@@ -1,0 +1,371 @@
+--- a/components/AuthGate.jsx
++++ b/components/AuthGate.jsx
+@@ -4,9 +4,13 @@
+ import { useApp } from '@/lib/store';
+ import * as cloud from '@/lib/supabase';
+ import { AF } from '@/lib/audio';
++import { cx } from '@/lib/content-i18n';
+ 
++/* i18n ETAPA 3a: tela de login/criar conta traduzida */
+ export default function AuthGate() {
+   const { S, enterApp, toast } = useApp();
++  const lang = (S && S.settings && S.settings.lang) || 'pt';
++  const T = (id, fb) => cx(lang, 'auth', id) || fb;
+   const [mode, setMode] = useState('login');
+   const [email, setEmail] = useState('');
+   const [pass, setPass] = useState('');
+@@ -14,11 +18,21 @@
+   const [msg, setMsg] = useState(null);
+   const [busy, setBusy] = useState(false);
+ 
++  /* erros do Supabase chegam em inglês → mapa pro idioma do guerreiro */
++  const authErr = (m) => {
++    const s = String((m && m.message) || m || '');
++    if (/invalid login credentials/i.test(s)) return T('e_invalid', '⚠ Credenciais inválidas.');
++    if (/email not confirmed/i.test(s)) return T('e_notconf', '⚠ Confirme seu e-mail antes de entrar.');
++    if (/already registered/i.test(s)) return T('e_exists', '⚠ Este e-mail já está cadastrado.');
++    if (/rate limit/i.test(s)) return T('e_rate', '⚠ Muitas tentativas. Aguarde um pouco.');
++    return '⚠ ' + s;
++  };
++
+   const valid = () => {
+     const em = email.trim(), pw = pass;
+-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { setMsg({ k: 'err', t: '⚠ Informe um e-mail válido.' }); return null; }
+-    if (pw.length < 6) { setMsg({ k: 'err', t: '⚠ A senha deve ter no mínimo 6 caracteres.' }); return null; }
+-    if (mode === 'signup' && pw !== pass2) { setMsg({ k: 'err', t: '⚠ As senhas não conferem.' }); return null; }
++    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { setMsg({ k: 'err', t: T('err_email', '⚠ Informe um e-mail válido.') }); return null; }
++    if (pw.length < 6) { setMsg({ k: 'err', t: T('err_pass', '⚠ A senha deve ter no mínimo 6 caracteres.') }); return null; }
++    if (mode === 'signup' && pw !== pass2) { setMsg({ k: 'err', t: T('err_match', '⚠ As senhas não conferem.') }); return null; }
+     return { em, pw };
+   };
+ 
+@@ -27,7 +41,7 @@
+     const v = valid();
+     if (!v) return;
+     setBusy(true);
+-    setMsg({ k: '', t: '⏳ Aguarde...' });
++    setMsg({ k: '', t: T('wait', '⏳ Aguarde...') });
+     try {
+       if (cloud.CLOUD) {
+         if (mode === 'login') {
+@@ -36,74 +50,74 @@
+         } else {
+           const data = await cloud.signUp(v.em, v.pw);
+           if (data && data.session) await enterApp(data.session);
+-          else setMsg({ k: 'ok', t: '✅ Conta criada! Confira seu e-mail para confirmar o cadastro e depois entre.' });
++          else setMsg({ k: 'ok', t: T('ok_signup', '✅ Conta criada! Confira seu e-mail para confirmar o cadastro e depois entre.') });
+         }
+       } else {
+         const users = cloud.localUsers();
+         if (mode === 'signup') {
+-          if (users[v.em]) throw new Error('Este e-mail já possui conta local. Use "Já tenho conta".');
++          if (users[v.em]) throw new Error(T('err_local_exists', 'Este e-mail já possui conta local. Use "Já tenho conta".'));
+           users[v.em] = { pw: cloud.hash(v.pw), ts: Date.now() };
+           cloud.saveLocalUsers(users);
+           localStorage.setItem('fg_local_session', v.em);
+           await enterApp({ local: true, email: v.em });
+         } else {
+           const u = users[v.em];
+-          if (!u || u.pw !== cloud.hash(v.pw)) throw new Error('E-mail ou senha incorretos (modo local).');
++          if (!u || u.pw !== cloud.hash(v.pw)) throw new Error(T('err_local_bad', 'E-mail ou senha incorretos (modo local).'));
+           localStorage.setItem('fg_local_session', v.em);
+           await enterApp({ local: true, email: v.em });
+         }
+       }
+     } catch (err) {
+-      setMsg({ k: 'err', t: '⚠ ' + ((err && err.message) || err) });
++      setMsg({ k: 'err', t: authErr(err) });
+     }
+     setBusy(false);
+   };
+ 
+   const forgot = async () => {
+     const em = email.trim();
+-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { setMsg({ k: 'err', t: '✍️ Digite seu e-mail no campo acima para redefinir a senha.' }); return; }
+-    if (!cloud.CLOUD) { setMsg({ k: 'err', t: '⚠ Modo local ativo: o envio do e-mail de redefinição exige configurar o Supabase.' }); return; }
++    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { setMsg({ k: 'err', t: T('forgot_need_email', '✍️ Digite seu e-mail no campo acima para redefinir a senha.') }); return; }
++    if (!cloud.CLOUD) { setMsg({ k: 'err', t: T('forgot_nocloud', '⚠ Modo local ativo: o envio do e-mail de redefinição exige configurar o Supabase.') }); return; }
+     try {
+       await cloud.resetPassword(em);
+-      setMsg({ k: 'ok', t: '📬 E-mail de redefinição enviado. Confira sua caixa de entrada.' });
+-    } catch (err) { setMsg({ k: 'err', t: '⚠ ' + ((err && err.message) || err) }); }
++      setMsg({ k: 'ok', t: T('forgot_ok', '📬 E-mail de redefinição enviado. Confira sua caixa de entrada.') });
++    } catch (err) { setMsg({ k: 'err', t: authErr(err) }); }
+   };
+ 
+   return (
+     <div className="fixed inset-0 z-[95] grid place-items-center overflow-y-auto p-5">
+       <div className="w-full max-w-sm rounded-r2 border border-gold/25 bg-surface p-6 text-center shadow-glow rise">
+         <ShieldCheck size={56} className="mx-auto mb-3 text-gold" strokeWidth={1.6} />
+-        <h2 className="font-display text-2xl tracking-wide">{S && S.settings.discreet ? 'FG DIÁRIO — ACESSO' : 'FORJANDO GUERREIROS — ACESSO AO RECURSO'}</h2>
+-        <p className="mb-5 mt-1 text-[12px] text-muted">{mode === 'signup' ? 'Criar conta de guerreiro' : 'Entrar com e-mail e senha'}</p>
++        <h2 className="font-display text-2xl tracking-wide">{S && S.settings.discreet ? T('title_disc', 'FG DIÁRIO — ACESSO') : T('title', 'FORJANDO GUERREIROS — ACESSO AO RECURSO')}</h2>
++        <p className="mb-5 mt-1 text-[12px] text-muted">{mode === 'signup' ? T('sub_signup', 'Criar conta de guerreiro') : T('sub_login', 'Entrar com e-mail e senha')}</p>
+         {!cloud.CLOUD && (
+           <p className="mb-3 flex items-center justify-center gap-2 rounded-r border border-gold/30 bg-gold/10 p-2 text-[11px] text-gold2">
+-            <CloudOff size={14} /> Nuvem não configurada. Modo local ativo.
++            <CloudOff size={14} /> {T('nocloud', 'Nuvem não configurada. Modo local ativo.')}
+           </p>
+         )}
+-        <label className="mb-3 block text-left"><span className="lbl">E-mail</span>
+-          <input type="email" className="field" autoComplete="email" placeholder="guerreiro@exemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
++        <label className="mb-3 block text-left"><span className="lbl">{T('lbl_email', 'E-mail')}</span>
++          <input type="email" className="field" autoComplete="email" placeholder={T('ph_email', 'guerreiro@exemplo.com')} value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
+         </label>
+-        <label className="mb-3 block text-left"><span className="lbl">Senha</span>
++        <label className="mb-3 block text-left"><span className="lbl">{T('lbl_pass', 'Senha')}</span>
+           <input type="password" className="field" autoComplete="current-password" placeholder="••••••••" value={pass} onChange={(e) => setPass(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
+         </label>
+         {mode === 'signup' && (
+-          <label className="mb-3 block text-left"><span className="lbl">Confirmar senha</span>
++          <label className="mb-3 block text-left"><span className="lbl">{T('lbl_pass2', 'Confirmar senha')}</span>
+             <input type="password" className="field" autoComplete="new-password" placeholder="••••••••" value={pass2} onChange={(e) => setPass2(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
+           </label>
+         )}
+         <button className="btn-gold btn-big" disabled={busy} onClick={() => { AF.click(); submit(); }}>
+           {mode === 'signup' ? <UserPlus size={17} /> : <LogIn size={17} />}
+-          {mode === 'signup' ? 'CRIAR CONTA' : 'ENTRAR NO QG'}
++          {mode === 'signup' ? T('btn_signup', 'CRIAR CONTA') : T('btn_login', 'ENTRAR NO QG')}
+         </button>
+         <div className="mt-3 flex justify-center gap-4 text-[12px] font-bold">
+           <button className="text-gold hover:underline" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setMsg(null); }}>
+-            {mode === 'login' ? 'Criar conta' : 'Já tenho conta — entrar'}
++            {mode === 'login' ? T('link_signup', 'Criar conta') : T('link_login', 'Já tenho conta — entrar')}
+           </button>
+-          <button className="text-muted hover:underline" onClick={forgot}><KeyRound size={12} className="mr-1 inline" />Esqueci minha senha</button>
++          <button className="text-muted hover:underline" onClick={forgot}><KeyRound size={12} className="mr-1 inline" />{T('link_forgot', 'Esqueci minha senha')}</button>
+         </div>
+         {msg && <p className={`mt-3 text-[12.5px] font-semibold ${msg.k === 'err' ? 'text-danger' : msg.k === 'ok' ? 'text-ok' : 'text-muted'}`}>{msg.t}</p>}
+-        <p className="fnote"><Shield size={11} className="mr-1 inline" /> Seus dados são sincronizados com criptografia e visíveis apenas para você.</p>
++        <p className="fnote"><Shield size={11} className="mr-1 inline" /> {T('foot', 'Seus dados são sincronizados com criptografia e visíveis apenas para você.')}</p>
+       </div>
+     </div>
+   );
+-}
+\ No newline at end of file
++}
+--- a/components/PinLock.jsx
++++ b/components/PinLock.jsx
+@@ -3,9 +3,13 @@
+ import { ShieldAlert, Delete, Trash2 } from 'lucide-react';
+ import { useApp } from '@/lib/store';
+ import { AF } from '@/lib/audio';
++import { cx } from '@/lib/content-i18n';
+ 
++/* i18n ETAPA 3a: tela de PIN traduzida */
+ export default function PinLock() {
+   const { S, setPhase } = useApp();
++  const lang = (S && S.settings && S.settings.lang) || 'pt';
++  const T = (id, fb) => cx(lang, 'pin', id) || fb;
+   const [buf, setBuf] = useState('');
+   const [err, setErr] = useState(false);
+ 
+@@ -34,8 +38,8 @@
+     <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center gap-6 bg-bg p-6">
+       <ShieldAlert size={60} className="text-gold" strokeWidth={1.5} />
+       <div className="text-center">
+-        <div className="k" style={{ marginBottom: 0 }}>CÓDIGO DE GUERRA</div>
+-        <small className="text-[12px] text-muted">Digite seu PIN de 4 dígitos para entrar no QG</small>
++        <div className="k" style={{ marginBottom: 0 }}>{T('title', 'CÓDIGO DE GUERRA')}</div>
++        <small className="text-[12px] text-muted">{T('sub', 'Digite seu PIN de 4 dígitos para entrar no QG')}</small>
+       </div>
+       <div className={`flex gap-3 ${err ? 'shakeit' : ''}`}>
+         {[0, 1, 2, 3].map((i) => (
+--- a/components/Paywall.jsx
++++ b/components/Paywall.jsx
+@@ -4,9 +4,14 @@
+ import { useApp } from '@/lib/store';
+ import * as cloud from '@/lib/supabase';
+ import { AF } from '@/lib/audio';
++import { cx } from '@/lib/content-i18n';
+ 
++/* i18n ETAPA 3a: portão de assinatura traduzido.
++   Moeda continua decidida pelo país (regra anti-burla) — só a língua muda. */
+ export default function Paywall() {
+-  const { toast, auth, refreshSub, subChecking } = useApp();
++  const { toast, auth, refreshSub, subChecking, S } = useApp();
++  const lang = (S && S.settings && S.settings.lang) || 'pt';
++  const T = (id, fb) => cx(lang, 'pay', id) || fb;
+   const [busy, setBusy] = useState(false);
+   const [price, setPrice] = useState(null); // preço da região do visitante (1 moeda só)
+ 
+@@ -14,7 +19,7 @@
+     let alive = true;
+     fetch('/api/region-price')
+       .then((r) => r.json())
+-      .then((d) => { if (alive && d && d.price) setPrice(d.price); })
++      .then((d) => { if (alive && d && (d.amount || d.price)) setPrice(d.amount || d.price); })
+       .catch(() => {});
+     return () => { alive = false; };
+   }, []);
+@@ -24,39 +29,41 @@
+     setBusy(true);
+     try {
+       const sess = await cloud.getSession();
+-      if (!sess || !sess.access_token) throw new Error('Sessão expirada — entre novamente.');
++      if (!sess || !sess.access_token) throw new Error(T('err_session', 'Sessão expirada — entre novamente.'));
+       const res = await fetch('/api/create-checkout-session', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess.access_token },
+       });
+       const data = await res.json();
+-      if (!res.ok || !data.url) throw new Error(data.error || 'Falha ao iniciar o checkout.');
++      if (!res.ok || !data.url) throw new Error(data.error || T('err_checkout', 'Falha ao iniciar o checkout.'));
+       window.location.href = data.url;
+     } catch (e) {
+-      toast('⚠ ' + (e.message || 'Erro ao abrir o checkout.'));
++      toast('⚠ ' + (e.message || T('err_open', 'Erro ao abrir o checkout.')));
+       setBusy(false);
+     }
+   };
+ 
+   const BENEFITS = [
+-    [Flame, 'QG completo: retenção, pureza e patamares de guerra'],
+-    [Siren, 'Protocolo S.O.S de 5 minutos com respiração guiada'],
+-    [BookOpen, 'Diário de Bordo, notas de campo e relatórios ilimitados'],
+-    [ChartNoAxesColumn, 'Mapa de combate, consistência da Forja e histórico'],
+-    [Sparkles, 'Sincronização em nuvem: PC, celular e tablet'],
++    [Flame, T('b1', 'QG completo: retenção, pureza e patamares de guerra')],
++    [Siren, T('b2', 'Protocolo S.O.S de 5 minutos com respiração guiada')],
++    [BookOpen, T('b3', 'Diário de Bordo, notas de campo e relatórios ilimitados')],
++    [ChartNoAxesColumn, T('b4', 'Mapa de combate, consistência da Forja e histórico')],
++    [Sparkles, T('b5', 'Sincronização em nuvem: PC, celular e tablet')],
+   ];
+ 
++  const suffix = cx(lang, 'land', 'per_month') || '/mês';
++
+   return (
+     <div className="grid min-h-dvh place-items-center p-5">
+       <div className="w-full max-w-md rounded-r2 border border-gold/40 bg-surface p-7 text-center shadow-glow rise">
+         <Crown size={46} className="mx-auto mb-3 text-gold" />
+-        <h1 className="font-display text-3xl tracking-wide">ENTRE PARA A FORJA</h1>
++        <h1 className="font-display text-3xl tracking-wide">{T('h1', 'ENTRE PARA A FORJA')}</h1>
+         <p className="mt-2 text-[13px] leading-relaxed text-muted">
+-          Seu acesso começa com <b className="text-gold">7 dias grátis</b>.{' '}
++          {T('start', 'Seu acesso começa com')} <b className="text-gold">{T('free', '7 dias grátis')}</b>.{' '}
+           {price
+-            ? <>Depois, apenas <b className="text-ink">{price}</b>.</>
+-            : <>Depois, apenas uma pequena mensalidade na sua moeda.</>}{' '}
+-          Cancele quando quiser.
++            ? <>{T('then', 'Depois, apenas')} <b className="text-ink">{price}{suffix}</b>.</>
++            : <>{T('then_generic', 'Depois, apenas uma pequena mensalidade na sua moeda.')}</>}{' '}
++          {T('cancel', 'Cancele quando quiser.')}
+         </p>
+         <div className="my-5 space-y-2.5 text-left">
+           {BENEFITS.map(([Ic, txt], i) => (
+@@ -67,10 +74,10 @@
+         </div>
+         <button className="btn-gold btn-big" disabled={busy || subChecking} onClick={() => { AF.click(); startTrial(); }}>
+           {busy || subChecking ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
+-          {subChecking ? 'CONFIRMANDO PAGAMENTO...' : '🛡️ INICIAR MEUS 7 DIAS GRÁTIS'}
++          {subChecking ? T('btn_check', 'CONFIRMANDO PAGAMENTO...') : T('btn', '🛡️ INICIAR MEUS 7 DIAS GRÁTIS')}
+         </button>
+-        <p className="fnote">Pagamento processado com segurança pela Stripe. Nenhum dado de cartão toca este aplicativo.</p>
+-        <p className="fnote" style={{ marginTop: 6 }}>Conectado como: <b className="text-gold">{auth.email || '—'}</b></p>
++        <p className="fnote">{T('foot1', 'Pagamento processado com segurança pela Stripe. Nenhum dado de cartão toca este aplicativo.')}</p>
++        <p className="fnote" style={{ marginTop: 6 }}>{T('foot2', 'Conectado como:')} <b className="text-gold">{auth.email || '—'}</b></p>
+       </div>
+     </div>
+   );
+--- a/components/ui.jsx
++++ b/components/ui.jsx
+@@ -4,6 +4,7 @@
+ import { X } from 'lucide-react';
+ import { AF } from '@/lib/audio';
+ import { fdmy } from '@/lib/utils';
++import { cx } from '@/lib/content-i18n';
+ 
+ export const Card = ({ children, className = '', glow = false }) => (
+   <article className={`card rise ${glow ? 'shadow-glow border-gold/40' : ''} ${className}`}>{children}</article>
+@@ -55,12 +56,13 @@
+ }
+ 
+ export function ModalHost() {
+-  const { modal, closeModal } = useApp();
++  const { modal, closeModal, S } = useApp();
++  const lang = (S && S.settings && S.settings.lang) || 'pt';
+   return (
+     <div className={`fixed inset-0 z-[70] grid place-items-center bg-black/70 p-4 backdrop-blur-sm transition-opacity ${modal ? 'opacity-100' : 'pointer-events-none opacity-0'}`} onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
+       {modal && (
+         <div className={`relative max-h-[92dvh] w-full overflow-y-auto rounded-r2 border border-gold/25 bg-[#16161a] p-5 rise ${modal.cls}`} style={{ maxWidth: modal.cls.includes('wide') ? 880 : 540 }}>
+-          <button className="absolute right-3 top-3 text-muted hover:text-ink" onClick={closeModal} aria-label="Fechar"><X size={18} /></button>
++          <button className="absolute right-3 top-3 text-muted hover:text-ink" onClick={closeModal} aria-label={cx(lang, 'ui', 'close') || 'Fechar'}><X size={18} /></button>
+           {modal.node}
+         </div>
+       )}
+--- /dev/null
++++ b/components/LangPick.jsx
+@@ -0,0 +1,26 @@
++'use client';
++/* i18n ETAPA 2 — seletor PT/EN/ES da landing (cookie + refresh, sem recarregar a página) */
++import React from 'react';
++import { useRouter } from 'next/navigation';
++import { LANGS, setLangCookie } from '@/lib/i18n';
++
++export default function LangPick({ lang }) {
++  const router = useRouter();
++  return (
++    <div className="flex items-center gap-1" role="group" aria-label="Idioma / Language / Idioma">
++      {LANGS.map((l) => (
++        <button
++          key={l}
++          type="button"
++          onClick={() => { setLangCookie(l); router.refresh(); }}
++          aria-current={l === lang ? 'true' : undefined}
++          className={`px-2 py-1 rounded text-[11px] font-extrabold uppercase tracking-wider transition-colors ${
++            l === lang ? 'bg-gold/15 text-gold' : 'text-muted hover:text-ink'
++          }`}
++        >
++          {l}
++        </button>
++      ))}
++    </div>
++  );
++}
+--- /dev/null
++++ b/lib/i18n.js
+@@ -0,0 +1,31 @@
++/* i18n ETAPA 2 — idioma do visitante via cookie fg_lang.
++   Usado pela landing (server) e pelo seletor LangPick (client).
++   O idioma DENTRO do app continua sendo settings.lang (store) —
++   ao entrar no /app, o cookie semeia o settings.lang de contas novas. */
++
++export const LANGS = ['pt', 'en', 'es'];
++export const LANG_COOKIE = 'fg_lang';
++
++/* Prioridade: cookie > Accept-Language do navegador > pt */
++export function pickLang(cookieLang, acceptLanguage) {
++  if (LANGS.includes(cookieLang)) return cookieLang;
++  const al = (acceptLanguage || '').toLowerCase();
++  if (al.includes('pt')) return 'pt';
++  if (al.includes('es')) return 'es';
++  if (al.includes('en')) return 'en';
++  return 'pt';
++}
++
++/* Client: grava o cookie por 1 ano (router.refresh() aplica na hora) */
++export function setLangCookie(l) {
++  if (typeof document === 'undefined') return;
++  if (!LANGS.includes(l)) return;
++  document.cookie = `${LANG_COOKIE}=${l}; path=/; max-age=31536000; samesite=lax`;
++}
++
++/* Client: lê o cookie (usado pelo store pra semear contas novas) */
++export function readLangCookie() {
++  if (typeof document === 'undefined') return null;
++  const m = document.cookie.match(new RegExp(`(^|; )${LANG_COOKIE}=([a-z]{2})`));
++  return m && LANGS.includes(m[2]) ? m[2] : null;
++}
+--- /dev/null
++++ b/lib/i18n-server.js
+@@ -0,0 +1,10 @@
++/* i18n ETAPA 2 — versão SERVER (páginas server component).
++   Next 14: cookies() e headers() são síncronos. */
++import { cookies, headers } from 'next/headers';
++import { LANG_COOKIE, pickLang } from './i18n';
++
++export function serverLang() {
++  const c = cookies().get(LANG_COOKIE);
++  const al = headers().get('accept-language');
++  return pickLang(c ? c.value : null, al);
++}
