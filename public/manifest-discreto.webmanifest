@@ -1,0 +1,15 @@
+{
+  "name": "FG Diário — Registro Pessoal",
+  "short_name": "FG Diário",
+  "description": "Diário pessoal e acompanhador de hábitos.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#D6DAE0",
+  "theme_color": "#6C7684",
+  "icons": [
+    { "src": "/icon-neutro-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-neutro-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-neutro-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
