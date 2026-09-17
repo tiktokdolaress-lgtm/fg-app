@@ -8,6 +8,7 @@ export async function GET(req) {
   return NextResponse.json({
     country,
     currency: br ? 'BRL' : 'USD',
-    price: br ? 'R$ 9,90/mês' : '$7.99/month',
+    price: br ? 'R$ 9,90/mês' : '$7.99/month', // legacy (Paywall ainda usa)
+    amount: br ? 'R$ 9,90' : '$7.99',           // i18n ETAPA 2: sufixo traduzido no client
   });
 }

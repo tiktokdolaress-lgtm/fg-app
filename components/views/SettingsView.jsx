@@ -5,6 +5,7 @@ import { useApp } from '@/lib/store';
 import { Card, K, Toggle, Chk, Empty } from '@/components/ui';
 import { LIFE_STATUS, genHallName } from '@/lib/data';
 import { cx } from '@/lib/content-i18n';
+import { setLangCookie } from '@/lib/i18n';
 import * as cloud from '@/lib/supabase';
 import * as L from '@/lib/logic';
 import { AF } from '@/lib/audio';
@@ -133,7 +134,7 @@ export default function SettingsView() {
           <K><Languages size={12} className="mr-1 inline" /> {T('k_lang', 'IDIOMA & APARÊNCIA')}</K>
           <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
             <div><b className="text-[13px]">{T('lang_title', 'Idioma')}</b><small className="block text-[11px] text-muted">{T('lang_desc', 'Interface principal (PT / EN / ES)')}</small></div>
-            <div className="flex gap-1.5">{['pt', 'en', 'es'].map((l) => <button key={l} className={st.lang === l ? 'chip' : 'chip-dim'} onClick={() => { update((s) => { s.settings.lang = l; }); toast(T('lang_toast', '🌐 Idioma: ') + l.toUpperCase()); }}>{l.toUpperCase()}</button>)}</div>
+            <div className="flex gap-1.5">{['pt', 'en', 'es'].map((l) => <button key={l} className={st.lang === l ? 'chip' : 'chip-dim'} onClick={() => { update((s) => { s.settings.lang = l; }); setLangCookie(l); toast(T('lang_toast', '🌐 Idioma: ') + l.toUpperCase()); }}>{l.toUpperCase()}</button>)}</div>
           </div>
           <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
             <div><b className="text-[13px]">{T('theme_title', 'Tema Escuro')}</b><small className="block text-[11px] text-muted">{T('theme_desc', 'Modo Ônix (ativo) / Grafite')}</small></div>

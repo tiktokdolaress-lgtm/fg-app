@@ -3,9 +3,13 @@ import React, { useState } from 'react';
 import { ShieldAlert, Delete, Trash2 } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { AF } from '@/lib/audio';
+import { cx } from '@/lib/content-i18n';
 
+/* i18n ETAPA 3a: tela de PIN traduzida */
 export default function PinLock() {
   const { S, setPhase } = useApp();
+  const lang = (S && S.settings && S.settings.lang) || 'pt';
+  const T = (id, fb) => cx(lang, 'pin', id) || fb;
   const [buf, setBuf] = useState('');
   const [err, setErr] = useState(false);
 
@@ -34,8 +38,8 @@ export default function PinLock() {
     <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center gap-6 bg-bg p-6">
       <ShieldAlert size={60} className="text-gold" strokeWidth={1.5} />
       <div className="text-center">
-        <div className="k" style={{ marginBottom: 0 }}>CÓDIGO DE GUERRA</div>
-        <small className="text-[12px] text-muted">Digite seu PIN de 4 dígitos para entrar no QG</small>
+        <div className="k" style={{ marginBottom: 0 }}>{T('title', 'CÓDIGO DE GUERRA')}</div>
+        <small className="text-[12px] text-muted">{T('sub', 'Digite seu PIN de 4 dígitos para entrar no QG')}</small>
       </div>
       <div className={`flex gap-3 ${err ? 'shakeit' : ''}`}>
         {[0, 1, 2, 3].map((i) => (

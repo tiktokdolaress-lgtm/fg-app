@@ -13,7 +13,13 @@ function loadLocal() {
     const r = localStorage.getItem(LSKEY);
     if (r) return mergeS(JSON.parse(r));
   } catch (e) {}
-  return DEF();
+  /* i18n ETAPA 2: conta nova herda o idioma escolhido na landing (cookie fg_lang) */
+  const s = DEF();
+  try {
+    const c = document.cookie.match(/(^|; )fg_lang=(pt|en|es)/);
+    if (c) s.settings.lang = c[2];
+  } catch (e) {}
+  return mergeS(s);
 }
 
 export function AppProvider({ children }) {
