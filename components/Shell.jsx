@@ -21,7 +21,7 @@ const VIEWS = { qg: QgView, forge: ForgeView, ops: OpsView, journal: JournalView
 
 export default function Shell() {
   const { S, tab, setTab, t, openModal, update } = useApp();
-  const go = (id) => { AF.click(); setTab(id); window.scrollTo({ top: 0 }); };
+  const go = (id) => { AF.click(); setTab(id); window.scrollTo({ top: 0 }); }
   const openSOS = () => { update((d) => { d.sos = (d.sos || 0) + 1; }); openModal(<SosModal />, 'full'); };
   const View = VIEWS[tab];
 
@@ -39,7 +39,7 @@ export default function Shell() {
         <div className="mb-5 flex items-center gap-2.5 px-2">
           <ShieldCheck size={40} className="flex-none text-gold" strokeWidth={1.6} />
           <div className="font-display text-[21px] leading-[.95] tracking-[.08em] text-gold">
-            {S.settings.discreet ? <>FG<br />DIÁRIO<small className="block font-body text-[9px] font-extrabold tracking-[.3em] text-muted">REGISTRO PESSOAL</small></> : <>FORJANDO<br />GUERREIROS<small className="block font-body text-[9px] font-extrabold tracking-[.3em] text-muted">RETENÇÃO • DISCIPLINA</small></>}
+            {S.settings.discreet ? <>FG<br />DIÁRIO<small className="block font-body text-[9px] font-extrabold tracking-[.3em] text-muted">{t('brand1')}</small></> : <>FORJANDO<br />GUERREIROS<small className="block font-body text-[9px] font-extrabold tracking-[.3em] text-muted">{t('brand2')}</small></>}
           </div>
         </div>
         <nav className="flex flex-col gap-1">
@@ -55,7 +55,7 @@ export default function Shell() {
         </nav>
         <div className="mt-auto rounded-r2 border border-gold/20 bg-surface p-3.5 text-center">
           <b className="block font-display text-[34px] leading-none text-gold">{progressDays(S)}</b>
-          <small className="text-[9.5px] font-extrabold tracking-[.2em] text-muted">DIAS EM RETENÇÃO</small>
+          <small className="text-[9.5px] font-extrabold tracking-[.2em] text-muted">{t('dret')}</small>
         </div>
       </aside>
 
@@ -64,7 +64,7 @@ export default function Shell() {
         <header className="sticky top-0 z-30 -mx-4 mb-4 flex flex-wrap items-center gap-2.5 border-b border-gold/20 bg-[rgba(13,13,14,.88)] px-5 py-3 backdrop-blur-md lg:-mx-8 lg:mb-6 lg:px-8">
           <h1 className="min-w-[120px] flex-1 truncate font-display text-2xl tracking-[.06em]">{t(tab)}</h1>
           <span className="chip flex-none">{(LIFE_STATUS[lifeMode(S)] || LIFE_STATUS.single).label}</span>
-          <button className="flex-none rounded-r border border-line bg-surface2 p-2 text-muted hover:text-gold" onClick={() => go('settings')} aria-label="Ajustes"><Settings size={18} /></button>
+          <button className="flex-none rounded-r border border-line bg-surface2 p-2 text-muted hover:text-gold" onClick={() => go('settings')} aria-label={t('adj')}><Settings size={18} /></button>
         </header>
         <View key={tab} />
       </main>
