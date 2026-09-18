@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Castle, Hammer, Target, BookOpen, ChartNoAxesColumn, Skull, Settings, Siren, ShieldCheck, Library } from 'lucide-react';
+import { Castle, Hammer, Target, BookOpen, ChartNoAxesColumn, Skull, Settings, Siren, ShieldCheck } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { TABS, LIFE_STATUS } from '@/lib/data';
 import { cx } from '@/lib/content-i18n';
@@ -15,10 +15,9 @@ import JournalView from './views/JournalView';
 import StatsView from './views/StatsView';
 import EnemyView from './views/EnemyView';
 import SettingsView from './views/SettingsView';
-import LibraryView from './views/LibraryView';
 
-const ICONS = { qg: Castle, forge: Hammer, ops: Target, journal: BookOpen, stats: ChartNoAxesColumn, enemy: Skull, library: Library, settings: Settings };
-const VIEWS = { qg: QgView, forge: ForgeView, ops: OpsView, journal: JournalView, stats: StatsView, enemy: EnemyView, library: LibraryView, settings: SettingsView };
+const ICONS = { qg: Castle, forge: Hammer, ops: Target, journal: BookOpen, stats: ChartNoAxesColumn, enemy: Skull, settings: Settings };
+const VIEWS = { qg: QgView, forge: ForgeView, ops: OpsView, journal: JournalView, stats: StatsView, enemy: EnemyView, settings: SettingsView };
 
 export default function Shell() {
   const { S, tab, setTab, t, openModal, update } = useApp();
@@ -26,7 +25,7 @@ export default function Shell() {
   const lifeLbl = (() => { const m = lifeMode(S); const LS = cx(lang, 'life', m) || LIFE_STATUS[m] || LIFE_STATUS.single; return LS.label; })();
   const go = (id) => { AF.click(); setTab(id); window.scrollTo({ top: 0 }); }
   const openSOS = () => { update((d) => { d.sos = (d.sos || 0) + 1; }); openModal(<SosModal />, 'full'); };
-  const View = VIEWS[tab];
+  const View = VIEWS[tab] || QgView;
 
   /* PWA: registra o service worker + agenda lembretes locais (hábitos ⏰ e check-in 20h) */
   React.useEffect(() => {
@@ -48,6 +47,7 @@ export default function Shell() {
         <nav className="flex flex-col gap-1">
           {TABS.map(([id, emo]) => {
             const Ic = ICONS[id];
+            if (!Ic) return null;
             const lb = t(id).toLowerCase().replace(/(^|\s)\w/g, (c) => c.toUpperCase());
             return (
               <button key={id} onClick={() => go(id)} className={`flex items-center gap-3 rounded-r border px-3.5 py-3 text-left text-sm font-bold transition-all ${tab === id ? 'border-gold/25 bg-gold/10 text-gold' : 'border-transparent text-muted hover:translate-x-[3px] hover:bg-surface hover:text-ink'}`}>
@@ -80,9 +80,10 @@ export default function Shell() {
       </button>
 
       {/* bottom nav mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-8 border-t border-gold/20 bg-[rgba(18,18,21,.97)] px-1 pt-2 backdrop-blur-md lg:hidden" style={{ paddingBottom: 'calc(8px + env(safe-area-inset-bottom))' }}>
+      <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-7 border-t border-gold/20 bg-[rgba(18,18,21,.97)] px-1 pt-2 backdrop-blur-md lg:hidden" style={{ paddingBottom: 'calc(8px + env(safe-area-inset-bottom))' }}>
         {TABS.map(([id, emo]) => {
           const Ic = ICONS[id];
+          if (!Ic) return null;
           return (
             <button key={id} onClick={() => go(id)} className={`relative flex flex-col items-center gap-[3px] rounded-[10px] px-0.5 py-1.5 text-[9.5px] font-extrabold tracking-[.08em] transition-colors ${tab === id ? 'text-gold' : 'text-muted'}`}>
               {tab === id && <span className="absolute -top-2 h-[3px] w-[18px] rounded-full bg-gold shadow-[0_0_8px_#FFC846]" />}
