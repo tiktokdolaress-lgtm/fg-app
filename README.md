@@ -71,3 +71,4 @@ components/
   foram simplificados/removidos (manifest mantém instalabilidade).
 - Fluxos de modal reescritos em React preservando textos, penalidades e regras de negócio
   (queda −12/−10/−18, pureza +2, slots por patamar, reps semanais/personalizadas etc.).
+  
