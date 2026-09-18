@@ -1,6 +1,6 @@
 'use client';
 import React, { useRef, useState } from 'react';
-import { Cloud, RefreshCw, LogOut, Download, Upload, Skull, Plus, X, ShieldCheck, Languages, Bell, BellOff, UserX, Handshake, Copy, Trophy } from 'lucide-react';
+import { Cloud, RefreshCw, LogOut, Download, Upload, Skull, Plus, X, ShieldCheck, Languages, Bell, BellOff, UserX, Handshake, Copy, Trophy, Palette } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Toggle, Chk, Empty } from '@/components/ui';
 import { LIFE_STATUS, genHallName } from '@/lib/data';
@@ -18,10 +18,17 @@ const SUB_LBL_FALLBACK = {
   es: { active: '✅ ACTIVA', trialing: '🎁 PRUEBA GRATIS ACTIVA', inactive: '⛔ INACTIVA', canceled: '🚫 CANCELADA', past_due: '⚠️ PAGO PENDIENTE', local: '💾 MODO LOCAL (sin nube)' },
 };
 
+const THEMES = [
+  { id: 'dark', name: '👑 FORJA DOURADA', desc: 'Preto Ônix com detalhes em Ouro Real' },
+  { id: 'stealth', name: '⚔️ BLACK OPS', desc: 'Total black minimalista com titânio e cinza tático' },
+  { id: 'military', name: '🪖 EXÉRCITO MILITAR', desc: 'Verde Oliva Tático com detalhes camuflados' },
+];
+
 export default function SettingsView() {
   const { S, update, toast, confirmBox, auth, setPhase, setAuth, authRef, sub, refreshSub } = useApp();
   const st = S.settings;
   const lang = (st && st.lang) || 'pt';
+  const currentTheme = st.theme || 'dark';
   const T = (id, fb) => cx(lang, 'settings', id) || cx(lang, 'life', id) || fb;
   const [pinCur, setPinCur] = useState('');
   const [pinNew, setPinNew] = useState('');
@@ -134,14 +141,52 @@ export default function SettingsView() {
     toast(T('ok_signOut', '🚪 Sessão encerrada.'));
   };
 
+  const selectTheme = (themeId) => {
+    update((s) => { s.settings.theme = themeId; });
+    document.documentElement.dataset.theme = themeId;
+    AF.click();
+    toast('🎨 ' + (THEMES.find((t) => t.id === themeId)?.name || 'Tema Atualizado'));
+  };
+
   const subLabels = SUB_LBL_FALLBACK[lang] || SUB_LBL_FALLBACK.pt;
 
   return (
     <div className="grid gap-3.5 lg:grid-cols-2">
       <section>
-        {/* IDIOMA & APARÊNCIA */}
+        {/* TEMAS DE GUERRA */}
         <Card className="mb-3.5">
-          <K><Languages size={12} className="mr-1 inline" /> {T('k_lang', 'IDIOMA & APARÊNCIA')}</K>
+          <K><Palette size={12} className="mr-1 inline" /> TEMAS DE COMBATE</K>
+          <p className="fnote mb-3 text-left">Personalize a identidade visual do seu QG de acordo com o seu estilo de combate.</p>
+          <div className="flex flex-col gap-2">
+            {THEMES.map((th) => {
+              const sel = currentTheme === th.id;
+              return (
+                <button
+                  key={th.id}
+                  type="button"
+                  onClick={() => selectTheme(th.id)}
+                  className={`flex items-center justify-between rounded-r border p-3 text-left transition-all ${
+                    sel 
+                      ? 'border-gold bg-gold/10 shadow-[0_0_12px_rgba(255,200,70,0.2)]' 
+                      : 'border-line bg-surface2 hover:border-gold/40'
+                  }`}
+                >
+                  <div>
+                    <b className={`block text-[13px] ${sel ? 'text-gold' : 'text-ink'}`}>{th.name}</b>
+                    <small className="block text-[11px] text-muted">{th.desc}</small>
+                  </div>
+                  <span className={`grid h-[20px] w-[20px] flex-none place-items-center rounded-full border text-[11px] font-bold ${
+                    sel ? 'border-gold bg-gold text-[#141414]' : 'border-line text-transparent'
+                  }`}>✓</span>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* IDIOMA & SOM */}
+        <Card className="mb-3.5">
+          <K><Languages size={12} className="mr-1 inline" /> {T('k_lang', 'IDIOMA & ÁUDIO')}</K>
           <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
             <div><b className="text-[13px]">{T('lang_title', 'Idioma')}</b><small className="block text-[11px] text-muted">{T('lang_desc', 'Interface principal (PT / EN / ES)')}</small></div>
             <div className="flex gap-1.5">{['pt', 'en', 'es'].map((l) => <button key={l} className={st.lang === l ? 'chip' : 'chip-dim'} onClick={() => { update((s) => { s.settings.lang = l; }); setLangCookie(l); toast(T('lang_toast', '🌐 Idioma: ') + l.toUpperCase()); }}>{l.toUpperCase()}</button>)}</div>
