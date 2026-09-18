@@ -31,7 +31,7 @@ export default function ForgeView() {
       }
     });
     if (S.forge.active.includes(id)) toast(T('t_removed', 'Hábito removido do protocolo.'));
-    else if (used >= tier.slots) toast(T('t_limit1', '🔒 Limite de slots atingido (') + tier.slots + T('t_limit2', '). Avance nos patamares para desbloquear mais.'));
+    else if (used >= tier.slots) toast(T('t_limit1', '🔒 Limite de slots atingido (') + (tier.slots === 99 ? '∞' : tier.slots) + T('t_limit2', '). Avance nos patamares para desbloquear mais.'));
     else { toast(T('t_act', '🔨 Hábito ativado na Forja.')); SFX.hammer(); }
   };
 
@@ -153,7 +153,7 @@ export default function ForgeView() {
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2.5">
           <button className="btn-gold" onClick={() => habitModal(null)}><Plus size={15} /> {T('create', 'CRIAR HÁBITO')}</button>
-          <span className="chip-dim">SLOTS {used}/{tier.slots === 99 ? '∞' : tier.slots}</span>
+          <span className="chip-dim">{T('slots_label', 'SLOTS')} {used}/{tier.slots === 99 ? '∞' : tier.slots}</span>
         </div>
       </Card>
 
@@ -169,7 +169,7 @@ export default function ForgeView() {
         </Card>
       )}
 
-      {actList.length > 0 && <K className="mt-4">{T('act_k', '⚡ ATIVOS NO PROTOCOLO — ')}{actList.length}/{tier.slots === 99 ? '∞' : tier.slots} SLOTS</K>}
+      {actList.length > 0 && <K className="mt-4">{T('act_k', '⚡ ATIVOS NO PROTOCOLO — ')}{actList.length}/{tier.slots === 99 ? '∞' : tier.slots} {T('slots_label', 'SLOTS')}</K>}
       <div className="grid gap-3.5 md:grid-cols-2">{actList.map(card)}</div>
       {resList.length > 0 && <K className="mt-5 text-muted">{T('res_k', '🗃 RESERVA DA FORJA — ')}{resList.length}</K>}
       <div className="grid gap-3.5 md:grid-cols-2">{resList.map(card)}</div>
