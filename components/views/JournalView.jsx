@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BookOpen, Brain, Pencil, X, Plus, Search, Save } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Empty, Field } from '@/components/ui';
@@ -22,8 +22,60 @@ export default function JournalView() {
   const [noteTxt, setNoteTxt] = useState('');
   const [q, setQ] = useState('');
 
-  const j = S.journal[jDate] || { mood: '', good: '', ch: '', vent: '' };
-  const setJ = (key, val) => update((s) => { s.journal[jDate] = s.journal[jDate] || { mood: '', good: '', ch: '' }; s.journal[jDate][key] = val; });
+  /* Estado local isolado para digitação ultra-fluida e sem travas */
+  const [localEntry, setLocalEntry] = useState({ mood: '', good: '', ch: '', vent: '' });
+  const saveTimeout = useRef(null);
+  const lastLoadedDate = useRef(null);
+
+  // Sincroniza o estado local quando muda a data selecionada
+  useEffect(() => {
+    const remote = S.journal[jDate] || { mood: '', good: '', ch: '', vent: '' };
+    setLocalEntry({
+      mood: remote.mood || '',
+      good: remote.good || '',
+      ch: remote.ch || '',
+      vent: remote.vent || '',
+    });
+    lastLoadedDate.current = jDate;
+  }, [jDate]);
+
+  /* Atualiza texto local na hora e agenda salvamento na nuvem (debounce 800ms) */
+  const handleTextChange = (field, value) => {
+    setLocalEntry((prev) => {
+      const next = { ...prev, [field]: value };
+      clearTimeout(saveTimeout.current);
+      saveTimeout.current = setTimeout(() => {
+        update((s) => {
+          s.journal[jDate] = s.journal[jDate] || { mood: '', good: '', ch: '' };
+          s.journal[jDate][field] = value;
+        });
+      }, 800);
+      return next;
+    });
+  };
+
+  /* Salva o humor com clique imediato */
+  const handleMoodSelect = (lb) => {
+    AF.click();
+    setLocalEntry((prev) => ({ ...prev, mood: lb }));
+    update((s) => {
+      s.journal[jDate] = s.journal[jDate] || { mood: '', good: '', ch: '' };
+      s.journal[jDate].mood = lb;
+    });
+  };
+
+  /* Salvar manual forçado */
+  const manualSave = () => {
+    clearTimeout(saveTimeout.current);
+    update((s) => {
+      s.journal[jDate] = s.journal[jDate] || { mood: '', good: '', ch: '' };
+      Object.assign(s.journal[jDate], localEntry);
+    });
+    AF.click();
+    toast('💾 ' + (t('savedj') || 'Diário salvo com sucesso.'));
+  };
+
+  const currentRemote = S.journal[jDate] || {};
   const hist = Object.keys(S.journal).sort().reverse().slice(0, 10);
 
   const notes = S.notes
@@ -51,19 +103,19 @@ export default function JournalView() {
             <button className="chip justify-center" style={{ flex: '1 1 100%', order: -1 }} onClick={() => { AF.click(); setJDate(today()); }}>📅 {t('hj')} ({fdmy(today())})</button>
             <button className="chip-dim" style={{ flex: '0 0 auto', ...(jDate >= today() ? { opacity: .35, cursor: 'not-allowed' } : {}) }} disabled={jDate >= today()} onClick={() => { AF.click(); setJDate(dstr(new Date(L.parseD(jDate).getTime() + 86400000))); }}>{t('j_next')}</button>
           </div>
-          {j.fall && <div className="chip-dim mb-2.5 border-danger/50 text-danger">{t('j_fall')}{((j.fallTypes || []).length ? ': ' + (j.fallTypes || []).map((x) => fallLbl(x)).join(' + ') : '')}</div>}
+          {currentRemote.fall && <div className="chip-dim mb-2.5 border-danger/50 text-danger">{t('j_fall')}{((currentRemote.fallTypes || []).length ? ': ' + (currentRemote.fallTypes || []).map((x) => fallLbl(x)).join(' + ') : '')}</div>}
           <div className="k2 mb-2">{t('j_mood')}</div>
           <div className="mb-3 grid grid-cols-4 gap-1.5">
             {MOODS.map(([ic, lb]) => (
-              <button key={lb} className={`rounded-r border p-2 text-center text-[11px] font-bold transition-colors ${j.mood === lb ? 'border-gold/60 bg-gold/10 text-gold' : 'border-line bg-surface2 text-muted'}`} onClick={() => { AF.click(); setJ('mood', lb); }}>
+              <button key={lb} className={`rounded-r border p-2 text-center text-[11px] font-bold transition-colors ${localEntry.mood === lb ? 'border-gold/60 bg-gold/10 text-gold' : 'border-line bg-surface2 text-muted'}`} onClick={() => handleMoodSelect(lb)}>
                 <i className="block text-lg not-italic">{ic}</i>{t('mood_' + lb)}
               </button>
             ))}
           </div>
-          <Field label={t('j_good')}><textarea className="field" maxLength={500} value={j.good || ''} onChange={(e) => setJ('good', e.target.value)} /></Field>
-          <Field label={t('j_ch')}><textarea className="field" maxLength={500} value={j.ch || ''} onChange={(e) => setJ('ch', e.target.value)} /></Field>
-          {(j.fall || j.vent) && <Field label={t('j_vent')}><textarea className="field" maxLength={600} value={j.vent || ''} onChange={(e) => setJ('vent', e.target.value)} /></Field>}
-          <button className="btn-gold btn-big" onClick={() => { AF.click(); toast('💾'); }}><Save size={15} /> {t('j_save')}</button>
+          <Field label={t('j_good')}><textarea className="field" maxLength={500} value={localEntry.good} onChange={(e) => handleTextChange('good', e.target.value)} /></Field>
+          <Field label={t('j_ch')}><textarea className="field" maxLength={500} value={localEntry.ch} onChange={(e) => handleTextChange('ch', e.target.value)} /></Field>
+          {(currentRemote.fall || localEntry.vent) && <Field label={t('j_vent')}><textarea className="field" maxLength={600} value={localEntry.vent} onChange={(e) => handleTextChange('vent', e.target.value)} /></Field>}
+          <button className="btn-gold btn-big" onClick={manualSave}><Save size={15} /> {t('j_save')}</button>
         </Card>
         <Card>
           <K>{t('j_hist')}</K>
