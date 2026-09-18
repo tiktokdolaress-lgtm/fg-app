@@ -1,6 +1,6 @@
 'use client';
 import React, { useRef, useState } from 'react';
-import { Cloud, CloudOff, RefreshCw, LogOut, Download, Upload, Skull, Plus, X, ShieldCheck, Volume2, VolumeX, Palette, Languages, Bell, BellOff, UserX, Handshake, Copy, Trophy, EyeOff } from 'lucide-react';
+import { Cloud, RefreshCw, LogOut, Download, Upload, Skull, Plus, X, ShieldCheck, Languages, Bell, BellOff, UserX, Handshake, Copy, Trophy } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Toggle, Chk, Empty } from '@/components/ui';
 import { LIFE_STATUS, genHallName } from '@/lib/data';
@@ -43,12 +43,13 @@ export default function SettingsView() {
     }
     setNotifBusy(false);
   };
+
   const disableNotif = async () => {
     try {
       const sess = await cloud.getSession();
       await unsubscribePush(sess && sess.access_token);
       update((s) => { s.settings.notifOn = false; });
-      toast(T('ok_notifOff', '🔕 Notificações desativadas neste dispositivo.'));
+      toast(T('ok_notifOff', ' Notificações desativadas neste dispositivo.'));
     } catch (e) { toast(T('err_notifOffFail', '⚠ Falha ao desativar.')); }
   };
 
@@ -82,7 +83,7 @@ export default function SettingsView() {
       if (nv) { if (!/^\d{4}$/.test(nv)) { toast(T('err_pin4', '⚠ Use exatamente 4 dígitos.')); return; } update((s) => { s.settings.pin = nv; }); toast(T('ok_pinUpd', '🛡 PIN atualizado.')); }
       else { update((s) => { s.settings.pin = ''; }); toast(T('ok_pinRemoved', '🔓 Bloqueio por PIN removido.')); }
     } else {
-      if (!/^\d{4}$/.test(nv)) { toast(T('err_pin4', '⚠ Use exatamente 4 dígitos.')); return; }
+      if (!/^\d{4}$/.test(nv)) { toast(T('err_pin4', ' Use exatamente 4 dígitos.')); return; }
       update((s) => { s.settings.pin = nv; }); toast(T('ok_pinOn', '🛡 Bloqueio por PIN ativado.'));
     }
     setPinCur(''); setPinNew('');
@@ -96,6 +97,7 @@ export default function SettingsView() {
     a.click();
     toast(T('ok_bkExp', '💾 Backup exportado.'));
   };
+
   const importBk = (f) => {
     const r = new FileReader();
     r.onload = () => {
@@ -105,7 +107,7 @@ export default function SettingsView() {
         update((s) => Object.assign(s, o));
         toast(T('ok_bkImp', '⬆ Backup importado com sucesso.'));
         setTimeout(() => location.reload(), 800);
-      } catch (e) { toast(T('err_bkInvalid', '⚠ Arquivo de backup inválido.')); }
+      } catch (e) { toast(T('err_bkInvalid', ' Arquivo de backup inválido.')); }
     };
     r.readAsText(f);
   };
@@ -118,6 +120,7 @@ export default function SettingsView() {
     if (d && d.v) update((s) => Object.assign(s, d));
     toast(T('ok_syncDone', '✅ Sincronização concluída com a nuvem.'));
   };
+
   const signOut = async () => {
     if (cloud.CLOUD) await cloud.signOut();
     try { localStorage.removeItem('fg_local_session'); } catch (e) {}
@@ -130,6 +133,7 @@ export default function SettingsView() {
   return (
     <div className="grid gap-3.5 lg:grid-cols-2">
       <section>
+        {/* IDIOMA & APARÊNCIA */}
         <Card className="mb-3.5">
           <K><Languages size={12} className="mr-1 inline" /> {T('k_lang', 'IDIOMA & APARÊNCIA')}</K>
           <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
@@ -146,6 +150,7 @@ export default function SettingsView() {
           </div>
         </Card>
 
+        {/* STATUS DE VIDA */}
         <Card className="mb-3.5">
           <K>{T('k_life', '💍 STATUS DE VIDA & PILARES')}</K>
           <p className="fnote" style={{ margin: '0 0 10px', textAlign: 'left' }}>{T('life_note', 'Define os pilares cobrados diariamente no QG. Alterar abre confirmação; o histórico de dias NUNCA é apagado.')}</p>
@@ -159,6 +164,7 @@ export default function SettingsView() {
           })}
         </Card>
 
+        {/* NOTIFICAÇÕES */}
         <Card className="mb-3.5">
           <K><Bell size={12} className="mr-1 inline" /> {T('k_notif', 'NOTIFICAÇÕES DE GUERRA')}</K>
           {perm !== 'granted' ? (
@@ -173,7 +179,7 @@ export default function SettingsView() {
                 <Toggle on={st.notifDaily !== false} onChange={() => update((s) => { s.settings.notifDaily = s.settings.notifDaily === false; })} />
               </div>
               <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
-                <div><b className="text-[13px]">{T('notif_hab_t', 'Horários dos hábitos')}</b><small className="block text-[11px] text-muted">{T('notif_hab_d', 'Alerta no horário ⏰ de cada hábito ativo (com o app aberto)')}</small></div>
+                <div><b className="text-[13px]">{T('notif_hab_t', 'Horários dos hábitos')}</b><small className="block text-[11px] text-muted">{T('notif_hab_d', 'Alerta no horário  de cada hábito ativo (com o app aberto)')}</small></div>
                 <Toggle on={st.notifHabits !== false} onChange={() => update((s) => { s.settings.notifHabits = s.settings.notifHabits === false; })} />
               </div>
               <button className="btn-dark btn-big" onClick={disableNotif}><BellOff size={15} /> {T('notif_off', 'DESATIVAR NESTE DISPOSITIVO')}</button>
@@ -181,15 +187,7 @@ export default function SettingsView() {
           )}
         </Card>
 
-        <Card className="mb-3.5">
-          <K><EyeOff size={12} className="mr-1 inline" /> {T('k_disc', 'MODO DISCRETO (PRIVACIDADE)')}</K>
-          <div className="flex items-center justify-between gap-3">
-            <div><b className="text-[13px]">{T('disc_t', 'Aparência neutra "FG Diário"')}</b><small className="block text-[11px] text-muted">{T('disc_d', 'Nome, ícone e título viram um diário de hábitos genérico')}</small></div>
-            <Toggle on={!!st.discreet} onChange={() => { update((s) => { s.settings.discreet = !s.settings.discreet; }); toast(st.discreet ? T('disc_off_toast', '🛡️ Modo discreto desativado.') : T('disc_on_toast', '🕵️ Modo discreto ativado.')); }} />
-          </div>
-          <p className="fnote" style={{ textAlign: 'left' }}>{T('disc_note', 'Afeta o título do app e o manifesto do PWA. Se você já instalou o ícone na tela inicial com o nome antigo, remova e reinstale para trocar o ícone/nome do atalho.')}</p>
-        </Card>
-
+        {/* PARCEIRO DE RESPONSABILIDADE */}
         <Card className="mb-3.5">
           <K><Handshake size={12} className="mr-1 inline" /> {T('k_partner', 'PARCEIRO DE RESPONSABILIDADE')}</K>
           {S.partnerToken ? (
@@ -209,6 +207,7 @@ export default function SettingsView() {
           )}
         </Card>
 
+        {/* SALÃO DA FAMA */}
         <Card className="mb-3.5">
           <K><Trophy size={12} className="mr-1 inline" /> {T('k_hall', 'SALÃO DA FAMA ANÔNIMO')}</K>
           <div className="flex items-center justify-between gap-3">
@@ -217,6 +216,7 @@ export default function SettingsView() {
           </div>
         </Card>
 
+        {/* PIN */}
         <Card>
           <K><ShieldCheck size={12} className="mr-1 inline" /> {T('k_pin', 'SEGURANÇA — BLOQUEIO POR PIN')}</K>
           {st.pin ? (
@@ -241,6 +241,7 @@ export default function SettingsView() {
       </section>
 
       <section>
+        {/* CONTA & NUVEM */}
         <Card className="mb-3.5">
           <K><Cloud size={12} className="mr-1 inline" /> {T('k_cloud', 'SUA CONTA & BACKUP NA NUVEM')}</K>
           <p className="mb-3 text-[12.5px] leading-relaxed text-muted">
@@ -257,12 +258,13 @@ export default function SettingsView() {
           <p className="fnote">{T('cloud_note2', 'Sem entrar na sua conta, os dados ficam guardados apenas neste dispositivo. Entre com sua conta para protegê-los.')}</p>
         </Card>
 
+        {/* FRASES DO CÓDIGO */}
         <Card className="mb-3.5">
           <K>{T('k_phrases', '📜 FRASES DO CÓDIGO DO GUERREIRO')}</K>
           <p className="mb-2.5 text-[12px] text-muted">{T('phrases_intro', 'Sua frase do juramento (o "porquê") é fixa. Adicione frases extras para o botão 🔄 Trocar Frase.')}</p>
           <div className="mb-2.5 flex gap-2">
             <input className="field flex-1" maxLength={140} placeholder={T('ph_phrase', 'Nova frase de guerra...')} value={ph} onChange={(e) => setPh(e.target.value)} />
-            <button className="btn-gold flex-none" onClick={() => { if (!ph.trim()) return; update((s) => { s.phrases.push(ph.trim()); }); setPh(''); toast(T('ok_phraseAdd', '📜 Frase adicionada ao Código.')); }}><Plus size={15} /></button>
+            <button className="btn-gold flex-none" onClick={() => { if (!ph.trim()) return; update((s) => { s.phrases.push(ph.trim()); }); setPh(''); toast(T('ok_phraseAdd', ' Frase adicionada ao Código.')); }}><Plus size={15} /></button>
           </div>
           {S.phrases.length ? S.phrases.map((p, i) => (
             <div key={i} className="mb-1.5 flex items-center justify-between gap-2 rounded-r border border-line bg-surface2 p-2.5 text-[12.5px]">
@@ -272,6 +274,7 @@ export default function SettingsView() {
           )) : <Empty>{T('phrases_empty', 'Nenhuma frase extra. O botão 🔄 usa seu Porquê + frases clássicas.')}</Empty>}
         </Card>
 
+        {/* BACKUP */}
         <Card className="mb-3.5">
           <K>{T('k_backup', '💾 BACKUP DE GUERRA')}</K>
           <div className="grid grid-cols-2 gap-2">
@@ -282,18 +285,7 @@ export default function SettingsView() {
           <p className="fnote" style={{ marginTop: 10 }}>{T('backup_note', 'Sem uma conta na nuvem, seus dados vivem apenas neste dispositivo. Exporte regularmente.')}</p>
         </Card>
 
-        <Card className="mb-3.5 border-ok/30">
-          <K className="text-ok">{T('k_crisis', '💚 APOIO EM CRISE — VOCÊ NÃO ESTÁ SOZINHO')}</K>
-          <p className="mb-2.5 text-[12.5px] leading-relaxed text-muted">
-            {T('crisis_a', 'O Forjando Guerreiros é uma ferramenta de autodisciplina e ')}<b className="text-ink">{T('crisis_b', 'não substitui terapia, acompanhamento médico ou psicológico')}</b>{T('crisis_c', '. Se você estiver em sofrimento intenso ou pensando em se machucar, procure ajuda agora:')}
-          </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <div className="rounded-r border border-ok/40 bg-ok/10 p-2.5 text-center"><b className="block font-display text-xl text-ok">188</b><small className="text-[10px] font-extrabold text-muted">{T('crisis_cvv', 'CVV · 24h · grátis')}</small></div>
-            <div className="rounded-r border border-ok/40 bg-ok/10 p-2.5 text-center"><b className="block text-[13px] font-extrabold text-ok">cvv.org.br</b><small className="text-[10px] font-extrabold text-muted">{T('crisis_chat', 'chat online')}</small></div>
-            <div className="rounded-r border border-ok/40 bg-ok/10 p-2.5 text-center"><b className="block font-display text-xl text-ok">192</b><small className="text-[10px] font-extrabold text-muted">{T('crisis_samu', 'SAMU · emergência')}</small></div>
-          </div>
-        </Card>
-
+        {/* ZONA DE PERIGO */}
         <Card className="border-danger/40">
           <K className="text-danger">{T('k_danger', '☠ ZONA DE PERIGO')}</K>
           <button className="btn-red btn-big" onClick={() => confirmBox(T('c_wipeTitle', 'APAGAR TUDO?'), T('c_wipeBody', 'Onboarding, streaks, diário, hábitos, tarefas e notas serão destruídos para sempre.'), () => { try { localStorage.removeItem(LSKEY); } catch (e) {} location.reload(); }, T('c_wipeOk', 'SIM, QUEIMAR TUDO E RECOMEÇAR'))}>
