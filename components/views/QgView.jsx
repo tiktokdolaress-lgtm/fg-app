@@ -15,7 +15,7 @@ export default function QgView() {
   const [ciDate, setCiDate] = useState(today());
   const [qgRange, setQgRange] = useState(30);
 
-  /* i18n ETAPA 4: patamares, metas, hábitos e mantras traduzidos */
+  /* i18n: patamares, metas, hábitos e mantras traduzidos */
   const tiers = cxTiers(lang, TIERS);
   const d = L.progressDays(S);
   const tier = tiers.find((x) => x.min === L.tierNow(S).min) || L.tierNow(S);
