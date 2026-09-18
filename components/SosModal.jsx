@@ -12,6 +12,7 @@ export default function SosModal() {
   const lang = (S && S.settings && S.settings.lang) || 'pt';
   const T = (id, fb) => cx(lang, 'sosui', id) || fb;
   const BR = (l) => cxBreath(lang, l);
+
   /* textos traduzidos; tempos (secs) continuam vindo de SOS_PHASES (data.js) */
   const kit = cxSos(lang, { phrases: SOS_PHRASES, phases: SOS_PHASES, ex: SOS_EX });
   const [phase, setPhase] = useState(0);
@@ -36,7 +37,10 @@ export default function SosModal() {
     toast('⚡ ' + p.t + ' — ' + p.d);
   };
 
-  const haltBreath = () => { if (breathRef.current) { breathRef.current.stop(); breathRef.current = null; } setBr({ lab: BR('PRONTO'), num: 4, ph: '' }); };
+  const haltBreath = () => {
+    if (breathRef.current) { breathRef.current.stop(); breathRef.current = null; }
+    setBr({ lab: BR('PRONTO'), num: 4, ph: '' });
+  };
 
   const goto = (p) => {
     setPhase(p);
@@ -58,6 +62,7 @@ export default function SosModal() {
     });
     goto(1);
   };
+
   const advance = () => {
     AF.click();
     if (phase >= 4) return;
@@ -79,7 +84,11 @@ export default function SosModal() {
     }, 1000);
     return () => clearInterval(iv);
   }, [phase]);
-  const advanceAuto = () => { if (phaseRef.current < 3) goto(phaseRef.current + 1); else { haltBreath(); setPhase(4); AF.chime(); } };
+
+  const advanceAuto = () => {
+    if (phaseRef.current < 3) goto(phaseRef.current + 1);
+    else { haltBreath(); setPhase(4); AF.chime(); }
+  };
 
   useEffect(() => () => haltBreath(), []);
 
@@ -96,8 +105,34 @@ export default function SosModal() {
   };
 
   const timeTxt = phase === 0 ? '05:00' : phase === 4 ? '00:00' : pad(Math.floor(left / 60)) + ':' + pad(left % 60);
-  const phaseLbl = phase === 0 ? T('ready_lbl', 'PRONTO · 3 FASES SEQUENCIAIS · 5 MIN') : phase === 4 ? T('done_lbl', '⚔ PROTOCOLO CONCLUÍDO — VALIDAÇÃO DE HONRA') : T('phase_lbl', 'FASE ') + phase + T('phase_of', ' DE 3 · ') + kit.phases[phase - 1].t;
+  const phaseLbl = phase === 0
+    ? T('ready_lbl', 'PRONTO · 3 FASES SEQUENCIAIS · 5 MIN')
+    : phase === 4
+    ? T('done_lbl', '⚔ PROTOCOLO CONCLUÍDO — VALIDAÇÃO DE HONRA')
+    : T('phase_lbl', 'FASE ') + phase + T('phase_of', ' DE 3 · ') + kit.phases[phase - 1].t;
   const shown = phase === 0 ? 1 : phase === 4 ? 4 : phase;
+
+  const crisisText = () => {
+    if (lang === 'en') {
+      return (
+        <p className="fnote mt-3 border-t border-line pt-2.5">
+          {T('crisis_en', '💚 In emotional crisis? Call/text ')}<b className="text-ok">988</b>{T('crisis_en2', ' (Suicide & Crisis Lifeline, 24/7, free). This tool does not replace professional care.')}
+        </p>
+      );
+    }
+    if (lang === 'es') {
+      return (
+        <p className="fnote mt-3 border-t border-line pt-2.5">
+          {T('crisis_es', '💚 ¿En crisis emocional? Esta herramienta no sustituye la terapia. En España llame al ')}<b className="text-ok">024</b>{T('crisis_es2', ' o busque ayuda médica local.')}
+        </p>
+      );
+    }
+    return (
+      <p className="fnote mt-3 border-t border-line pt-2.5">
+        {T('crisis1', '💚 Em crise emocional? Esta ferramenta não substitui terapia. Ligue ')}<b className="text-ok">188</b>{T('crisis2', ' (CVV, 24h, gratuito) ou acesse cvv.org.br. Emergência: SAMU 192.')}
+      </p>
+    );
+  };
 
   return (
     <div className="-m-5">
@@ -183,7 +218,7 @@ export default function SosModal() {
             </>
           )}
         </div>
-        <p className="fnote mt-3 border-t border-line pt-2.5">{T('crisis1', '💚 Em crise emocional? Esta ferramenta não substitui terapia. Ligue ')}<b className="text-ok">188</b>{T('crisis2', ' (CVV, 24h, gratuito) ou acesse cvv.org.br. Emergência: SAMU 192.')}</p>
+        {crisisText()}
       </div>
     </div>
   );
