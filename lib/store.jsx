@@ -27,7 +27,7 @@ function loadLocal(userId) {
 }
 
 export function AppProvider({ children }) {
-  const [S, setS] = useState(null);                 // estado de guerra (null = boot)
+  const [S, setS] = useState(() => loadLocal(null)); // sempre tem o layout base pronto
   const [phase, setPhase] = useState('boot');       // boot | auth | lock | onboard | app
   const [tab, setTab] = useState('qg');
   const [toastMsg, setToastMsg] = useState(null);
@@ -42,12 +42,12 @@ export function AppProvider({ children }) {
 
   /* gate de som ligado ao setting */
   useEffect(() => {
-    setSoundGate(() => !!(SRef.current && SRef.current.settings.sound));
+    setSoundGate(() => !!(SRef.current && SRef.current.settings && SRef.current.settings.sound));
   }, []);
 
   /* tema + cosmic + modo discreto */
   useEffect(() => {
-    if (!S) return;
+    if (!S || !S.settings) return;
     document.documentElement.dataset.theme = S.settings.theme || 'dark';
     document.body.classList.toggle('cosmic', tierNow(S).min >= 180);
     const disc = !!S.settings.discreet;
@@ -58,7 +58,7 @@ export function AppProvider({ children }) {
     link.href = disc ? '/manifest-discreto.webmanifest' : '/manifest.webmanifest';
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = disc ? '#6C7684' : '#0D0D0E';
-  }, [S && S.settings.theme, S && S.settings.discreet, S && S.purity, S && S.retStart]);
+  }, [S && S.settings && S.settings.theme, S && S.settings && S.settings.discreet, S && S.purity, S && S.retStart]);
 
   const persist = useCallback((next) => {
     const a = authRef.current;
@@ -113,7 +113,7 @@ export function AppProvider({ children }) {
     return st;
   }, []);
 
-  /* entra no app com sessão (nuvem ou local) e ISOLA os dados daquele usuário */
+  /* entra no app com sessão (nuvem ou local) e ISOLA os dados do guerreiro */
   const enterApp = useCallback(async (sess) => {
     const email = (sess && (sess.user ? sess.user.email : sess.email)) || '';
     const userId = (sess && sess.user ? sess.user.id : null) || (sess && sess.local ? 'local:' + sess.email : 'local:' + email);
@@ -126,13 +126,13 @@ export function AppProvider({ children }) {
       refreshSub(8);
     }
 
-    // 1) Puxa do Supabase os dados ESPECÍFICOS desse usuário
+    // 1) Busca dados online da conta específica
     const remote = await cloud.pullProfile(userId);
     let next;
     if (remote && remote.v) {
       next = mergeS(remote);
     } else {
-      // Usuário novo: inicia zerado do padrão, NUNCA herda dados de outro usuário
+      // Conta nova: NUNCA herda dados de outro usuário anterior
       const userCached = loadLocal(userId);
       next = userCached.onboarded ? userCached : DEF();
     }
@@ -194,14 +194,14 @@ export function AppProvider({ children }) {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
 
-  /* sync de token renovado / signout remoto: limpa e zera */
+  /* sync de logout: limpa sessão e vai DIRETO para a tela de login (auth) */
   useEffect(() => {
     if (!cloud.CLOUD) return;
     return cloud.onAuth((ev, session) => {
       if (ev === 'SIGNED_OUT') {
         authRef.current = { email: '', userId: null };
         setAuth({ email: '', userId: null });
-        setS(null);
+        setS(loadLocal(null));
         try { localStorage.removeItem('fg_local_session'); } catch (e) {}
         setPhase('auth');
       }
