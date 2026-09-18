@@ -14,6 +14,7 @@ export default function EnemyView() {
   const doss = cxDossier(lang, DOSSIER);
   const rows = cxTable(lang, DOSSIER_TABLE);
   const [open, setOpen] = useState({});
+
   return (
     <div>
       <Card glow className="mb-4 text-center">
@@ -21,8 +22,8 @@ export default function EnemyView() {
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted">{T('sub', 'O impacto real da pornografia e masturbação compulsiva no corpo e na mente.')}</p>
       </Card>
 
-      {doss.map((d, i) => (
-        <Card key={d.id} className="mb-3 border-danger/25 p-0" >
+      {doss.map((d) => (
+        <Card key={d.id} className="mb-3 border-danger/25 p-0">
           <button className="flex w-full items-center gap-3 p-4 text-left" onClick={() => { AF.click(); setOpen((o) => ({ ...o, [d.id]: !o[d.id] })); }}>
             <span className="text-2xl">{d.icon}</span>
             <span className="min-w-0 flex-1 text-[14px] font-extrabold">{d.t}</span>
@@ -45,10 +46,20 @@ export default function EnemyView() {
         <K>{T('tbl_k', '📊 TABELA RESUMO — 6 ÁREAS AFETADAS')}</K>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[520px] border-collapse text-[12.5px]">
-            <thead><tr className="border-b border-line text-left text-[10.5px] uppercase tracking-[.14em] text-gold2"><th className="p-2">{T('th1', 'Área')}</th><th className="p-2">{T('th2', 'Condição')}</th><th className="p-2">{T('th3', 'Sintoma Principal')}</th></tr></thead>
+            <thead>
+              <tr className="border-b border-line text-left text-[10.5px] uppercase tracking-[.14em] text-gold2">
+                <th className="p-2">{T('th1', 'Área')}</th>
+                <th className="p-2">{T('th2', 'Condição')}</th>
+                <th className="p-2">{T('th3', 'Sintoma Principal')}</th>
+              </tr>
+            </thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={i} className="border-b border-line/60"><td className="p-2 font-bold">{r[0]}</td><td className="p-2 text-danger">{r[1]}</td><td className="p-2 text-muted">{r[2]}</td></tr>
+                <tr key={i} className="border-b border-line/60">
+                  <td className="p-2 font-bold">{r[0]}</td>
+                  <td className="p-2 text-danger">{r[1]}</td>
+                  <td className="p-2 text-muted">{r[2]}</td>
+                </tr>
               ))}
             </tbody>
           </table>
