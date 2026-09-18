@@ -6,7 +6,7 @@ import { Card, K, Empty } from '@/components/ui';
 import { LESSONS, READINGS } from '@/lib/data';
 import { BREATH_PROGRAMS, createBreath, AF } from '@/lib/audio';
 import * as L from '@/lib/logic';
-import { cx } from '@/lib/content-i18n';
+import { cx, cxBreath } from '@/lib/content-i18n';
 
 export default function LibraryView() {
   const { S, t } = useApp();
@@ -14,18 +14,19 @@ export default function LibraryView() {
   const LT = (ls) => Object.assign({}, ls, cx(lang, 'les', ls.day) || {});
   const RT = (i, r) => Object.assign({}, r, cx(lang, 'read', i + 1) || {});
   const PN = (k) => cx(lang, 'prog', k) || BREATH_PROGRAMS[k].nome;
+  const BR = (l) => cxBreath(lang, l);
   const [tab, setTab] = useState('licoes');
   const [prog, setProg] = useState('combate');
-  const [br, setBr] = useState({ lab: 'PRONTO', num: 0, ph: '' });
+  const [br, setBr] = useState({ lab: BR('PRONTO'), num: 0, ph: '' });
   const [on, setOn] = useState(false);
   const breathRef = useRef(null);
   const d = L.progressDays(S);
 
   const toggle = () => {
-    if (on) { if (breathRef.current) breathRef.current.stop(); breathRef.current = null; setOn(false); setBr({ lab: 'PRONTO', num: 0, ph: '' }); return; }
+    if (on) { if (breathRef.current) breathRef.current.stop(); breathRef.current = null; setOn(false); setBr({ lab: BR('PRONTO'), num: 0, ph: '' }); return; }
     const b = createBreath(BREATH_PROGRAMS[prog].phases);
     breathRef.current = b;
-    b.onTick = (num, p) => setBr({ lab: p.l, num, ph: p.k });
+    b.onTick = (num, p) => setBr({ lab: BR(p.l), num, ph: p.k });
     b.start();
     setOn(true);
     AF.click();
@@ -77,10 +78,10 @@ export default function LibraryView() {
 
       {tab === 'audios' && (
         <Card className="mx-auto max-w-md text-center">
-          <K><Waves size={12} className="mr-1 inline" /> RESPIRAÇÃO GUIADA COM SOM</K>
+          <K><Waves size={12} className="mr-1 inline" /> {t('lib_bk')}</K>
           <div className="mb-4 flex flex-col gap-2">
             {Object.keys(BREATH_PROGRAMS).map((k) => (
-              <button key={k} className={`btn-big ${prog === k ? 'btn-gold' : 'btn-dark'}`} onClick={() => { setProg(k); if (on) { if (breathRef.current) breathRef.current.stop(); breathRef.current = null; setOn(false); setBr({ lab: 'PRONTO', num: 0, ph: '' }); } }}>
+              <button key={k} className={`btn-big ${prog === k ? 'btn-gold' : 'btn-dark'}`} onClick={() => { setProg(k); if (on) { if (breathRef.current) breathRef.current.stop(); breathRef.current = null; setOn(false); setBr({ lab: BR('PRONTO'), num: 0, ph: '' }); } }}>
                 {PN(k)}
               </button>
             ))}

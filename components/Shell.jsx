@@ -3,6 +3,7 @@ import React from 'react';
 import { Castle, Hammer, Target, BookOpen, ChartNoAxesColumn, Skull, Settings, Siren, ShieldCheck, Library } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { TABS, LIFE_STATUS } from '@/lib/data';
+import { cx } from '@/lib/content-i18n';
 import { lifeMode, progressDays, allH } from '@/lib/logic';
 import { ensureSw, scheduleLocalTimers } from '@/lib/notify';
 import { AF } from '@/lib/audio';
@@ -21,6 +22,8 @@ const VIEWS = { qg: QgView, forge: ForgeView, ops: OpsView, journal: JournalView
 
 export default function Shell() {
   const { S, tab, setTab, t, openModal, update } = useApp();
+  const lang = (S && S.settings && S.settings.lang) || 'pt';
+  const lifeLbl = (() => { const m = lifeMode(S); const LS = cx(lang, 'life', m) || LIFE_STATUS[m] || LIFE_STATUS.single; return LS.label; })();
   const go = (id) => { AF.click(); setTab(id); window.scrollTo({ top: 0 }); }
   const openSOS = () => { update((d) => { d.sos = (d.sos || 0) + 1; }); openModal(<SosModal />, 'full'); };
   const View = VIEWS[tab];
@@ -39,7 +42,7 @@ export default function Shell() {
         <div className="mb-5 flex items-center gap-2.5 px-2">
           <ShieldCheck size={40} className="flex-none text-gold" strokeWidth={1.6} />
           <div className="font-display text-[21px] leading-[.95] tracking-[.08em] text-gold">
-            {S.settings.discreet ? <>FG<br />DIÁRIO<small className="block font-body text-[9px] font-extrabold tracking-[.3em] text-muted">{t('brand1')}</small></> : <>FORJANDO<br />GUERREIROS<small className="block font-body text-[9px] font-extrabold tracking-[.3em] text-muted">{t('brand2')}</small></>}
+            {S.settings.discreet ? <>FG<br />{t('brandMain')}<small className="block font-body text-[9px] font-extrabold tracking-[.3em] text-muted">{t('brand1')}</small></> : <>FORJANDO<br />GUERREIROS<small className="block font-body text-[9px] font-extrabold tracking-[.3em] text-muted">{t('brand2')}</small></>}
           </div>
         </div>
         <nav className="flex flex-col gap-1">
@@ -63,7 +66,7 @@ export default function Shell() {
         {/* topbar */}
         <header className="sticky top-0 z-30 -mx-4 mb-4 flex flex-wrap items-center gap-2.5 border-b border-gold/20 bg-[rgba(13,13,14,.88)] px-5 py-3 backdrop-blur-md lg:-mx-8 lg:mb-6 lg:px-8">
           <h1 className="min-w-[120px] flex-1 truncate font-display text-2xl tracking-[.06em]">{t(tab)}</h1>
-          <span className="chip flex-none">{(LIFE_STATUS[lifeMode(S)] || LIFE_STATUS.single).label}</span>
+          <span className="chip flex-none">{lifeLbl}</span>
           <button className="flex-none rounded-r border border-line bg-surface2 p-2 text-muted hover:text-gold" onClick={() => go('settings')} aria-label={t('adj')}><Settings size={18} /></button>
         </header>
         <View key={tab} />

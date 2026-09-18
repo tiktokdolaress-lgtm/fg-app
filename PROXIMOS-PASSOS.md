@@ -36,6 +36,7 @@ Checklist da virada:
 ---
 
 ## ✅ Log de entregas concluídas
+- **i18n 100% (ETAPA 4 final)**: app inteiro em PT/EN/ES — QG, Forja, Missões, Diário, Dados, Inimigo, Biblioteca, Ajustes, S.O.S, onboarding, landing, paywall, PIN, cartão do parceiro, /termos, /privacidade, datas, notificações locais e push do servidor (cron). Corrigidas 43 chaves de tradução que estavam faltando no dicionário (a UI mostrava códigos crus tipo `fail_t`/`vic_t` mesmo em português) + adicionada a aba Biblioteca que não tinha rótulo traduzido. Build de produção verificado ✓
 - Sync em nuvem Supabase (warrior_profiles + RLS + realtime) · mobile overflow · Next.js completo
 - Assinatura Stripe teste (7 dias grátis, moeda por país, webhook libera/corta) · portão de assinatura
 - Landing de vendas · /termos · /privacidade · exclusão de conta LGPD · notificações push + lembretes

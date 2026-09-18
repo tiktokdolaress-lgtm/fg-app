@@ -4,6 +4,26 @@ import { createClient } from '@supabase/supabase-js';
 
 const SBURL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://txtvusttcbdkcXgsdazm.supabase.co';
 
+/* i18n ETAPA 4: textos de push no idioma do usuário (settings.lang do perfil) */
+const PUSH = {
+  pt: {
+    ci: 'Você ainda não marcou seus pilares hoje. A forja espera por você.',
+    repT: '📜 Relatório Semanal de Guerra',
+    rep: 'Vitórias, quedas, consistência e pureza da sua semana te esperam em Relatórios.',
+  },
+  en: {
+    ci: "You haven't logged your pillars today. The forge awaits you.",
+    repT: '📜 Weekly War Report',
+    rep: 'Wins, falls, consistency and purity of your week await you in Reports.',
+  },
+  es: {
+    ci: 'Aún no registraste tus pilares hoy. La forja te espera.',
+    repT: '📜 Informe Semanal de Guerra',
+    rep: 'Victorias, caídas, consistencia y pureza de tu semana te esperan en Informes.',
+  },
+};
+const pushLang = (d) => PUSH[(d && d.settings && d.settings.lang) || 'pt'] || PUSH.pt;
+
 /* Vercel Cron (vercel.json): lembrete noturno de check-in para quem ainda não registrou o dia.
    Protegido pelo CRON_SECRET que a própria Vercel injeta no deployment. */
 export async function GET(req) {
@@ -34,11 +54,12 @@ export async function GET(req) {
     if (d.settings && d.settings.notifDaily === false) continue;           // usuário desativou
     const ci = (d.checkins || {})[todayBRT];
     if (ci && (ci.ok || ci.fail)) continue;                                  // já registrou hoje
+    const PL = pushLang(d);
     for (const s of byUser[uid]) {
       try {
         await webpush.sendNotification(
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth_key } },
-          JSON.stringify({ title: '⚔ Forjando Guerreiros', body: 'Você ainda não marcou seus pilares hoje. A forja espera por você.', tag: 'checkin-diario' }),
+          JSON.stringify({ title: '⚔ Forjando Guerreiros', body: PL.ci, tag: 'checkin-diario' }),
           { TTL: 3600 }
         );
         sent++;
@@ -54,7 +75,7 @@ export async function GET(req) {
         try {
           await webpush.sendNotification(
             { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth_key } },
-            JSON.stringify({ title: '📜 Relatório Semanal de Guerra', body: 'Vitórias, quedas, consistência e pureza da sua semana te esperam em Relatórios.', tag: 'relatorio-semanal' }),
+            JSON.stringify({ title: PL.repT, body: PL.rep, tag: 'relatorio-semanal' }),
             { TTL: 7200 }
           );
           sent++;

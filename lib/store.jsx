@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { LSKEY, today } from './utils';
+import { LSKEY, today, setLocaleLang } from './utils';
 import { DEF, mergeS, T as translate, tierNow } from './logic';
 import { setSoundGate, AF } from './audio';
 import * as cloud from './supabase';
@@ -47,7 +47,8 @@ export function AppProvider({ children }) {
     document.documentElement.dataset.theme = S.settings.theme || 'dark';
     document.body.classList.toggle('cosmic', tierNow(S).min >= 180);
     const disc = !!S.settings.discreet;
-    document.title = disc ? 'FG Diário' : 'FORJANDO GUERREIROS ⚔ Retenção & Disciplina';
+    setLocaleLang(S.settings.lang); /* datas curtas (fmtD) no idioma do app */
+    document.title = disc ? translate(S, 'title_disc') : translate(S, 'title_full');
     let link = document.querySelector('link[rel="manifest"]');
     if (!link) { link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
     link.href = disc ? '/manifest-discreto.webmanifest' : '/manifest.webmanifest';
@@ -83,9 +84,9 @@ export function AppProvider({ children }) {
       <div className="text-center">
         <h3 className="mb-2 font-display text-2xl tracking-wide text-danger">⚠ {title}</h3>
         <p className="mb-4 text-sm text-muted">{msg}</p>
-        <button className="btn-red btn-big" onClick={() => { AF.click(); closeModal(); onYes(); }}>{yesLabel || 'SIM, EXCLUIR'}</button>
-        <button className="btn-dark btn-big mt-2" onClick={closeModal}>Cancelar</button>
-        <p className="fnote">Esta ação é irreversível.</p>
+        <button className="btn-red btn-big" onClick={() => { AF.click(); closeModal(); onYes(); }}>{yesLabel || translate(SRef.current, 'yes_del')}</button>
+        <button className="btn-dark btn-big mt-2" onClick={closeModal}>{translate(SRef.current, 'cancel_btn')}</button>
+        <p className="fnote">{translate(SRef.current, 'irr')}</p>
       </div>
     );
   }, [openModal, closeModal]);
@@ -131,7 +132,7 @@ export function AppProvider({ children }) {
         try { localStorage.setItem(LSKEY, JSON.stringify(merged)); } catch (e) {}
         return merged;
       });
-      toast('☁️ Dados sincronizados da nuvem');
+      toast(translate(SRef.current, 'synced'));
     });
     const cur = next || SRef.current;
     if (cur && cur.settings.pin && !sessionStorage.getItem('fg_unlock')) setPhase('lock');

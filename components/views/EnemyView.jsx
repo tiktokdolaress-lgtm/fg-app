@@ -5,19 +5,20 @@ import { useApp } from '@/lib/store';
 import { Card, K } from '@/components/ui';
 import { DOSSIER, DOSSIER_TABLE } from '@/lib/data';
 import { AF } from '@/lib/audio';
-import { cxDossier, cxTable } from '@/lib/content-i18n';
+import { cx, cxDossier, cxTable } from '@/lib/content-i18n';
 
 export default function EnemyView() {
   const { S } = useApp();
   const lang = (S && S.settings && S.settings.lang) || 'pt';
+  const T = (id, fb) => cx(lang, 'enemy', id) || fb;
   const doss = cxDossier(lang, DOSSIER);
   const rows = cxTable(lang, DOSSIER_TABLE);
   const [open, setOpen] = useState({});
   return (
     <div>
       <Card glow className="mb-4 text-center">
-        <h2 className="font-display text-[clamp(26px,5vw,38px)] tracking-[.06em] text-[#FF8A80]">🕳️ O INIMIGO REVELADO: DOSSIÊ CIENTÍFICO</h2>
-        <p className="mt-2 text-[13.5px] leading-relaxed text-muted">O impacto real da pornografia e masturbação compulsiva no corpo e na mente.</p>
+        <h2 className="font-display text-[clamp(26px,5vw,38px)] tracking-[.06em] text-[#FF8A80]">{T('title', '🕳️ O INIMIGO REVELADO: DOSSIÊ CIENTÍFICO')}</h2>
+        <p className="mt-2 text-[13.5px] leading-relaxed text-muted">{T('sub', 'O impacto real da pornografia e masturbação compulsiva no corpo e na mente.')}</p>
       </Card>
 
       {doss.map((d, i) => (
@@ -41,10 +42,10 @@ export default function EnemyView() {
       ))}
 
       <Card className="mt-4">
-        <K>📊 TABELA RESUMO — 6 ÁREAS AFETADAS</K>
+        <K>{T('tbl_k', '📊 TABELA RESUMO — 6 ÁREAS AFETADAS')}</K>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[520px] border-collapse text-[12.5px]">
-            <thead><tr className="border-b border-line text-left text-[10.5px] uppercase tracking-[.14em] text-gold2"><th className="p-2">Área</th><th className="p-2">Condição</th><th className="p-2">Sintoma Principal</th></tr></thead>
+            <thead><tr className="border-b border-line text-left text-[10.5px] uppercase tracking-[.14em] text-gold2"><th className="p-2">{T('th1', 'Área')}</th><th className="p-2">{T('th2', 'Condição')}</th><th className="p-2">{T('th3', 'Sintoma Principal')}</th></tr></thead>
             <tbody>
               {rows.map((r, i) => (
                 <tr key={i} className="border-b border-line/60"><td className="p-2 font-bold">{r[0]}</td><td className="p-2 text-danger">{r[1]}</td><td className="p-2 text-muted">{r[2]}</td></tr>
@@ -52,7 +53,7 @@ export default function EnemyView() {
             </tbody>
           </table>
         </div>
-        <p className="fnote mt-3">Conhecer o inimigo é metade da vitória. A outra metade é a Forja. <BookOpen size={11} className="inline" /></p>
+        <p className="fnote mt-3">{T('note', 'Conhecer o inimigo é metade da vitória. A outra metade é a Forja.')} <BookOpen size={11} className="inline" /></p>
       </Card>
     </div>
   );

@@ -3,39 +3,52 @@ import React, { useState } from 'react';
 import { RefreshCw, Trophy, CalendarDays, Flame, ShieldCheck, Droplets, Hand, HeartPulse } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Bar, Chk, Empty } from '@/components/ui';
-import { METAS, NEXTF, FAIL_PEN, TRIGGERS, FAIL_LBL } from '@/lib/data';
+import { METAS, NEXTF, FAIL_PEN, TRIGGERS, FAIL_LBL, TIERS, QUOTES } from '@/lib/data';
+import { cx, cxHabits, cxTiers, cxQuotes } from '@/lib/content-i18n';
 import * as L from '@/lib/logic';
 import { AF, metaSfx } from '@/lib/audio';
 import { today, dstr, fdmy, fmtD, pad, yesterday } from '@/lib/utils';
 
 export default function QgView() {
   const { S, update, t, openModal, closeModal, toast, setTab } = useApp();
+  const lang = (S && S.settings && S.settings.lang) || 'pt';
   const [ciDate, setCiDate] = useState(today());
   const [qgRange, setQgRange] = useState(30);
 
-  const d = L.progressDays(S), tier = L.tierNow(S), nt = NEXTF(d);
+  /* i18n ETAPA 4: patamares, metas, hábitos e mantras traduzidos */
+  const tiers = cxTiers(lang, TIERS);
+  const d = L.progressDays(S);
+  const tier = tiers.find((x) => x.min === L.tierNow(S).min) || L.tierNow(S);
+  const nt = tiers.find((x) => x.min > d) || null;
+  const quotes = cxQuotes(lang, QUOTES);
+  const ALLH = cxHabits(lang, L.allH(S));
+  const MT = (m) => (m ? Object.assign({}, m, cx(lang, 'metas', m.d) || {}) : m);
+  const TR = (x, i) => cx(lang, 'ob', 'trig' + i) || x;
+  const fallLbl = (x) => { const k = t('fall_' + x); return k === 'fall_' + x ? (FAIL_LBL[x] || x) : k; };
+
   const cView = L.ci(S, ciDate);
   const fd = L.fDone(S, today()), ff = L.fFailed(S, today());
   const act = S.forge.active.slice().sort((a, b) => (L.hTime(S, a) || '99:99').localeCompare(L.hTime(S, b) || '99:99'));
   const doneF = S.forge.active.filter((id) => fd.includes(id)).length;
   const streak = L.currentStreak(S);
   const lvlPct = nt ? Math.min(100, ((d - tier.min) / (nt.min - tier.min)) * 100) : 100;
-  const lvlTxt = nt ? <>Faltam <b className="text-gold">{nt.min - d} dias</b> para o patamar {nt.icon} {nt.name}</> : '🐉 Patamar máximo alcançado — LENDA';
-  const mantra = L.mantraPool(S)[S.phraseIdx % L.mantraPool(S).length];
+  const lvlTxt = nt ? <>{t('lvl_a')}<b className="text-gold">{nt.min - d}{t('dayw')}</b>{t('lvl_b')}{nt.icon} {nt.name}</> : t('lvl_max');
+  const mantraPool = L.mantraPool(S, quotes);
+  const mantra = mantraPool[S.phraseIdx % mantraPool.length];
   const pornFree = S.lastPorn ? Math.max(0, L.daysBetweenSafe(S.lastPorn)) : d;
   const mastFree = S.lastMast ? Math.max(0, L.daysBetweenSafe(S.lastMast)) : d;
   const openTasks = S.tasks.filter((x) => L.repDue(x, today()) && !L.isDone(x, today())).slice(0, 5);
-  const goalMeta = METAS.find((m) => m.d === S.goal);
+  const goalMeta = MT(METAS.find((m) => m.d === S.goal));
   const lw = L.sosLast(S);
 
   /* linha do tempo */
   let cells = [], wins = 0, falls = 0, part = 0;
   for (let i = qgRange - 1; i >= 0; i--) {
     const ds = dstr(new Date(Date.now() - i * 86400000));
-    const cc = S.checkins[ds]; let cls = '', lab = 'sem registro';
-    if (cc && cc.fail) { cls = 'f'; falls++; lab = 'QUEDA'; }
-    else if (cc && cc.ok) { cls = 'w'; wins++; lab = 'VITÓRIA'; }
-    else if (cc && (cc.p || cc.m || cc.r)) { cls = 'p'; part++; lab = 'parcial'; }
+    const cc = S.checkins[ds]; let cls = '', lab = t('st_n');
+    if (cc && cc.fail) { cls = 'f'; falls++; lab = t('st_f'); }
+    else if (cc && cc.ok) { cls = 'w'; wins++; lab = t('st_v'); }
+    else if (cc && (cc.p || cc.m || cc.r)) { cls = 'p'; part++; lab = t('st_p'); }
     cells.push({ ds, cls, lab });
   }
   const rate = Math.round((wins / qgRange) * 100);
@@ -59,7 +72,7 @@ export default function QgView() {
     if (all && dd === today()) {
       AF.victory(L.tierNow(S).min >= 180); metaSfx(d);
       openModal(<Victory />);
-    } else if (all) toast('✅ ' + fdmy(dd) + ' registrado como VITÓRIA. Contadores recalculados.');
+    } else if (all) toast('✅ ' + fdmy(dd) + t('recvit'));
     else AF.click();
   };
 
@@ -67,9 +80,9 @@ export default function QgView() {
     let sel = [];
     const opts = L.modeA(S) ? ['porn', 'mast'] : ['porn', 'mast', 'ejac'];
     const lbl = {
-      porn: <>🖥️ Consumi pornografia <small className="ml-auto text-danger">−12 pureza</small></>,
-      mast: <>✋ Masturbação (sem ejaculação) <small className="ml-auto text-danger">−10 pureza</small></>,
-      ejac: <>💥 Ejaculação (quebra de retenção) <small className="ml-auto text-danger">−18 · reinicia contador</small></>,
+      porn: <>{t('lblp')}<small className="ml-auto text-danger">{t('penp')}</small></>,
+      mast: <>{t('lblm')}<small className="ml-auto text-danger">{t('penm')}</small></>,
+      ejac: <>{t('lble')}<small className="ml-auto text-danger">{t('pene')}</small></>,
     };
     const Fail = () => {
       const [, force] = useState(0);
@@ -80,10 +93,10 @@ export default function QgView() {
           {opts.map((o) => (
             <button key={o} className={`btn-big mb-2 w-full text-left ${sel.includes(o) ? 'btn-red' : 'btn-dark'}`} onClick={() => { sel = sel.includes(o) ? sel.filter((x) => x !== o) : [...sel, o]; force((x) => x + 1); AF.click(); }}>{lbl[o]}</button>
           ))}
-          {L.modeA(S) && <p className="fnote text-gold2">💍 No Modo Sexo Real Consciente, ejaculação com a parceira NÃO é contada como falha.</p>}
+          {L.modeA(S) && <p className="fnote text-gold2">{t('modeA_note')}</p>}
           <button className="btn-red btn-big" disabled={!sel.length} onClick={() => doFail(sel)}>{t('fail_ok')}</button>
-          <p className="fnote">O registro honesto é o primeiro passo da retomada.</p>
-          <button className="btn-dark btn-big mt-1" onClick={closeModal}>Cancelar</button>
+          <p className="fnote">{t('honest')}</p>
+          <button className="btn-dark btn-big mt-1" onClick={closeModal}>{t('cancel_btn')}</button>
         </div>
       );
     };
@@ -92,7 +105,7 @@ export default function QgView() {
 
   const doFail = (types) => {
     if (L.modeA(S)) types = types.filter((x) => x !== 'ejac');
-    if (!types.length) { toast('⚠ Nada registrado.'); return; }
+    if (!types.length) { toast(t('nothing')); return; }
     let triggers = [];
     update((s) => {
       const dd = today();
@@ -111,23 +124,23 @@ export default function QgView() {
       return (
         <div className="text-center">
           <h3 className="mb-2 font-display text-2xl tracking-wide text-danger">{t('fall_t')}</h3>
-          <p className="mb-3 text-sm text-muted">{types.map((x) => FAIL_LBL[x]).join(' + ')}</p>
+          <p className="mb-3 text-sm text-muted">{types.map((x) => fallLbl(x)).join(' + ')}</p>
           <div className="mb-4 rounded-r border border-gold/30 bg-gold/5 p-3.5 text-left text-[13px] leading-relaxed">
-            <b className="text-gold">PROTOCOLO DE RETOMADA:</b><br />1. Saia do ambiente do gatilho AGORA.<br />2. Água gelada no rosto e pulsos.<br />3. 20 flexões ou caminhada de 10 minutos.<br />4. Registre abaixo gatilhos e desabafo — vai direto para o Diário.<br />5. Uma queda não apaga a guerra. Amanhã você volta mais forte.
+            <b className="text-gold">{t('retom')}</b><br />{t('r1')}<br />{t('r2')}<br />{t('r3')}<br />{t('r4')}<br />{t('r5')}
           </div>
           <span className="k text-danger">{t('fall_trig')}</span>
           <div className="mb-3 flex flex-wrap justify-center gap-1.5">
-            {TRIGGERS.map((x) => <button key={x} className={`tag ${triggers.includes(x) ? 'sel' : ''}`} onClick={() => { triggers = triggers.includes(x) ? triggers.filter((y) => y !== x) : [...triggers, x]; force((v) => v + 1); }}>{x}</button>)}
+            {TRIGGERS.map((x, i) => <button key={x} className={`tag ${triggers.includes(x) ? 'sel' : ''}`} onClick={() => { triggers = triggers.includes(x) ? triggers.filter((y) => y !== x) : [...triggers, x]; force((v) => v + 1); }}>{TR(x, i)}</button>)}
           </div>
           <label className="mb-3 block text-left"><span className="lbl">{t('fall_vent')}</span>
-            <textarea className="field" maxLength={600} placeholder="Desabafe aqui, guerreiro. Sem vergonha. Só verdade..." value={vent} onChange={(e) => (vent = e.target.value)} /></label>
+            <textarea className="field" maxLength={600} placeholder={t('ventph')} value={vent} onChange={(e) => (vent = e.target.value)} /></label>
           <button className="btn-gold btn-big" onClick={() => {
             update((s) => {
               const dd = today();
               s.journal[dd] = s.journal[dd] || { mood: '', good: '', ch: '' };
               Object.assign(s.journal[dd], { fall: true, fallTypes: types, fallTriggers: triggers, vent: vent || s.journal[dd].vent || '' });
             });
-            closeModal(); toast('💾 Registrado no Diário. Levante-se, guerreiro.');
+            closeModal(); toast(t('savedj'));
           }}>{t('fall_save')}</button>
           <button className="btn-dark btn-big mt-2" onClick={closeModal}>{t('fall_no')}</button>
         </div>
@@ -170,12 +183,12 @@ export default function QgView() {
   const Victory = () => (
     <div className="relative overflow-hidden text-center">
       <Trophy size={64} className="mx-auto mb-3 text-gold" />
-      <h2 className="font-display text-3xl tracking-wide">{t('vic_t')} {(S.name || 'GUERREIRO').toUpperCase()}!</h2>
+      <h2 className="font-display text-3xl tracking-wide">{t('vic_t')} {(S.name || t('warrior_w')).toUpperCase()}!</h2>
       <p className="mt-2 text-sm text-muted">{L.modeA(S) ? t('vic_2') : t('vic_3')}. {t('vic_x')}</p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
-        <span className="chip">🔥 {L.progressDays(S)} dias</span>
-        <span className="chip">✦ {S.purity}% pureza</span>
-        {L.tierNow(S).min >= 90 && <span className="chip">{L.tierNow(S).icon} {L.tierNow(S).name}</span>}
+        <span className="chip">🔥 {L.progressDays(S)}{t('dayw')}</span>
+        <span className="chip">✦ {S.purity}% {t('purw')}</span>
+        {tier.min >= 90 && <span className="chip">{tier.icon} {tier.name}</span>}
       </div>
       <button className="btn-gold btn-big mt-5" onClick={closeModal}>{t('vic_b')}</button>
     </div>
@@ -194,8 +207,8 @@ export default function QgView() {
           </div>
           <div className="lg:flex lg:w-60 lg:flex-none lg:flex-col lg:items-center lg:gap-2 lg:rounded-r lg:border lg:border-gold/20 lg:bg-surface2/60 lg:p-4">
             <ShieldCheck size={30} strokeWidth={1.6} className="hidden text-gold lg:block" />
-            <div className="k2 hidden lg:block">FRASE {(S.phraseIdx % L.mantraPool(S).length) + 1} DE {L.mantraPool(S).length}</div>
-            <button className="btn-ghost" onClick={() => { AF.click(); update((s) => { s.phraseIdx = (s.phraseIdx + 1) % L.mantraPool(s).length; }); }}><RefreshCw size={14} /> {t('swap')}</button>
+            <div className="k2 hidden lg:block">{t('phrase_n')}{(S.phraseIdx % mantraPool.length) + 1}{t('phrase_of')}{mantraPool.length}</div>
+            <button className="btn-ghost" onClick={() => { AF.click(); update((s) => { s.phraseIdx = (s.phraseIdx + 1) % L.mantraPool(s, quotes).length; }); }}><RefreshCw size={14} /> {t('swap')}</button>
           </div>
         </div>
       </Card>
@@ -203,7 +216,7 @@ export default function QgView() {
       {/* Hero */}
       <Card glow className="overflow-hidden text-center">
         <div className="pointer-events-none absolute left-1/2 top-[6%] h-[340px] w-[340px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,200,70,.14),transparent_65%)]" style={{ animation: 'breathe 5s ease-in-out infinite' }} />
-        <K className="text-center">{tier.min >= 90 ? 'PROGRESSO DE GUERRA · 👑 AURA DOURADA ATIVA' : 'PROGRESSO DE GUERRA'}</K>
+        <K className="text-center">{tier.min >= 90 ? t('prog_aura') : t('prog')}</K>
         <div className="relative my-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
           <div className="col-span-2 bg-gradient-to-b from-[#FFE79A] via-gold to-gold2 bg-clip-text font-display text-[clamp(88px,15vw,150px)] leading-[.92] text-transparent drop-shadow-[0_4px_22px_rgba(255,200,70,.3)] lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:py-3">
             {d}
@@ -225,26 +238,26 @@ export default function QgView() {
           <div className="rounded-r border border-line bg-surface2 p-3 lg:col-start-3 lg:row-start-1 lg:self-center"><b className="block font-display text-2xl text-gold">{mastFree}</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hmast')}</small></div>
           <div className="rounded-r border border-line bg-surface2 p-3 lg:col-start-2 lg:row-start-2"><b className="block font-display text-2xl text-gold">🔥 {streak}</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hstreak')}</small></div>
           <div className="rounded-r border border-line bg-surface2 p-3 lg:col-start-3 lg:row-start-2"><b className="block font-display text-2xl text-gold">🛡️ {L.sosWins(S)}</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hsos')}</small></div>
-          {tier.min >= 365 && <div className="col-span-2 rounded-r border border-[#EDEDF2] bg-gradient-to-br from-[#EDEDF2] to-[#8F96A0] p-3 shadow-[0_0_18px_rgba(230,232,240,.35)] lg:col-span-3 lg:col-start-1 lg:row-start-3"><b className="block font-display text-2xl text-[#141414]">🐉</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.14em] text-[#33383f]">Insígnia de Titânio · Lenda</small></div>}
+          {tier.min >= 365 && <div className="col-span-2 rounded-r border border-[#EDEDF2] bg-gradient-to-br from-[#EDEDF2] to-[#8F96A0] p-3 shadow-[0_0_18px_rgba(230,232,240,.35)] lg:col-span-3 lg:col-start-1 lg:row-start-3"><b className="block font-display text-2xl text-[#141414]">🐉</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.14em] text-[#33383f]">{t('titan')}</small></div>}
         </div>
         <div className="relative text-left">
           <K>{t('tier')} — {tier.icon} {tier.name}</K>
           <Bar pct={lvlPct} />
           <div className="mt-2 flex justify-between text-[11.5px] font-extrabold tracking-[.06em] text-muted"><span>{lvlTxt}</span><span className="font-mono">{d}d</span></div>
-          {goalMeta && <div className="mt-1 text-[11px] font-bold text-gold2">{d >= goalMeta.d ? '🏁 Primeira conquista alcançada: ' + goalMeta.icon + ' ' + goalMeta.n + '!' : '🎯 Primeira conquista: ' + goalMeta.icon + ' ' + goalMeta.n + ' em ' + goalMeta.d + ' dias (faltam ' + (goalMeta.d - d) + ')'}</div>}
-          {tier.reward && <div className="mt-1 text-[11px] font-bold text-gold2">🎁 Recompensa do patamar: {tier.reward}</div>}
+          {goalMeta && <div className="mt-1 text-[11px] font-bold text-gold2">{d >= goalMeta.d ? t('goal_done') + goalMeta.icon + ' ' + goalMeta.n + '!' : t('goal_next') + goalMeta.icon + ' ' + goalMeta.n + t('goal_in') + goalMeta.d + t('goal_days') + (goalMeta.d - d) + t('goal_close')}</div>}
+          {tier.reward && <div className="mt-1 text-[11px] font-bold text-gold2">{t('reward_l')}{tier.reward}</div>}
         </div>
       </Card>
 
       {/* Check-in */}
       <Card>
-        <K>{t('checkin')}{L.modeA(S) ? ' · 2 PILARES' : ''}</K>
+        <K>{t('checkin')}{L.modeA(S) ? t('two_pil') : ''}</K>
         <div className="ciday-row mb-2.5 flex flex-wrap gap-1.5">
-          <button className="chip-dim flex-none justify-center" style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setCiDate(yesterday(ciDate)); }}>◄ Dia Anterior</button>
-          <button className="chip justify-center" style={{ flex: '1 1 100%', order: -1 }} onClick={() => { AF.click(); setCiDate(today()); }}>📅 HOJE ({fdmy(today())})</button>
-          <button className="chip-dim flex-none justify-center" style={{ flex: '0 0 auto', ...(ciDate >= today() ? { opacity: .35, cursor: 'not-allowed' } : {}) }} disabled={ciDate >= today()} onClick={() => { AF.click(); setCiDate(dstr(new Date(L.parseD(ciDate).getTime() + 86400000))); }}>Próximo Dia ►</button>
+          <button className="chip-dim flex-none justify-center" style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setCiDate(yesterday(ciDate)); }}>{t('prev_d')}</button>
+          <button className="chip justify-center" style={{ flex: '1 1 100%', order: -1 }} onClick={() => { AF.click(); setCiDate(today()); }}>{t('today_b')} ({fdmy(today())})</button>
+          <button className="chip-dim flex-none justify-center" style={{ flex: '0 0 auto', ...(ciDate >= today() ? { opacity: .35, cursor: 'not-allowed' } : {}) }} disabled={ciDate >= today()} onClick={() => { AF.click(); setCiDate(dstr(new Date(L.parseD(ciDate).getTime() + 86400000))); }}>{t('next_d')}</button>
         </div>
-        {ciDate !== today() && <div className="chip mb-2.5 cursor-default">✏️ Editando registro de {fdmy(ciDate)}</div>}
+        {ciDate !== today() && <div className="chip mb-2.5 cursor-default">{t('editing_r')}{fdmy(ciDate)}</div>}
         <div className="flex flex-col gap-2.5">
           {L.pillars(S).map((k) => {
             const FAILMAP = { p: 'porn', m: 'mast', r: 'ejac' };
@@ -264,12 +277,12 @@ export default function QgView() {
       {/* Forja hoje + operações */}
       <div className="grid gap-3.5 lg:grid-cols-2">
         <Card>
-          <K>🔨 {t('forgeToday')} — {doneF} de {S.forge.active.length}</K>
+          <K>🔨 {t('forgeToday')} — {doneF}{t('of_w')}{S.forge.active.length}</K>
           {act.length ? (
             <>
               <div className="flex flex-col gap-2">
                 {act.map((id) => {
-                  const h = L.allH(S).find((x) => x.id === id); if (!h) return null;
+                  const h = ALLH.find((x) => x.id === id); if (!h) return null;
                   const dn = fd.includes(id), isF = ff.includes(id), tm = L.hTime(S, id);
                   return (
                     <button key={id} className={`flex items-center gap-2.5 rounded-r border p-2.5 text-left text-sm font-semibold transition-colors ${dn ? 'border-gold/50 bg-gold/10 opacity-75' : isF ? 'border-danger/50 bg-danger/10' : 'border-line bg-surface2'}`} onClick={() => { if (!S.forge.active.includes(id)) return; update((s) => { const dd = today(); const a = s.forge.done[dd] = s.forge.done[dd] || []; const i = a.indexOf(id); if (i >= 0) a.splice(i, 1); else { a.push(id); const f = s.forge.failed[dd] = s.forge.failed[dd] || []; const fi = f.indexOf(id); if (fi >= 0) f.splice(fi, 1); } }); AF.click(); }}>
@@ -284,12 +297,12 @@ export default function QgView() {
               <div className="bar mt-3"><i style={{ width: (S.forge.active.length ? (doneF / S.forge.active.length) * 100 : 0) + '%' }} /></div>
             </>
           ) : (
-            <><Empty>Nenhum hábito ativo.<br />Ative seus hábitos de elite em <b className="text-gold">A Forja</b>.</Empty>
-              <button className="btn-ghost btn-big mt-2.5" onClick={() => setTab('forge')}>IR PARA A FORJA 🔨</button></>
+            <><Empty>{t('ef1')}<br />{t('ef2')} <b className="text-gold">{t('forge_b')}</b>.</Empty>
+              <button className="btn-ghost btn-big mt-2.5" onClick={() => setTab('forge')}>{t('goforge')}</button></>
           )}
         </Card>
         <Card>
-          <K>🎯 {t('tasksToday')} — {openTasks.length} pendentes</K>
+          <K>🎯 {t('tasksToday')} — {openTasks.length}{t('pend_w')}</K>
           {openTasks.length ? (
             <div className="flex flex-col gap-2">
               {openTasks.map((x) => (
@@ -301,28 +314,28 @@ export default function QgView() {
                 </button>
               ))}
             </div>
-          ) : <Empty>Nenhuma operação pendente hoje. Adicione tarefas em <b className="text-gold">Projetos & Tarefas</b>.</Empty>}
+          ) : <Empty>{t('eo1')}<b className="text-gold">{t('ops_b')}</b>.</Empty>}
         </Card>
       </div>
 
       {/* Linha do tempo */}
       <Card>
-        <K>📅 LINHA DO TEMPO — VITÓRIAS × QUEDAS</K>
+        <K>{t('tlt')}</K>
         <div className="mb-2.5 flex flex-wrap gap-1.5">
           {[7, 14, 30, 60, 90, 365].map((n) => (
-            <button key={n} className={qgRange === n ? 'chip' : 'chip-dim'} style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setQgRange(n); }}>{n} DIAS</button>
+            <button key={n} className={qgRange === n ? 'chip' : 'chip-dim'} style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setQgRange(n); }}>{n}{t('daysuf')}</button>
           ))}
         </div>
         <div className="mb-3 flex flex-wrap gap-2">
-          <span className="chip cursor-default">🏆 {wins} vitória(s)</span>
-          <span className="chip-dim cursor-default border-danger/50 text-danger">💥 {falls} queda(s)</span>
-          <span className="chip-dim cursor-default">◐ {part} parcial(is)</span>
-          <span className="chip-dim cursor-default">⚡ {rate}% aproveitamento</span>
-          <span className="chip-dim cursor-default border-ok/45 text-ok" title={lw ? 'Última vitória: ' + fdmy(lw.d) + ' às ' + lw.h : 'Nenhuma intervenção registrada'}>🛡️ {L.sosWins(S)} S.O.S vencida(s)</span>
+          <span className="chip cursor-default">🏆 {wins}{t('winsw')}</span>
+          <span className="chip-dim cursor-default border-danger/50 text-danger">💥 {falls}{t('fallsw')}</span>
+          <span className="chip-dim cursor-default">◐ {part}{t('partw')}</span>
+          <span className="chip-dim cursor-default">⚡ {rate}{t('ratew')}</span>
+          <span className="chip-dim cursor-default border-ok/45 text-ok" title={lw ? t('lastw') + fdmy(lw.d) + t('atw') + lw.h : t('nosos')}>🛡️ {L.sosWins(S)}{t('sosw')}</span>
         </div>
         <div className="flex flex-wrap gap-[5px]">
           {cells.map((c) => (
-            <button key={c.ds} title={c.ds + ' · ' + c.lab + ' — toque para editar'} className={`tlc ${c.cls}`} onClick={() => dayEditor(c.ds)} />
+            <button key={c.ds} title={c.ds + ' · ' + c.lab + t('taped')} className={`tlc ${c.cls}`} onClick={() => dayEditor(c.ds)} />
           ))}
         </div>
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10.5px] text-muted">
