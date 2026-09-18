@@ -146,10 +146,6 @@ export default function SettingsView() {
             <div><b className="text-[13px]">{T('lang_title', 'Idioma')}</b><small className="block text-[11px] text-muted">{T('lang_desc', 'Interface principal (PT / EN / ES)')}</small></div>
             <div className="flex gap-1.5">{['pt', 'en', 'es'].map((l) => <button key={l} className={st.lang === l ? 'chip' : 'chip-dim'} onClick={() => { update((s) => { s.settings.lang = l; }); setLangCookie(l); toast(T('lang_toast', '🌐 Idioma: ') + l.toUpperCase()); }}>{l.toUpperCase()}</button>)}</div>
           </div>
-          <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
-            <div><b className="text-[13px]">{T('theme_title', 'Tema Escuro')}</b><small className="block text-[11px] text-muted">{T('theme_desc', 'Modo Ônix (ativo) / Grafite')}</small></div>
-            <Toggle on={st.theme === 'dark'} onChange={() => { update((s) => { s.settings.theme = s.settings.theme === 'dark' ? 'steel' : 'dark'; }); }} />
-          </div>
           <div className="flex items-center justify-between gap-3">
             <div><b className="text-[13px]">{T('sound_title', '🔊 Efeitos Sonoros')}</b><small className="block text-[11px] text-muted">{T('sound_desc', 'Sons sintetizados via Web Audio API')}</small></div>
             <Toggle on={st.sound} onChange={() => { update((s) => { s.settings.sound = !s.settings.sound; }); if (!st.sound) AF.click(); }} />
