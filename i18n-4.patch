@@ -1,0 +1,20 @@
+--- a/lib/data.js
++++ b/lib/data.js
+@@ -134,17 +134,29 @@
+     nav_qg: 'QG', nav_forge: 'Forja', nav_ops: 'Missões', nav_journal: 'Diário', nav_stats: 'Dados', nav_enemy: 'Inimigo', nav_settings: 'Ajustes',
+     code: 'CÓDIGO DO GUERREIRO', swap: '🔄 Trocar Frase', days: 'DIAS EM RETENÇÃO SEMINAL', daysClean: 'DIAS LIMPIOS DE VÍCIO', purity: 'PUREZA', hours: 'SALVAS NESTE CICLO',
+     tier: 'NÍVEL DA FORJA', checkin: 'REGISTRO DIÁRIO DE COMBATE', c1: 'Não assisti pornografia', c2: 'Não me masturbei', c3: 'Mantive a retenção (Sem ejaculação)',
+-    fail: '🔴 FALHEI / CAÍ', forgeToday: 'A FORJA HOJE', tasksToday: 'OPERAÇÕES DO DIA', sos_t: 'PROTOCOLO DE INTERVENÇÃO DE EMERGÊNCIA' },
++    fail: '🔴 FALHEI / CAÍ', forgeToday: 'A FORJA HOJE', tasksToday: 'OPERAÇÕES DO DIA', sos_t: 'PROTOCOLO DE INTERVENÇÃO DE EMERGÊNCIA' , hj: 'HOJE', j_prev: '◀ DIA ANTERIOR', j_next: 'PRÓXIMO DIA ▶', j_fall: '⚠ QUEDA REGISTRADA', j_mood: 'HUMOR DO DIA', j_good: 'VITÓRIAS / O QUE DEU CERTO', j_ch: 'DESAFIOS / O QUE TRAVOU', j_vent: 'DESABAFO (OPCIONAL)', j_save: 'SALVAR REGISTRO DO DIA', j_hist: '📜 ÚLTIMOS 10 REGISTROS', j_empty: 'Nenhum registro ainda. A guerra começa hoje.', j_notes: '🧠 CADERNO DE NOTAS DE CAMPO', j_ph: 'Escreva uma nota de campo...', j_search: 'Buscar nas notas...', j_cancel: 'CANCELAR EDIÇÃO', j_add: 'ADICIONAR NOTA', j_saveedit: 'SALVAR ALTERAÇÃO', j_edit_t: 'Editar nota', j_del_t: 'Excluir', j_del_q: 'EXCLUIR NOTA?', j_del_m: 'será apagada do caderno de campo.', j_del_ok: '🗑 Nota excluída.', j_upd: '💾 Nota atualizada com sucesso.', j_new: '🧠 Nota registrada.', j_write: '⚠ Escreva a nota.', j_queda: '⚠ QUEDA:', j_gat: '🎯 Gatilhos:', j_desab: '🖋 Desabafo:',
++    mood_Forte: 'Forte', mood_Estável: 'Estável', mood_Ansioso: 'Ansioso', mood_Vulnerável: 'Vulnerável',
++    nt1: '💡 Negócios', nt2: '📜 Princípios', nt3: '📚 Aprendizado', nt4: '🧠 Reflexão',
++    fall_porn: 'Pornografia', fall_mast: 'Masturbação', fall_ejac: 'Ejaculação',
++    brand1: 'REGISTRO PESSOAL', brand2: 'RETENÇÃO • DISCIPLINA', adj: 'Ajustes', dret: 'DIAS EM RETENÇÃO' },
+   en: { qg: 'WARRIOR HQ', forge: 'THE FORGE', ops: 'PROJECTS & TASKS', journal: 'SHIP LOG', stats: 'COMBAT REPORTS', enemy: 'THE ENEMY REVEALED', settings: 'SETTINGS',
+     nav_qg: 'HQ', nav_forge: 'Forge', nav_ops: 'Missions', nav_journal: 'Journal', nav_stats: 'Data', nav_enemy: 'Enemy', nav_settings: 'Setup',
+     code: 'WARRIOR CODE', swap: '🔄 Swap Phrase', days: 'DAYS OF SEMINAL RETENTION', daysClean: 'DAYS CLEAN FROM ADDICTION', purity: 'PURITY', hours: 'SAVED THIS CYCLE',
+     tier: 'FORGE LEVEL', checkin: 'DAILY COMBAT LOG', c1: 'No pornography today', c2: 'No masturbation today', c3: 'Retention held (No ejaculation)',
+-    fail: '🔴 I FELL', forgeToday: 'THE FORGE TODAY', tasksToday: "TODAY'S OPS", sos_t: 'EMERGENCY INTERVENTION PROTOCOL' },
++    fail: '🔴 I FELL', forgeToday: 'THE FORGE TODAY', tasksToday: "TODAY'S OPS", sos_t: 'EMERGENCY INTERVENTION PROTOCOL' , hj: 'TODAY', j_prev: '◀ PREVIOUS DAY', j_next: 'NEXT DAY ▶', j_fall: '⚠ RECORDED FALL', j_mood: 'MOOD OF THE DAY', j_good: 'WINS / WHAT WENT RIGHT', j_ch: 'CHALLENGES / WHAT STALLED', j_vent: 'VENTING (OPTIONAL)', j_save: 'SAVE DAILY LOG', j_hist: '📜 LAST 10 LOGS', j_empty: 'No logs yet. The war starts today.', j_notes: '🧠 FIELD NOTES PAD', j_ph: 'Write a field note...', j_search: 'Search notes...', j_cancel: 'CANCEL EDIT', j_add: 'ADD NOTE', j_saveedit: 'SAVE CHANGE', j_edit_t: 'Edit note', j_del_t: 'Delete', j_del_q: 'DELETE NOTE?', j_del_m: 'will be erased from the field notes.', j_del_ok: '🗑 Note deleted.', j_upd: '💾 Note updated successfully.', j_new: '🧠 Note logged.', j_write: '⚠ Write the note.', j_queda: '⚠ FALL:', j_gat: '🎯 Triggers:', j_desab: '🖋 Venting:',
++    mood_Forte: 'Strong', mood_Estável: 'Stable', mood_Ansioso: 'Anxious', mood_Vulnerável: 'Vulnerable',
++    nt1: '💡 Business', nt2: '📜 Principles', nt3: '📚 Learning', nt4: '🧠
