@@ -10,26 +10,52 @@ import { AF } from '@/lib/audio';
 import { today, dstr, uid, fmtD, daysBetween } from '@/lib/utils';
 
 const PRI_ORDER = { alta: 0, media: 1, baixa: 2 };
-const REP_LBL_PT = { unica: '', diaria: '🔁 Diária', semana: '🔁 Seg–Sex', fds: '🔁 Sáb–Dom', semanal: '🔁 Semanal', custom: '🗓️ Personalizada' };
+const REP_LBL_FALLBACK = {
+  pt: { unica: '', diaria: '🔁 Diária', semana: '🔁 Seg–Sex', fds: '🔁 Sáb–Dom', semanal: '🔁 Semanal', custom: '🗓️ Personalizada' },
+  en: { unica: '', diaria: '🔁 Daily', semana: '🔁 Mon–Fri', fds: '🔁 Sat–Sun', semanal: '🔁 Weekly', custom: '🗓️ Custom' },
+  es: { unica: '', diaria: '🔁 Diaria', semana: '🔁 Lun–Vie', fds: '🔁 Sáb–Dom', semanal: '🔁 Semanal', custom: '🗓️ Personalizada' },
+};
 
 export default function OpsView() {
   const { S, update, openModal, closeModal, confirmBox, toast } = useApp();
-  const lang = S.settings.lang;
+  const lang = (S && S.settings && S.settings.lang) || 'pt';
   const T = (id, fb) => cx(lang, 'ops', id) || fb;
   const [thistOpen, setThistOpen] = useState({});
 
-  const WD = () => [T('wd0', 'Dom'), T('wd1', 'Seg'), T('wd2', 'Ter'), T('wd3', 'Qua'), T('wd4', 'Qui'), T('wd5', 'Sex'), T('wd6', 'Sáb')];
+  const WD = () => [
+    T('wd0', lang === 'en' ? 'Sun' : 'Dom'),
+    T('wd1', lang === 'en' ? 'Mon' : lang === 'es' ? 'Lun' : 'Seg'),
+    T('wd2', lang === 'en' ? 'Tue' : lang === 'es' ? 'Mar' : 'Ter'),
+    T('wd3', lang === 'en' ? 'Wed' : lang === 'es' ? 'Mié' : 'Qua'),
+    T('wd4', lang === 'en' ? 'Thu' : lang === 'es' ? 'Jue' : 'Qui'),
+    T('wd5', lang === 'en' ? 'Fri' : lang === 'es' ? 'Vie' : 'Sex'),
+    T('wd6', lang === 'en' ? 'Sat' : 'Sáb'),
+  ];
+
   const repLbl = (t) => {
     const r = t.rep || 'unica';
     const wd = WD();
-    if (r === 'semanal') return T('rep_semanal_prefix', '🔁 Semanal · ') + wd[t.repDay == null ? 1 : Number(t.repDay)];
+    const semPrefix = T('rep_semanal_prefix', lang === 'en' ? '🔁 Weekly · ' : '🔁 Semanal · ');
+    const custPrefix = T('rep_custom_prefix', '🗓 ');
+    if (r === 'semanal') return semPrefix + wd[t.repDay == null ? 1 : Number(t.repDay)];
     if (r === 'custom') {
       const ds = (t.repDays || []).slice().sort((a, b) => a - b);
-      return T('rep_custom_prefix', '🗓 ') + (ds.length ? ds.map((i) => wd[i]).join(', ') : '—');
+      return custPrefix + (ds.length ? ds.map((i) => wd[i]).join(', ') : '—');
     }
-    return T('rep_' + r, REP_LBL_PT[r]) || '';
+    const def = (REP_LBL_FALLBACK[lang] || REP_LBL_FALLBACK.pt)[r] || '';
+    return T('rep_' + r, def);
   };
-  const catLbl = (c) => { const i = PROJ_CATS.indexOf(c); return i >= 0 ? T('cat' + i, c) : c; };
+
+  const catLbl = (c) => {
+    const i = PROJ_CATS.indexOf(c);
+    const defaults = {
+      en: ['Body', 'Mind', 'Financial', 'Career', 'Spirit', 'Other'],
+      es: ['Cuerpo', 'Mente', 'Financiero', 'Carrera', 'Espíritu', 'Otro'],
+      pt: ['Corpo', 'Mente', 'Financeiro', 'Carreira', 'Espírito', 'Outro'],
+    };
+    const fb = (defaults[lang] || defaults.pt)[i] || c;
+    return i >= 0 ? T('cat' + i, fb) : c;
+  };
 
   const toggleTask = (id) => {
     update((s) => {
