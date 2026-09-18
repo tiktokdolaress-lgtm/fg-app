@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { RefreshCw, Trophy, CalendarDays, Flame, ShieldCheck, Droplets, Hand, HeartPulse } from 'lucide-react';
+import { RefreshCw, Trophy, CalendarDays, Flame, ShieldCheck, Droplets, Hand, HeartPulse, Check, X } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Bar, Chk, Empty } from '@/components/ui';
 import { METAS, NEXTF, FAIL_PEN, TRIGGERS, FAIL_LBL, TIERS, QUOTES } from '@/lib/data';
@@ -74,6 +74,46 @@ export default function QgView() {
       openModal(<Victory />);
     } else if (all) toast('✅ ' + fdmy(dd) + t('recvit'));
     else AF.click();
+  };
+
+  /* Ação direta para marcar como cumprido na Forja Hoje */
+  const toggleHabitDone = (id, e) => {
+    if (e) e.stopPropagation();
+    if (!S.forge.active.includes(id)) return;
+    update((s) => {
+      const dd = today();
+      const a = s.forge.done[dd] = s.forge.done[dd] || [];
+      const i = a.indexOf(id);
+      if (i >= 0) {
+        a.splice(i, 1);
+      } else {
+        a.push(id);
+        const f = s.forge.failed[dd] = s.forge.failed[dd] || [];
+        const fi = f.indexOf(id);
+        if (fi >= 0) f.splice(fi, 1);
+      }
+    });
+    AF.click();
+  };
+
+  /* Ação direta para marcar como FALHO na Forja Hoje */
+  const toggleHabitFailed = (id, e) => {
+    if (e) e.stopPropagation();
+    if (!S.forge.active.includes(id)) return;
+    update((s) => {
+      const dd = today();
+      const f = s.forge.failed[dd] = s.forge.failed[dd] || [];
+      const fi = f.indexOf(id);
+      if (fi >= 0) {
+        f.splice(fi, 1);
+      } else {
+        f.push(id);
+        const a = s.forge.done[dd] = s.forge.done[dd] || [];
+        const ai = a.indexOf(id);
+        if (ai >= 0) a.splice(ai, 1);
+      }
+    });
+    AF.tone(110, 0.35, 'sine', 0.18, 0, 55);
   };
 
   const failFlow = () => {
@@ -285,12 +325,42 @@ export default function QgView() {
                   const h = ALLH.find((x) => x.id === id); if (!h) return null;
                   const dn = fd.includes(id), isF = ff.includes(id), tm = L.hTime(S, id);
                   return (
-                    <button key={id} className={`flex items-center gap-2.5 rounded-r border p-2.5 text-left text-sm font-semibold transition-colors ${dn ? 'border-gold/50 bg-gold/10 opacity-75' : isF ? 'border-danger/50 bg-danger/10' : 'border-line bg-surface2'}`} onClick={() => { if (!S.forge.active.includes(id)) return; update((s) => { const dd = today(); const a = s.forge.done[dd] = s.forge.done[dd] || []; const i = a.indexOf(id); if (i >= 0) a.splice(i, 1); else { a.push(id); const f = s.forge.failed[dd] = s.forge.failed[dd] || []; const fi = f.indexOf(id); if (fi >= 0) f.splice(fi, 1); } }); AF.click(); }}>
+                    <div key={id} className={`flex items-center gap-2.5 rounded-r border p-2.5 text-left text-sm font-semibold transition-colors ${dn ? 'border-gold/50 bg-gold/10' : isF ? 'border-danger/50 bg-danger/10' : 'border-line bg-surface2'}`}>
                       <span className="w-[26px] text-center text-lg">{h.icon}</span>
-                      <span className={`min-w-0 flex-1 truncate ${dn ? 'text-muted line-through' : ''}`}>{h.n}</span>
+                      <span className={`min-w-0 flex-1 truncate ${dn ? 'text-muted line-through' : isF ? 'text-danger line-through opacity-80' : ''}`}>{h.n}</span>
                       {tm && <span className="font-mono text-[11px] text-gold2">⏰{tm}</span>}
-                      <span className={`grid h-[21px] w-[21px] flex-none place-items-center rounded-md border-2 text-[13px] font-black ${dn ? 'border-gold bg-gold text-[#141414]' : 'border-[#3c3c46] text-transparent'}`}>✓</span>
-                    </button>
+                      
+                      {/* Botões rápidos: Cumprido (✔) ou Falho (✕) */}
+                      <div className="flex items-center gap-1.5 flex-none">
+                        {/* Botão Falho */}
+                        <button
+                          type="button"
+                          title="Marcar como Falho"
+                          onClick={(e) => toggleHabitFailed(id, e)}
+                          className={`grid h-[24px] w-[24px] place-items-center rounded-md border text-[13px] font-bold transition-all ${
+                            isF 
+                              ? 'border-danger bg-danger text-white shadow-[0_0_8px_rgba(239,68,68,0.5)]' 
+                              : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-danger/60 hover:text-danger'
+                          }`}
+                        >
+                          <X size={14} strokeWidth={2.5} />
+                        </button>
+
+                        {/* Botão Cumprido */}
+                        <button
+                          type="button"
+                          title="Marcar como Cumprido"
+                          onClick={(e) => toggleHabitDone(id, e)}
+                          className={`grid h-[24px] w-[24px] place-items-center rounded-md border text-[13px] font-bold transition-all ${
+                            dn 
+                              ? 'border-gold bg-gold text-[#141414] shadow-[0_0_8px_rgba(255,200,70,0.5)]' 
+                              : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-gold/60 hover:text-gold'
+                          }`}
+                        >
+                          <Check size={14} strokeWidth={2.5} />
+                        </button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
