@@ -92,6 +92,14 @@ export default function StatsView() {
     ['🛡️ ' + L.sosWins(S), T('kpi_sosw', 'S.O.S vencidas')],
   ];
 
+  const weekdayLetters = {
+    pt: ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'],
+    en: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+    es: ['D', 'L', 'M', 'M', 'J', 'V', 'S'],
+  };
+
+  const localeCode = { pt: 'pt-BR', en: 'en-US', es: 'es-ES' };
+
   return (
     <div>
       <div className="mb-3.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
@@ -105,14 +113,18 @@ export default function StatsView() {
       <div className="grid gap-3.5 lg:grid-cols-2">
         <Card>
           <div className="mb-3 flex items-center justify-between">
-            <K style={{ margin: 0 }}>{T('map_k', 'MAPA — ')}{ref.toLocaleDateString(T('locale', 'pt-BR'), { month: 'long', year: 'numeric' }).toUpperCase()}</K>
+            <K style={{ margin: 0 }}>{T('map_k', 'MAPA — ')}{ref.toLocaleDateString(localeCode[lang] || 'pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}</K>
             <div className="flex gap-1.5">
               <button className="chip-dim px-2 py-1" onClick={() => setHmOff(hmOff - 1)}><ChevronLeft size={14} /></button>
               <button className="chip-dim px-2 py-1" disabled={hmOff >= 0} style={hmOff >= 0 ? { opacity: .35 } : {}} onClick={() => setHmOff(Math.min(0, hmOff + 1))}><ChevronRight size={14} /></button>
             </div>
           </div>
           <div className="hm">
-            {[0, 1, 2, 3, 4, 5, 6].map((i) => <b key={'w' + i} className="grid place-items-center border-none bg-transparent text-[9px] text-muted">{T('wd' + i, ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'][i])}</b>)}
+            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+              <b key={'w' + i} className="grid place-items-center border-none bg-transparent text-[9px] text-muted">
+                {T('wd' + i, (weekdayLetters[lang] || weekdayLetters.pt)[i])}
+              </b>
+            ))}
             {grid.map((c, i) => c.hidden ? <b key={i} className="invisible" /> : <b key={i} className={c.cls} title={c.ds} />)}
           </div>
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10.5px] text-muted">
