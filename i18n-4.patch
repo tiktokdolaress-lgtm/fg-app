@@ -17,4 +17,19 @@
 -    fail: '🔴 I FELL', forgeToday: 'THE FORGE TODAY', tasksToday: "TODAY'S OPS", sos_t: 'EMERGENCY INTERVENTION PROTOCOL' },
 +    fail: '🔴 I FELL', forgeToday: 'THE FORGE TODAY', tasksToday: "TODAY'S OPS", sos_t: 'EMERGENCY INTERVENTION PROTOCOL' , hj: 'TODAY', j_prev: '◀ PREVIOUS DAY', j_next: 'NEXT DAY ▶', j_fall: '⚠ RECORDED FALL', j_mood: 'MOOD OF THE DAY', j_good: 'WINS / WHAT WENT RIGHT', j_ch: 'CHALLENGES / WHAT STALLED', j_vent: 'VENTING (OPTIONAL)', j_save: 'SAVE DAILY LOG', j_hist: '📜 LAST 10 LOGS', j_empty: 'No logs yet. The war starts today.', j_notes: '🧠 FIELD NOTES PAD', j_ph: 'Write a field note...', j_search: 'Search notes...', j_cancel: 'CANCEL EDIT', j_add: 'ADD NOTE', j_saveedit: 'SAVE CHANGE', j_edit_t: 'Edit note', j_del_t: 'Delete', j_del_q: 'DELETE NOTE?', j_del_m: 'will be erased from the field notes.', j_del_ok: '🗑 Note deleted.', j_upd: '💾 Note updated successfully.', j_new: '🧠 Note logged.', j_write: '⚠ Write the note.', j_queda: '⚠ FALL:', j_gat: '🎯 Triggers:', j_desab: '🖋 Venting:',
 +    mood_Forte: 'Strong', mood_Estável: 'Stable', mood_Ansioso: 'Anxious', mood_Vulnerável: 'Vulnerable',
-+    nt1: '💡 Business', nt2: '📜 Principles', nt3: '📚 Learning', nt4: '🧠
++    nt1: '💡 Business', nt2: '📜 Principles', nt3: '📚 Learning', nt4: '🧠 Reflection',
++    fall_porn: 'Pornography', fall_mast: 'Masturbation', fall_ejac: 'Ejaculation',
++    brand1: 'PERSONAL LOG', brand2: 'RETENTION • DISCIPLINE', adj: 'Settings', dret: 'DAYS IN RETENTION' },
+   es: { qg: 'QG DEL GUERRERO', forge: 'LA FORJA', ops: 'PROYECTOS & TAREAS', journal: 'DIARIO DE A BORDO', stats: 'INFORMES DE COMBATE', enemy: 'EL ENEMIGO REVELADO', settings: 'AJUSTES',
+     nav_qg: 'QG', nav_forge: 'Forja', nav_ops: 'Misiones', nav_journal: 'Diario', nav_stats: 'Datos', nav_enemy: 'Enemigo', nav_settings: 'Ajustes',
+     code: 'CÓDIGO DEL GUERRERO', swap: '🔄 Cambiar Frase', days: 'DÍAS DE RETENCIÓN SEMINAL', daysClean: 'DÍAS LIMPIOS DE ADICCIÓN', purity: 'PUREZA', hours: 'AHORRADAS EN ESTE CICLO',
+     tier: 'NIVEL DE LA FORJA', checkin: 'REGISTRO DIARIO DE COMBATE', c1: 'No vi pornografía', c2: 'No me masturbé', c3: 'Mantuve la retención (Sin eyaculación)',
+-    fail: '🔴 FALLÉ', forgeToday: 'LA FORJA HOY', tasksToday: 'OPERACIONES DEL DÍA', sos_t: 'PROTOCOLO DE INTERVENCIÓN DE EMERGENCIA' },
++    fail: '🔴 FALLÉ', forgeToday: 'LA FORJA HOY', tasksToday: 'OPERACIONES DEL DÍA', sos_t: 'PROTOCOLO DE INTERVENCIÓN DE EMERGENCIA' , hj: 'HOY', j_prev: '◀ DÍA ANTERIOR', j_next: 'DÍA SIGUIENTE ▶', j_fall: '⚠ CAÍDA REGISTRADA', j_mood: 'HUMOR DEL DÍA', j_good: 'VICTORIAS / LO QUE SALIÓ BIEN', j_ch: 'DESAFÍOS / LO QUE TRABÓ', j_vent: 'DESAHOGO (OPCIONAL)', j_save: 'GUARDAR REGISTRO DEL DÍA', j_hist: '📜 ÚLTIMOS 10 REGISTROS', j_empty: 'Aún no hay registros. La guerra empieza hoy.', j_notes: '🧠 CUADERNO DE NOTAS DE CAMPO', j_ph: 'Escribe una nota de campo...', j_search: 'Buscar en las notas...', j_cancel: 'CANCELAR EDICIÓN', j_add: 'AÑADIR NOTA', j_saveedit: 'GUARDAR CAMBIO', j_edit_t: 'Editar nota', j_del_t: 'Eliminar', j_del_q: '¿ELIMINAR NOTA?', j_del_m: 'será borrada del cuaderno de campo.', j_del_ok: '🗑 Nota eliminada.', j_upd: '💾 Nota actualizada con éxito.', j_new: '🧠 Nota registrada.', j_write: '⚠ Escribe la nota.', j_queda: '⚠ CAÍDA:', j_gat: '🎯 Gatillos:', j_desab: '🖋 Desahogo:',
++    mood_Forte: 'Fuerte', mood_Estável: 'Estable', mood_Ansioso: 'Ansioso', mood_Vulnerável: 'Vulnerable',
++    nt1: '💡 Negocios', nt2: '📜 Principios', nt3: '📚 Aprendizaje', nt4: '🧠 Reflexión',
++    fall_porn: 'Pornografía', fall_mast: 'Masturbación', fall_ejac: 'Eyaculación',
++    brand1: 'REGISTRO PERSONAL', brand2: 'RETENCIÓN • DISCIPLINA', adj: 'Ajustes', dret: 'DÍAS EN RETENCIÓN' },
+ };
+ 
+ export const SOS_PHRASES = [
