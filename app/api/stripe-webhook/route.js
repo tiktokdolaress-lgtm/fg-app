@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-/* Webhook do Stripe com UPSERT automático:
-   Se o usuário entrou pelo Google e ainda não tinha linha criada,
-   ele cria e ativa o acesso imediatamente! */
+/* Webhook do Stripe: cria ou atualiza automaticamente o guerreiro no Supabase.
+   Garante acesso IMEDIATO a novos clientes autenticados via Google ou e-mail. */
 export async function POST(req) {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
     return new NextResponse('Chaves do Stripe ausentes.', { status: 500 });
@@ -27,7 +26,7 @@ export async function POST(req) {
   );
 
   try {
-    // 1) Quando o cliente completa o checkout de 7 dias grátis
+    // 1) Quando o cliente conclui o checkout (início do teste grátis)
     if (event.type === 'checkout.session.completed') {
       const s = event.data.object;
       const userId = s.metadata && s.metadata.userId;
@@ -45,7 +44,7 @@ export async function POST(req) {
       }
     }
 
-    // 2) Criação ou atualização da assinatura
+    // 2) Criação ou renovação de assinatura
     if (event.type === 'customer.subscription.created' || event.type === 'customer.subscription.updated') {
       const sub = event.data.object;
       const userId = sub.metadata && sub.metadata.userId;
@@ -66,7 +65,7 @@ export async function POST(req) {
       }
     }
 
-    // 3) Se a assinatura for cancelada
+    // 3) Se o cliente cancelar
     if (event.type === 'customer.subscription.deleted') {
       const sub = event.data.object;
       if (sub.customer) {
