@@ -13,6 +13,7 @@ const MOODS = [['🔥', 'Forte'], ['⚖️', 'Estável'], ['⚡', 'Ansioso'], ['
 export default function JournalView() {
   const { S, update, toast, confirmBox, t } = useApp();
   const LOCD = { pt: 'pt-BR', en: 'en-US', es: 'es-ES' };
+  const lang = (S && S.settings && S.settings.lang) || 'pt';
   const fallLbl = (x) => { const k = t('fall_' + x); return k === 'fall_' + x ? (FAIL_LBL[x] || x) : k; };
   const NT_TR = (tag) => { const i = NOTE_TAGS.indexOf(tag); return i >= 0 ? t('nt' + (i + 1)) : tag; };
   const [jDate, setJDate] = useState(today());
@@ -103,7 +104,7 @@ export default function JournalView() {
               <p className="text-[13px] leading-relaxed">{n.txt}</p>
               <div className="mt-1.5 flex items-center gap-2">
                 <span className="chip-dim px-2 py-0.5 text-[9px]">{NT_TR(n.tag)}</span>
-                <span className="font-mono text-[10px] text-muted">{new Date(n.ts).toLocaleDateString(LOCD[S.settings.lang] || 'pt-BR')}</span>
+                <span className="font-mono text-[10px] text-muted">{new Date(n.ts).toLocaleDateString(LOCD[lang] || 'pt-BR')}</span>
                 <span className="ml-auto flex gap-1.5">
                   <button className="text-muted hover:text-gold" title={t('j_edit_t')} onClick={() => { setNoteEditId(n.id); setNoteTxt(n.txt); setNoteTag(n.tag); }}><Pencil size={13} /></button>
                   <button className="text-muted hover:text-danger" title={t('j_del_t')} onClick={() => confirmBox(t('j_del_q'), '"' + String(n.txt).slice(0, 70) + '" ' + t('j_del_m'), () => { update((s) => { s.notes = s.notes.filter((x) => x.id != n.id); }); if (noteEditId == n.id) { setNoteEditId(null); setNoteTxt(''); } toast(t('j_del_ok')); })}><X size={13} /></button>
