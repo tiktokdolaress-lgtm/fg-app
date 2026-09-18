@@ -4,14 +4,19 @@ import { Volume2, VolumeX, ArrowLeft, ArrowRight, PenLine, ShieldCheck } from 'l
 import { useApp } from '@/lib/store';
 import { LIFE_STATUS, METAS, TRIGGERS, FREQS } from '@/lib/data';
 import { cx } from '@/lib/content-i18n';
+import { setLangCookie } from '@/lib/i18n';
 import { AF, SFX } from '@/lib/audio';
 import { today, dstr, uid } from '@/lib/utils';
 
-const LBL = { 1: 'IDENTIFICAÇÃO', 2: 'IDENTIFICAÇÃO', 3: 'STATUS DE COMBATE', 4: 'LINHA DE BASE', 5: 'LINHA DE BASE', 6: 'MARCO ZERO', 7: 'META POR PATENTE', 8: 'INTELIGÊNCIA', 9: 'INTELIGÊNCIA', 10: 'O PORQUÊ', 11: 'O JURAMENTO' };
+const LBL_FALLBACK = {
+  pt: { 1: 'IDENTIFICAÇÃO', 2: 'IDENTIFICAÇÃO', 3: 'STATUS DE COMBATE', 4: 'LINHA DE BASE', 5: 'LINHA DE BASE', 6: 'MARCO ZERO', 7: 'META POR PATENTE', 8: 'INTELIGÊNCIA', 9: 'INTELIGÊNCIA', 10: 'O PORQUÊ', 11: 'O JURAMENTO' },
+  en: { 1: 'IDENTIFICATION', 2: 'IDENTIFICATION', 3: 'COMBAT STATUS', 4: 'BASELINE', 5: 'BASELINE', 6: 'GROUND ZERO', 7: 'RANK TARGET', 8: 'INTELLIGENCE', 9: 'INTELLIGENCE', 10: 'THE WHY', 11: 'THE OATH' },
+  es: { 1: 'IDENTIFICACIÓN', 2: 'IDENTIFICACIÓN', 3: 'ESTADO DE COMBATE', 4: 'LÍNEA DE BASE', 5: 'LÍNEA DE BASE', 6: 'PUNTO CERO', 7: 'META POR RANGO', 8: 'INTELIGENCIA', 9: 'INTELIGENCIA', 10: 'EL PORQUÉ', 11: 'EL JURAMENTO' },
+};
 
 export default function Onboarding() {
   const { S, update, setPhase, toast, setTab } = useApp();
-  const lang = S.settings.lang;
+  const lang = (S && S.settings && S.settings.lang) || 'pt';
   const T = (id, fb) => cx(lang, 'ob', id) || fb;
   const [OB, setOB] = useState({});
   const [step, setStep] = useState(1);
@@ -45,6 +50,12 @@ export default function Onboarding() {
     if (step < total) { setStep(step + 1); SFX.step(); }
   };
   const back = () => { if (step > 1) { setStep(step - 1); AF.click(); } };
+
+  const changeLang = (l) => {
+    AF.click();
+    update((d) => { d.settings.lang = l; });
+    setLangCookie(l);
+  };
 
   const finish = () => {
     AF.seal(); setStamped(true);
@@ -85,7 +96,7 @@ export default function Onboarding() {
     <div className="mb-3 flex items-center gap-1.5">
       <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted">🌐 {T('langLabel', 'Idioma')}</span>
       {['pt', 'en', 'es'].map((l) => (
-        <button key={l} type="button" className={lang === l ? 'chip' : 'chip-dim'} onClick={() => { AF.click(); update((d) => { d.settings.lang = l; }); }}>{l.toUpperCase()}</button>
+        <button key={l} type="button" className={lang === l ? 'chip' : 'chip-dim'} onClick={() => changeLang(l)}>{l.toUpperCase()}</button>
       ))}
     </div>
     <h2 className="obq">{T('q1', 'Como devemos nos referir a você no campo de batalha?')}</h2>
@@ -140,6 +151,8 @@ export default function Onboarding() {
       <button className="btn-gold btn-big mt-5" onClick={finish}><PenLine size={16} /> {T('sign', 'ASSINAR JURAMENTO E ENTRAR NO QG')}</button>
     </div>);
 
+  const curLbl = (LBL_FALLBACK[lang] || LBL_FALLBACK.pt)[sid] || '';
+
   return (
     <div className="fixed inset-0 z-[55] flex flex-col overflow-y-auto bg-bg">
       <div className="flex items-center gap-3 p-4">
@@ -154,7 +167,7 @@ export default function Onboarding() {
         </div>
       </div>
       <div className="mx-auto w-full max-w-[560px] flex-1 px-5 pb-4 rise" key={step}>
-        <span className="k">{T('stepWord', 'PASSO')} {step} / {total} · {cx(lang, 'ob', 'lbl' + sid) || LBL[sid]}</span>
+        <span className="k">{T('stepWord', 'PASSO')} {step} / {total} · {cx(lang, 'ob', 'lbl' + sid) || curLbl}</span>
         {body}
         {err && <p className="mt-3 text-[12.5px] font-bold text-danger shakeit">{err}</p>}
       </div>
