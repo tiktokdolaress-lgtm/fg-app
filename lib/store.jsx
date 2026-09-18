@@ -8,12 +8,16 @@ import * as cloud from './supabase';
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
 
-function loadLocal() {
+function getUserKey(userId) {
+  return userId ? `${LSKEY}_${userId}` : LSKEY;
+}
+
+function loadLocal(userId) {
   try {
-    const r = localStorage.getItem(LSKEY);
+    const key = getUserKey(userId);
+    const r = localStorage.getItem(key);
     if (r) return mergeS(JSON.parse(r));
   } catch (e) {}
-  /* i18n ETAPA 2: conta nova herda o idioma escolhido na landing (cookie fg_lang) */
   const s = DEF();
   try {
     const c = document.cookie.match(/(^|; )fg_lang=(pt|en|es)/);
@@ -47,7 +51,7 @@ export function AppProvider({ children }) {
     document.documentElement.dataset.theme = S.settings.theme || 'dark';
     document.body.classList.toggle('cosmic', tierNow(S).min >= 180);
     const disc = !!S.settings.discreet;
-    setLocaleLang(S.settings.lang); /* datas curtas (fmtD) no idioma do app */
+    setLocaleLang(S.settings.lang);
     document.title = disc ? translate(S, 'title_disc') : translate(S, 'title_full');
     let link = document.querySelector('link[rel="manifest"]');
     if (!link) { link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
@@ -57,9 +61,11 @@ export function AppProvider({ children }) {
   }, [S && S.settings.theme, S && S.settings.discreet, S && S.purity, S && S.retStart]);
 
   const persist = useCallback((next) => {
-    try { localStorage.setItem(LSKEY, JSON.stringify(next)); } catch (e) {}
     const a = authRef.current;
-    if (a.userId) cloud.pushProfile(a.userId, a.email, next);
+    if (a.userId) {
+      try { localStorage.setItem(getUserKey(a.userId), JSON.stringify(next)); } catch (e) {}
+      cloud.pushProfile(a.userId, a.email, next);
+    }
   }, []);
 
   const update = useCallback((fn) => {
@@ -91,7 +97,7 @@ export function AppProvider({ children }) {
     );
   }, [openModal, closeModal]);
 
-  /* consulta o status de assinatura com paciência (espera o webhook chegar) */
+  /* consulta o status de assinatura com paciência */
   const refreshSub = useCallback(async (tries = 6) => {
     const uidNow = authRef.current.userId;
     if (!uidNow || String(uidNow).indexOf('local:') === 0) { setSub('local'); return 'local'; }
@@ -107,7 +113,7 @@ export function AppProvider({ children }) {
     return st;
   }, []);
 
-  /* entra no app com sessão (nuvem ou local) */
+  /* entra no app com sessão (nuvem ou local) e ISOLA os dados daquele usuário */
   const enterApp = useCallback(async (sess) => {
     const email = (sess && (sess.user ? sess.user.email : sess.email)) || '';
     const userId = (sess && sess.user ? sess.user.id : null) || (sess && sess.local ? 'local:' + sess.email : 'local:' + email);
@@ -119,23 +125,33 @@ export function AppProvider({ children }) {
       window.history.replaceState({}, '', window.location.pathname);
       refreshSub(8);
     }
+
+    // 1) Puxa do Supabase os dados ESPECÍFICOS desse usuário
     const remote = await cloud.pullProfile(userId);
-    let next = SRef.current;
+    let next;
     if (remote && remote.v) {
       next = mergeS(remote);
-      try { localStorage.setItem(LSKEY, JSON.stringify(next)); } catch (e) {}
-      setS(next);
+    } else {
+      // Usuário novo: inicia zerado do padrão, NUNCA herda dados de outro usuário
+      const userCached = loadLocal(userId);
+      next = userCached.onboarded ? userCached : DEF();
     }
+
+    try { localStorage.setItem(getUserKey(userId), JSON.stringify(next)); } catch (e) {}
+    setS(next);
+
+    // 2) Inscreve no realtime apenas para este usuário
     cloud.subscribeProfile(userId, (data) => {
       setS((prev) => {
         const merged = mergeS(data);
-        try { localStorage.setItem(LSKEY, JSON.stringify(merged)); } catch (e) {}
+        try { localStorage.setItem(getUserKey(userId), JSON.stringify(merged)); } catch (e) {}
         return merged;
       });
       toast(translate(SRef.current, 'synced'));
     });
-    const cur = next || SRef.current;
-    if (cur && cur.settings.pin && !sessionStorage.getItem('fg_unlock')) setPhase('lock');
+
+    const cur = next;
+    if (cur && cur.settings && cur.settings.pin && !sessionStorage.getItem('fg_unlock')) setPhase('lock');
     else if (cur && cur.onboarded) setPhase('app');
     else setPhase('onboard');
   }, [toast, refreshSub]);
@@ -144,9 +160,6 @@ export function AppProvider({ children }) {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const local = loadLocal();
-      if (!alive) return;
-      setS(local);
       try {
         if (cloud.CLOUD) {
           const sess = await cloud.getSession();
@@ -158,7 +171,7 @@ export function AppProvider({ children }) {
         setPhase('auth');
       } catch (e) {
         authRef.current = { email: '', userId: 'local:fail' };
-        if (local.onboarded) setPhase('app'); else setPhase('onboard');
+        setPhase('auth');
       }
     })();
     return () => { alive = false; };
@@ -169,7 +182,11 @@ export function AppProvider({ children }) {
     const onVis = () => {
       if (document.visibilityState === 'visible' && authRef.current.userId) {
         cloud.pullProfile(authRef.current.userId).then((d) => {
-          if (d && d.v) setS(() => { const m = mergeS(d); try { localStorage.setItem(LSKEY, JSON.stringify(m)); } catch (e) {} return m; });
+          if (d && d.v) setS(() => {
+            const m = mergeS(d);
+            try { localStorage.setItem(getUserKey(authRef.current.userId), JSON.stringify(m)); } catch (e) {}
+            return m;
+          });
         });
       }
     };
@@ -177,13 +194,14 @@ export function AppProvider({ children }) {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
 
-  /* sync de token renovado / signout remoto */
+  /* sync de token renovado / signout remoto: limpa e zera */
   useEffect(() => {
     if (!cloud.CLOUD) return;
     return cloud.onAuth((ev, session) => {
       if (ev === 'SIGNED_OUT') {
         authRef.current = { email: '', userId: null };
         setAuth({ email: '', userId: null });
+        setS(null);
         try { localStorage.removeItem('fg_local_session'); } catch (e) {}
         setPhase('auth');
       }
