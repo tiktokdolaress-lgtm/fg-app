@@ -12,13 +12,17 @@ import { AF } from '@/lib/audio';
 import { today, LSKEY } from '@/lib/utils';
 import { pushSupported, askPermission, subscribePush, unsubscribePush } from '@/lib/notify';
 
-const SUB_LBL = { active: '✅ ATIVA', trialing: '🎁 TESTE GRÁTIS EM CURSO', inactive: '⛔ INATIVA', canceled: '🚫 CANCELADA', past_due: '⚠️ PAGAMENTO PENDENTE', local: '💾 MODO LOCAL (sem nuvem)' };
+const SUB_LBL_FALLBACK = {
+  pt: { active: '✅ ATIVA', trialing: '🎁 TESTE GRÁTIS EM CURSO', inactive: '⛔ INATIVA', canceled: '🚫 CANCELADA', past_due: '⚠️ PAGAMENTO PENDENTE', local: '💾 MODO LOCAL (sem nuvem)' },
+  en: { active: '✅ ACTIVE', trialing: '🎁 FREE TRIAL ACTIVE', inactive: '⛔ INACTIVE', canceled: '🚫 CANCELED', past_due: '⚠️ PAYMENT PENDING', local: '💾 LOCAL MODE (no cloud)' },
+  es: { active: '✅ ACTIVA', trialing: '🎁 PRUEBA GRATIS ACTIVA', inactive: '⛔ INACTIVA', canceled: '🚫 CANCELADA', past_due: '⚠️ PAGO PENDIENTE', local: '💾 MODO LOCAL (sin nube)' },
+};
 
 export default function SettingsView() {
   const { S, update, toast, confirmBox, auth, setPhase, setAuth, authRef, sub, refreshSub } = useApp();
   const st = S.settings;
-  const lang = st.lang;
-  const T = (id, fb) => cx(lang, 'life', id) || fb;
+  const lang = (st && st.lang) || 'pt';
+  const T = (id, fb) => cx(lang, 'settings', id) || cx(lang, 'life', id) || fb;
   const [pinCur, setPinCur] = useState('');
   const [pinNew, setPinNew] = useState('');
   const [ph, setPh] = useState('');
@@ -49,7 +53,7 @@ export default function SettingsView() {
       const sess = await cloud.getSession();
       await unsubscribePush(sess && sess.access_token);
       update((s) => { s.settings.notifOn = false; });
-      toast(T('ok_notifOff', ' Notificações desativadas neste dispositivo.'));
+      toast(T('ok_notifOff', '🔕 Notificações desativadas neste dispositivo.'));
     } catch (e) { toast(T('err_notifOffFail', '⚠ Falha ao desativar.')); }
   };
 
@@ -83,7 +87,7 @@ export default function SettingsView() {
       if (nv) { if (!/^\d{4}$/.test(nv)) { toast(T('err_pin4', '⚠ Use exatamente 4 dígitos.')); return; } update((s) => { s.settings.pin = nv; }); toast(T('ok_pinUpd', '🛡 PIN atualizado.')); }
       else { update((s) => { s.settings.pin = ''; }); toast(T('ok_pinRemoved', '🔓 Bloqueio por PIN removido.')); }
     } else {
-      if (!/^\d{4}$/.test(nv)) { toast(T('err_pin4', ' Use exatamente 4 dígitos.')); return; }
+      if (!/^\d{4}$/.test(nv)) { toast(T('err_pin4', '⚠ Use exatamente 4 dígitos.')); return; }
       update((s) => { s.settings.pin = nv; }); toast(T('ok_pinOn', '🛡 Bloqueio por PIN ativado.'));
     }
     setPinCur(''); setPinNew('');
@@ -107,7 +111,7 @@ export default function SettingsView() {
         update((s) => Object.assign(s, o));
         toast(T('ok_bkImp', '⬆ Backup importado com sucesso.'));
         setTimeout(() => location.reload(), 800);
-      } catch (e) { toast(T('err_bkInvalid', ' Arquivo de backup inválido.')); }
+      } catch (e) { toast(T('err_bkInvalid', '⚠ Arquivo de backup inválido.')); }
     };
     r.readAsText(f);
   };
@@ -129,6 +133,8 @@ export default function SettingsView() {
     setPhase('auth');
     toast(T('ok_signOut', '🚪 Sessão encerrada.'));
   };
+
+  const subLabels = SUB_LBL_FALLBACK[lang] || SUB_LBL_FALLBACK.pt;
 
   return (
     <div className="grid gap-3.5 lg:grid-cols-2">
@@ -179,7 +185,7 @@ export default function SettingsView() {
                 <Toggle on={st.notifDaily !== false} onChange={() => update((s) => { s.settings.notifDaily = s.settings.notifDaily === false; })} />
               </div>
               <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
-                <div><b className="text-[13px]">{T('notif_hab_t', 'Horários dos hábitos')}</b><small className="block text-[11px] text-muted">{T('notif_hab_d', 'Alerta no horário  de cada hábito ativo (com o app aberto)')}</small></div>
+                <div><b className="text-[13px]">{T('notif_hab_t', 'Horários dos hábitos')}</b><small className="block text-[11px] text-muted">{T('notif_hab_d', 'Alerta no horário de cada hábito ativo (com o app aberto)')}</small></div>
                 <Toggle on={st.notifHabits !== false} onChange={() => update((s) => { s.settings.notifHabits = s.settings.notifHabits === false; })} />
               </div>
               <button className="btn-dark btn-big" onClick={disableNotif}><BellOff size={15} /> {T('notif_off', 'DESATIVAR NESTE DISPOSITIVO')}</button>
@@ -247,7 +253,7 @@ export default function SettingsView() {
           <p className="mb-3 text-[12.5px] leading-relaxed text-muted">
             {T('cloud_sync_lbl', 'Status da sincronização: ')}{cloud.CLOUD ? <b className="text-ok">{T('cloud_on', 'ATIVA')}</b> : <b className="text-gold2">{T('cloud_off_lbl', 'SOMENTE NESTE DISPOSITIVO')}</b>}<br />
             {T('cloud_user', 'Conectado como: ')}<b className="text-gold">{auth.email || '—'}</b><br />
-            {T('cloud_sub', 'Assinatura: ')}<b className={sub === 'active' || sub === 'trialing' ? 'text-ok' : 'text-gold2'}>{SUB_LBL[sub] ? T('sub_' + sub, SUB_LBL[sub]) : sub}</b>{' '}
+            {T('cloud_sub', 'Assinatura: ')}<b className={sub === 'active' || sub === 'trialing' ? 'text-ok' : 'text-gold2'}>{subLabels[sub] || sub}</b>{' '}
             <button className="underline text-[11px] text-muted hover:text-gold" onClick={() => { refreshSub(2); toast(T('ok_subUpd', '🔄 Status de assinatura atualizado.')); }}>{T('sub_refresh', '(atualizar)')}</button><br />
             {T('cloud_note1', 'Seu progresso é salvo automaticamente na sua conta e acompanha você em qualquer aparelho.')}
           </p>
@@ -264,7 +270,7 @@ export default function SettingsView() {
           <p className="mb-2.5 text-[12px] text-muted">{T('phrases_intro', 'Sua frase do juramento (o "porquê") é fixa. Adicione frases extras para o botão 🔄 Trocar Frase.')}</p>
           <div className="mb-2.5 flex gap-2">
             <input className="field flex-1" maxLength={140} placeholder={T('ph_phrase', 'Nova frase de guerra...')} value={ph} onChange={(e) => setPh(e.target.value)} />
-            <button className="btn-gold flex-none" onClick={() => { if (!ph.trim()) return; update((s) => { s.phrases.push(ph.trim()); }); setPh(''); toast(T('ok_phraseAdd', ' Frase adicionada ao Código.')); }}><Plus size={15} /></button>
+            <button className="btn-gold flex-none" onClick={() => { if (!ph.trim()) return; update((s) => { s.phrases.push(ph.trim()); }); setPh(''); toast(T('ok_phraseAdd', '✨ Frase adicionada ao Código.')); }}><Plus size={15} /></button>
           </div>
           {S.phrases.length ? S.phrases.map((p, i) => (
             <div key={i} className="mb-1.5 flex items-center justify-between gap-2 rounded-r border border-line bg-surface2 p-2.5 text-[12.5px]">
