@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-/* Webhook do Stripe: avisos de pagamento/cancelamento → atualiza warrior_profiles.
-   Requer SUPABASE_SERVICE_ROLE_KEY (Secret na Vercel) para bypassar RLS com segurança. */
+/* Webhook do Stripe com UPSERT automático:
+   Se o usuário entrou pelo Google e ainda não tinha linha criada,
+   ele cria e ativa o acesso imediatamente! */
 export async function POST(req) {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
     return new NextResponse('Chaves do Stripe ausentes.', { status: 500 });
   }
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-  const body = await req.text(); // corpo CRU (obrigatório para validar assinatura)
+  const body = await req.text();
   const sig = req.headers.get('stripe-signature');
 
   let event;
@@ -26,32 +27,46 @@ export async function POST(req) {
   );
 
   try {
+    // 1) Quando o cliente completa o checkout de 7 dias grátis
     if (event.type === 'checkout.session.completed') {
       const s = event.data.object;
       const userId = s.metadata && s.metadata.userId;
       if (userId) {
         await supabase
           .from('warrior_profiles')
-          .update({
+          .upsert({
+            user_id: userId,
+            email: s.customer_email || s.customer_details?.email || null,
             stripe_customer_id: s.customer || null,
             subscription_status: 'trialing',
             plan_type: 'premium',
-          })
-          .eq('user_id', userId);
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' });
       }
     }
 
+    // 2) Criação ou atualização da assinatura
     if (event.type === 'customer.subscription.created' || event.type === 'customer.subscription.updated') {
       const sub = event.data.object;
       const userId = sub.metadata && sub.metadata.userId;
       const status = sub.status; // trialing | active | past_due | canceled ...
       if (userId) {
-        await supabase.from('warrior_profiles').update({ subscription_status: status }).eq('user_id', userId);
+        await supabase
+          .from('warrior_profiles')
+          .upsert({
+            user_id: userId,
+            subscription_status: status,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' });
       } else if (sub.customer) {
-        await supabase.from('warrior_profiles').update({ subscription_status: status }).eq('stripe_customer_id', sub.customer);
+        await supabase
+          .from('warrior_profiles')
+          .update({ subscription_status: status })
+          .eq('stripe_customer_id', sub.customer);
       }
     }
 
+    // 3) Se a assinatura for cancelada
     if (event.type === 'customer.subscription.deleted') {
       const sub = event.data.object;
       if (sub.customer) {
