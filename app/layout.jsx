@@ -3,20 +3,22 @@ import { Bebas_Neue, Manrope, Share_Tech_Mono } from 'next/font/google';
 import { I18N } from '@/lib/data';
 import { serverLang } from '@/lib/i18n-server';
 
+export const dynamic = 'force-dynamic';
+
 const bebas = Bebas_Neue({ subsets: ['latin'], weight: '400', variable: '--fd' });
 const manrope = Manrope({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'], variable: '--fb' });
 const mono = Share_Tech_Mono({ subsets: ['latin'], weight: '400', variable: '--fm' });
 
-/* i18n ETAPA 4: metadata + <html lang> seguem o idioma do visitante (cookie fg_lang) */
 export function generateMetadata() {
   const lang = serverLang();
   return {
     title: (I18N[lang] && I18N[lang].title_full) || I18N.pt.title_full,
-    description: lang === 'en'
-      ? 'HQ for retention, discipline and habit forging.'
-      : lang === 'es'
-        ? 'QG de retención, disciplina y forja de hábitos.'
-        : 'QG de retenção, disciplina e forja de hábitos.',
+    description:
+      lang === 'en'
+        ? 'HQ for retention, discipline and habit forging.'
+        : lang === 'es'
+          ? 'QG de retención, disciplina y forja de hábitos.'
+          : 'QG de retenção, disciplina e forja de hábitos.',
     manifest: '/manifest.webmanifest',
   };
 }
