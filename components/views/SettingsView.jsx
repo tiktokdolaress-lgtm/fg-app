@@ -23,9 +23,9 @@ const SUB_LBL_FALLBACK = {
 };
 
 const THEMES = [
-  { id: 'dark', name: 'Forja Dourada', icon: '👑', desc: 'Preto ônix com ouro real' },
-  { id: 'stealth', name: 'Black Ops', icon: '⚔️', desc: 'Titânio fosco & cinza tático' },
-  { id: 'military', name: 'Exército', icon: '🪖', desc: 'Verde oliva camuflado' },
+  { id: 'dark', nameKey: 'theme_dark', fallbackName: 'Forja Dourada', icon: '👑', descKey: 'theme_dark_desc', fallbackDesc: 'Preto ônix com ouro real' },
+  { id: 'stealth', nameKey: 'theme_stealth', fallbackName: 'Black Ops', icon: '⚔️', descKey: 'theme_stealth_desc', fallbackDesc: 'Titânio fosco & cinza tático' },
+  { id: 'military', nameKey: 'theme_military', fallbackName: 'Exército', icon: '🪖', descKey: 'theme_military_desc', fallbackDesc: 'Verde oliva camuflado' },
 ];
 
 export default function SettingsView() {
@@ -168,10 +168,10 @@ export default function SettingsView() {
       <div className="flex items-center justify-between gap-2 overflow-x-auto rounded-lg border border-line bg-surface p-1.5 shadow-sm">
         <div className="flex items-center gap-1">
           {[
-            { id: 'all', label: 'Todas as Opções', icon: Sliders },
-            { id: 'general', label: 'Geral & Visual', icon: Palette },
-            { id: 'security', label: 'Segurança & Acesso', icon: Shield },
-            { id: 'data', label: 'Conta & Dados', icon: Database },
+            { id: 'all', key: 'cat_all', label: 'Todas as Opções', icon: Sliders },
+            { id: 'general', key: 'cat_general', label: 'Geral & Visual', icon: Palette },
+            { id: 'security', key: 'cat_security', label: 'Segurança & Acesso', icon: Shield },
+            { id: 'data', key: 'cat_data', label: 'Conta & Dados', icon: Database },
           ].map((cat) => {
             const Icon = cat.icon;
             const sel = activeCategory === cat.id;
@@ -187,14 +187,14 @@ export default function SettingsView() {
                 }`}
               >
                 <Icon size={13} />
-                <span>{cat.label}</span>
+                <span>{T(cat.key, cat.label)}</span>
               </button>
             );
           })}
         </div>
 
         <span className="hidden sm:inline text-[11px] font-mono text-muted pr-2">
-          ⚙️ CONFIGURAÇÕES DO QG
+          ⚙️ {T('sec_settings', 'CONFIGURAÇÕES DO QG')}
         </span>
       </div>
 
@@ -205,9 +205,12 @@ export default function SettingsView() {
           <Card className="flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2.5">
-                <K><Palette size={13} className="mr-1 inline text-gold" /> TEMA & IDENTIDADE VISUAL</K>
+                <K><Palette size={13} className="mr-1 inline text-gold" /> {T('sec_theme', 'TEMA & IDENTIDADE VISUAL')}</K>
                 <span className="text-[10px] font-mono text-gold uppercase px-2 py-0.5 rounded bg-gold/10 border border-gold/20">
-                  {THEMES.find(t => t.id === currentTheme)?.name}
+                  {(() => {
+                    const curr = THEMES.find(t => t.id === currentTheme);
+                    return curr ? T(curr.nameKey, curr.fallbackName) : currentTheme;
+                  })()}
                 </span>
               </div>
 
@@ -227,7 +230,7 @@ export default function SettingsView() {
                       }`}
                     >
                       <span className="text-base mb-0.5">{th.icon}</span>
-                      <span className="text-[11.5px] leading-tight truncate w-full">{th.name}</span>
+                      <span className="text-[11.5px] leading-tight truncate w-full">{T(th.nameKey, th.fallbackName)}</span>
                     </button>
                   );
                 })}
@@ -240,7 +243,7 @@ export default function SettingsView() {
                     <Languages size={14} className="text-gold" />
                     <div>
                       <b className="text-xs text-ink">{T('lang_title', 'Idioma')}</b>
-                      <small className="block text-[10px] text-muted">Interface do sistema</small>
+                      <small className="block text-[10px] text-muted">{T('lang_desc', 'Interface do sistema')}</small>
                     </div>
                   </div>
                   <div className="flex gap-1">
@@ -265,7 +268,7 @@ export default function SettingsView() {
                     <Volume2 size={14} className="text-gold" />
                     <div>
                       <b className="text-xs text-ink">{T('sound_title', 'Efeitos Sonoros')}</b>
-                      <small className="block text-[10px] text-muted">Feedback tático nas ações</small>
+                      <small className="block text-[10px] text-muted">{T('sound_desc', 'Feedback tático nas ações')}</small>
                     </div>
                   </div>
                   <Toggle
@@ -284,11 +287,11 @@ export default function SettingsView() {
           <Card className="flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2.5">
-                <K>💍 STATUS DE VIDA & PILARES</K>
-                <span className="text-[10px] font-mono text-muted">IMPACTO NO QG</span>
+                <K>💍 {T('sec_status', 'STATUS DE VIDA & PILARES')}</K>
+                <span className="text-[10px] font-mono text-muted">{T('status_impact_badge', 'IMPACTO NO QG')}</span>
               </div>
               <p className="text-[11.5px] text-muted mb-2 leading-relaxed">
-                Define quais hábitos e pilares são cobrados diariamente no seu Quartel General.
+                {T('status_desc', 'Define quais hábitos e pilares são cobrados diariamente no seu Quartel General.')}
               </p>
 
               <div className="space-y-1.5">
@@ -329,11 +332,11 @@ export default function SettingsView() {
           <Card className="flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2.5">
-                <K><ShieldCheck size={13} className="mr-1 inline text-gold" /> BLOQUEIO POR PIN</K>
+                <K><ShieldCheck size={13} className="mr-1 inline text-gold" /> {T('sec_pin', 'BLOQUEIO POR PIN')}</K>
                 <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
                   st.pin ? 'text-ok bg-ok/10 border-ok/30' : 'text-muted bg-surface2 border-line'
                 }`}>
-                  {st.pin ? '✓ ATIVADO' : 'DESATIVADO'}
+                  {st.pin ? T('badge_active', '✓ ATIVADO') : T('badge_disabled', 'DESATIVADO')}
                 </span>
               </div>
 
@@ -354,7 +357,7 @@ export default function SettingsView() {
                     {T('pin_intro', 'Defina um PIN de 4 dígitos para impedir o acesso caso alguém pegue seu aparelho.')}
                   </p>
                   <div className="flex gap-2">
-                    <input type="password" className="field flex-1 text-xs text-center font-mono tracking-widest" maxLength={4} inputMode="numeric" placeholder="Código de 4 dígitos" value={pinNew} onChange={(e) => setPinNew(e.target.value)} />
+                    <input type="password" className="field flex-1 text-xs text-center font-mono tracking-widest" maxLength={4} inputMode="numeric" placeholder={T('ph_pin4_simple', 'Código de 4 dígitos')} value={pinNew} onChange={(e) => setPinNew(e.target.value)} />
                     <button className="btn-gold flex-none px-4 text-xs font-bold py-1.5" onClick={setPin}>{T('pin_act', 'ATIVAR PIN')}</button>
                   </div>
                 </div>
@@ -366,11 +369,11 @@ export default function SettingsView() {
           <Card className="flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2.5">
-                <K><Bell size={13} className="mr-1 inline text-gold" /> NOTIFICAÇÕES DE GUERRA</K>
+                <K><Bell size={13} className="mr-1 inline text-gold" /> {T('sec_notif', 'NOTIFICAÇÕES DE GUERRA')}</K>
                 <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
                   perm === 'granted' ? 'text-ok bg-ok/10 border-ok/30' : 'text-gold2 bg-gold/10 border-gold/20'
                 }`}>
-                  {perm === 'granted' ? 'DISPOSITIVO ATIVO' : 'NÃO AUTORIZADO'}
+                  {perm === 'granted' ? T('badge_device_active', 'DISPOSITIVO ATIVO') : T('badge_not_authorized', 'NÃO AUTORIZADO')}
                 </span>
               </div>
 
@@ -388,14 +391,14 @@ export default function SettingsView() {
                   <div className="p-2 rounded bg-surface2 border border-line/60 flex items-center justify-between gap-2">
                     <div>
                       <b className="text-xs text-ink">{T('notif_daily_t', 'Lembrete noturno')}</b>
-                      <small className="block text-[10px] text-muted">Push às ~19h se não fez check-in</small>
+                      <small className="block text-[10px] text-muted">{T('notif_daily_d', 'Push às ~19h se não fez check-in')}</small>
                     </div>
                     <Toggle on={st.notifDaily !== false} onChange={() => update((s) => { s.settings.notifDaily = s.settings.notifDaily === false; })} />
                   </div>
                   <div className="p-2 rounded bg-surface2 border border-line/60 flex items-center justify-between gap-2">
                     <div>
                       <b className="text-xs text-ink">{T('notif_hab_t', 'Horários dos hábitos')}</b>
-                      <small className="block text-[10px] text-muted">Alertas nos horários agendados</small>
+                      <small className="block text-[10px] text-muted">{T('notif_hab_d', 'Alertas nos horários agendados')}</small>
                     </div>
                     <Toggle on={st.notifHabits !== false} onChange={() => update((s) => { s.settings.notifHabits = s.settings.notifHabits === false; })} />
                   </div>
@@ -411,14 +414,14 @@ export default function SettingsView() {
           <Card className="flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2.5">
-                <K><Handshake size={13} className="mr-1 inline text-gold" /> PARCEIRO DE RESPONSABILIDADE</K>
-                <span className="text-[10px] font-mono text-muted">ACCOUNTABILITY</span>
+                <K><Handshake size={13} className="mr-1 inline text-gold" /> {T('sec_partner', 'PARCEIRO DE RESPONSABILIDADE')}</K>
+                <span className="text-[10px] font-mono text-muted">{T('badge_accountability', 'ACCOUNTABILITY')}</span>
               </div>
 
               {S.partnerToken ? (
                 <div className="space-y-2">
                   <p className="text-[11.5px] text-muted">
-                    Link somente-leitura ativo. Exibe apenas pseudônimo, dias e streak:
+                    {T('partner_have', 'Link somente-leitura ativo. Exibe apenas pseudônimo, dias e streak:')}
                   </p>
                   <div className="flex gap-1.5">
                     <input className="field flex-1 font-mono text-[11px] py-1" readOnly value={(typeof window !== 'undefined' ? window.location.origin : '') + '/p/' + S.partnerToken} />
@@ -433,10 +436,10 @@ export default function SettingsView() {
               ) : (
                 <div className="space-y-2">
                   <p className="text-xs text-muted leading-relaxed">
-                    Gere um link seguro para um amigo ou mentor acompanhar seu progresso sem expor notas ou dados privados.
+                    {T('partner_intro', 'Gere um link seguro para um amigo ou mentor acompanhar seu progresso sem expor notas ou dados privados.')}
                   </p>
                   <button className="btn-gold w-full text-xs py-2" onClick={() => { const tok = Math.random().toString(36).slice(2) + Date.now().toString(36); update((s) => { s.partnerToken = tok; if (!s.hallName) s.hallName = genHallName(); }); toast(T('ok_linkCreated', '🤝 Link de responsabilidade criado.')); }}>
-                    <Handshake size={13} /> GERAR LINK DE AUDITORIA
+                    <Handshake size={13} /> {T('btn_partner_create', 'GERAR LINK DE AUDITORIA')}
                   </button>
                 </div>
               )}
@@ -447,19 +450,19 @@ export default function SettingsView() {
           <Card className="flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2.5">
-                <K><Trophy size={13} className="mr-1 inline text-gold" /> SALÃO DA FAMA</K>
+                <K><Trophy size={13} className="mr-1 inline text-gold" /> {T('sec_hall', 'SALÃO DA FAMA')}</K>
                 <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
                   S.hallOptIn ? 'text-gold bg-gold/10 border-gold/30' : 'text-muted bg-surface2 border-line'
                 }`}>
-                  {S.hallOptIn ? 'PARTICIPANDO' : 'OCULTO'}
+                  {S.hallOptIn ? T('badge_participating', 'PARTICIPANDO') : T('badge_hidden', 'OCULTO')}
                 </span>
               </div>
 
               <div className="p-2.5 rounded bg-surface2 border border-line/60 flex items-center justify-between gap-3 mb-2">
                 <div>
-                  <b className="text-xs text-ink">Participar do ranking anônimo</b>
+                  <b className="text-xs text-ink">{T('hall_t', 'Participar do ranking anônimo')}</b>
                   <small className="block text-[10.5px] text-muted">
-                    {S.hallOptIn ? 'Pseudônimo: ' + (S.hallName || 'Guerreiro') : 'Apenas quem opta explicitamente é exibido'}
+                    {S.hallOptIn ? T('hall_pseudo', 'Pseudônimo: ') + (S.hallName || 'Guerreiro') : T('hall_optin', 'Apenas quem opta explicitamente é exibido')}
                   </small>
                 </div>
                 <Toggle
@@ -472,7 +475,7 @@ export default function SettingsView() {
               </div>
 
               <p className="text-[11px] text-muted leading-relaxed">
-                100% anônimo. Apenas seu pseudônimo de combate e sequência de dias são visíveis para inspirar a tropa.
+                {T('hall_intro', '100% anônimo. Apenas seu pseudônimo de combate e sequência de dias são visíveis para inspirar a tropa.')}
               </p>
             </div>
           </Card>
@@ -486,21 +489,21 @@ export default function SettingsView() {
           <Card className="flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <K><Cloud size={13} className="mr-1 inline text-gold" /> SUA CONTA & NUVEM</K>
+                <K><Cloud size={13} className="mr-1 inline text-gold" /> {T('sec_account', 'SUA CONTA & NUVEM')}</K>
                 <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
                   cloud.CLOUD ? 'text-ok bg-ok/10 border-ok/30' : 'text-gold2 bg-gold/10 border-gold/30'
                 }`}>
-                  {cloud.CLOUD ? 'NUVEM ATIVA' : 'LOCAL'}
+                  {cloud.CLOUD ? T('badge_cloud_active', 'NUVEM ATIVA') : T('badge_local', 'LOCAL')}
                 </span>
               </div>
 
               <div className="p-2.5 rounded bg-surface2 border border-line/60 text-xs space-y-1.5 mb-2.5">
                 <div className="flex justify-between items-center">
-                  <span className="text-muted">Guerreiro:</span>
+                  <span className="text-muted">{T('lbl_warrior', 'Guerreiro:')}</span>
                   <b className="text-gold font-mono truncate max-w-[200px]">{auth.email || '—'}</b>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-muted">Assinatura:</span>
+                  <span className="text-muted">{T('lbl_subscription', 'Assinatura:')}</span>
                   <span className="flex items-center gap-1.5">
                     <b className={sub === 'active' || sub === 'trialing' ? 'text-ok font-bold' : 'text-gold2 font-bold'}>
                       {subLabels[sub] || sub}
@@ -509,7 +512,7 @@ export default function SettingsView() {
                       className="underline text-[10px] text-muted hover:text-gold"
                       onClick={() => { refreshSub(2); toast(T('ok_subUpd', '🔄 Status atualizado.')); }}
                     >
-                      (atualizar)
+                      {T('sub_refresh', '(atualizar)')}
                     </button>
                   </span>
                 </div>
@@ -517,10 +520,10 @@ export default function SettingsView() {
 
               <div className="grid grid-cols-2 gap-2">
                 <button className="btn-ghost text-xs py-1.5" onClick={syncNow}>
-                  <RefreshCw size={13} /> Sincronizar Agora
+                  <RefreshCw size={13} /> {T('btn_sync', 'Sincronizar Agora')}
                 </button>
                 <button className="btn-red text-xs py-1.5" onClick={signOut}>
-                  <LogOut size={13} /> Sair da Conta
+                  <LogOut size={13} /> {T('btn_signout', 'Sair da Conta')}
                 </button>
               </div>
             </div>
@@ -530,18 +533,18 @@ export default function SettingsView() {
           <Card className="flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <K><Download size={13} className="mr-1 inline text-gold" /> BACKUP EM ARQUIVO</K>
+                <K><Download size={13} className="mr-1 inline text-gold" /> {T('sec_backup', 'BACKUP EM ARQUIVO')}</K>
                 <span className="text-[10px] font-mono text-muted">FORMATO .JSON</span>
               </div>
               <p className="text-xs text-muted mb-2.5 leading-relaxed">
-                Exporte uma cópia completa dos seus dados criptografados para backup físico ou migração de aparelho.
+                {T('backup_desc', 'Exporte uma cópia completa dos seus dados criptografados para backup físico ou migração de aparelho.')}
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <button className="btn-ghost text-xs py-1.5" onClick={exportBk}>
-                  <Download size={13} /> Exportar Backup
+                  <Download size={13} /> {T('btn_export', 'Exportar Backup')}
                 </button>
                 <button className="btn-ghost text-xs py-1.5" onClick={() => fileRef.current && fileRef.current.click()}>
-                  <Upload size={13} /> Importar Arquivo
+                  <Upload size={13} /> {T('btn_import', 'Importar Arquivo')}
                 </button>
               </div>
               <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={(e) => { const f = e.target.files[0]; if (f) importBk(f); e.target.value = ''; }} />
@@ -552,22 +555,22 @@ export default function SettingsView() {
           <Card className="flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <K>📜 FRASES DO CÓDIGO DO GUERREIRO</K>
-                <span className="text-[10px] font-mono text-muted">{S.phrases.length} EXTRAS</span>
+                <K>📜 {T('sec_phrases', 'FRASES DO CÓDIGO DO GUERREIRO')}</K>
+                <span className="text-[10px] font-mono text-muted">{S.phrases.length} {T('lbl_extras', 'EXTRAS')}</span>
               </div>
 
               <div className="mb-2 flex gap-1.5">
                 <input
                   className="field flex-1 text-xs py-1.5"
                   maxLength={140}
-                  placeholder="Adicionar lema ou princípio de guerra..."
+                  placeholder={T('phrases_placeholder', 'Adicionar lema ou princípio de guerra...')}
                   value={ph}
                   onChange={(e) => setPh(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && ph.trim()) {
                       update((s) => { s.phrases.push(ph.trim()); });
                       setPh('');
-                      toast('✨ Frase adicionada.');
+                      toast(T('ok_phraseAdd', '✨ Frase adicionada.'));
                     }
                   }}
                 />
@@ -577,7 +580,7 @@ export default function SettingsView() {
                     if (!ph.trim()) return;
                     update((s) => { s.phrases.push(ph.trim()); });
                     setPh('');
-                    toast('✨ Frase adicionada.');
+                    toast(T('ok_phraseAdd', '✨ Frase adicionada.'));
                   }}
                 >
                   <Plus size={14} />
@@ -591,14 +594,14 @@ export default function SettingsView() {
                       <span className="italic text-ink truncate">"{p}"</span>
                       <button
                         className="text-muted hover:text-danger flex-none p-0.5"
-                        onClick={() => confirmBox('EXCLUIR FRASE?', `Remover "${p}" do Código?`, () => update((s) => { s.phrases.splice(i, 1); s.phraseIdx = 0; }))}
+                        onClick={() => confirmBox(T('c_phTitle', 'EXCLUIR FRASE?'), `Remover "${p}" do Código?`, () => update((s) => { s.phrases.splice(i, 1); s.phraseIdx = 0; }))}
                       >
                         <X size={12} />
                       </button>
                     </div>
                   ))
                 ) : (
-                  <Empty className="py-2 text-[11px]">Nenhuma frase customizada adicionada ainda.</Empty>
+                  <Empty className="py-2 text-[11px]">{T('phrases_empty', 'Nenhuma frase customizada adicionada ainda.')}</Empty>
                 )}
               </div>
             </div>
@@ -608,18 +611,18 @@ export default function SettingsView() {
           <Card className="border-danger/30 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <K className="text-danger flex items-center gap-1"><Skull size={13} /> ZONA CRÍTICA</K>
-                <span className="text-[10px] font-mono text-danger/80">AÇÕES IRREVERSÍVEIS</span>
+                <K className="text-danger flex items-center gap-1"><Skull size={13} /> {T('sec_danger', 'ZONA CRÍTICA')}</K>
+                <span className="text-[10px] font-mono text-danger/80">{T('badge_irreversible', 'AÇÕES IRREVERSÍVEIS')}</span>
               </div>
               <p className="text-xs text-muted mb-2.5 leading-relaxed">
-                Ações definitivas que redefinem o banco de dados local ou apagam sua conta na nuvem.
+                {T('danger_desc', 'Ações definitivas que redefinem o banco de dados local ou apagam sua conta na nuvem.')}
               </p>
               <div className="space-y-1.5">
                 <button className="btn-red w-full text-xs py-1.5" onClick={() => confirmBox(T('c_wipeTitle', 'APAGAR TUDO?'), T('c_wipeBody', 'Onboarding, streaks, diário, hábitos, tarefas e notas serão destruídos para sempre.'), () => { try { localStorage.removeItem(LSKEY); } catch (e) {} location.reload(); }, T('c_wipeOk', 'SIM, QUEIMAR TUDO E RECOMEÇAR'))}>
-                  <Skull size={13} /> Resetar Dados Locais
+                  <Skull size={13} /> {T('btn_wipe', 'Resetar Dados Locais')}
                 </button>
                 <button className="btn-red w-full border border-danger/40 bg-transparent text-danger hover:bg-danger/10 text-xs py-1.5" onClick={deleteAccount}>
-                  <UserX size={13} /> Excluir Conta & Dados (LGPD)
+                  <UserX size={13} /> {T('btn_delAcct', 'Excluir Conta & Dados (LGPD)')}
                 </button>
               </div>
             </div>
