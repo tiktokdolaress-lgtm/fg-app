@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Plus, Flame, Clock, Check, X, ChevronDown, ChevronUp, AlertTriangle, ShieldCheck, Sparkles, CalendarDays, Dumbbell, Brain, Briefcase, Award, Layers } from 'lucide-react';
+import { Plus, Flame, Clock, Check, X, ChevronDown, ChevronUp, AlertTriangle, ShieldCheck, Sparkles, CalendarDays } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Empty } from '@/components/ui';
 import { FORGE_RULES, DEFAULT_HABITS } from '@/lib/data';
@@ -32,223 +32,86 @@ const LABELS_I18N = {
   failBtn: { pt: 'FALHEI', en: 'FAILED', es: 'FALLÉ' },
 };
 
-/* Catálogo Expandido de Hábitos Masculinos com Pilares e Benefícios Científicos */
-const MASTER_HABITS_CATALOG = [
-  /* PILAR 1: CORPO & TESTOSTERONA */
-  {
-    id: '#01', cat: 'body', icon: '🧊',
-    n: { pt: 'Banho Gelado', en: 'Cold Shower', es: 'Ducha Fría' },
-    benefit: {
-      pt: 'Resfria a região pélvica, extingue impulsos sexuais repentinos e gera um pico imediato de dopamina limpa sem pornografia.',
-      en: 'Cools the pelvic floor, extinguishes sudden sexual urges, and creates an instant spike of clean dopamine without porn.',
-      es: 'Enfría el área pélvica, apaga impulsos sexuales repentinos y genera un pico inmediato de dopamina limpia sin pantallas.',
-    }
-  },
-  {
-    id: '#02', cat: 'body', icon: '🏋️',
-    n: { pt: 'Treino de Força / Musculação', en: 'Strength Training / Gym', es: 'Entrenamiento de Fuerza' },
-    benefit: {
-      pt: 'Transmuta a energia seminal represada em densidade muscular, aumenta a testosterona livre e descarrega a tensão corporal.',
-      en: 'Transmutes stored seminal energy into muscle density, increases free testosterone, and discharges body restlessness.',
-      es: 'Transmuta la energía seminal en densidad muscular, eleva la testosterona libre y descarga la tensión física.',
-    }
-  },
-  {
-    id: '#13', cat: 'body', icon: '💧',
-    n: { pt: '3L a 4L de Água', en: '3L to 4L of Water', es: '3L a 4L de Agua' },
-    benefit: {
-      pt: 'Mantém a hidratação celular máxima, otimiza o fluxo sanguíneo e elimina a letargia que costuma abrir portas para a recaída.',
-      en: 'Maximizes cellular hydration, optimizes blood flow, and eliminates physical sluggishness that invites relapse.',
-      es: 'Mantiene la hidratación celular máxima, optimiza el flujo sanguíneo y aleja la lentitud que abre paso a la recaída.',
-    }
-  },
-  {
-    id: '#14', cat: 'body', icon: '☀️',
-    n: { pt: 'Sol Matinal (15m)', en: 'Morning Sunlight (15m)', es: 'Sol Matutino (15m)' },
-    benefit: {
-      pt: 'Calibra o ritmo circadiano cerebral, sintetiza vitamina D e garante sono profundo à noite (onde a testosterona é forjada).',
-      en: 'Calibrates brain circadian rhythm, synthesizes vitamin D, and ensures deep sleep at night (where testosterone is built).',
-      es: 'Calibra el ritmo circadiano cerebral, sintetiza vitamina D y asegura un sueño profundo (donde se forja la testosterona).',
-    }
-  },
-  {
-    id: '#18', cat: 'body', icon: '🧘‍♂️',
-    n: { pt: 'Mobilidade Pélvica / Kegel Invertido', en: 'Pelvic Mobility / Reverse Kegel', es: 'Movilidad Pélvica' },
-    benefit: {
-      pt: 'Relaxa o assoalho pélvico, melhora a circulação prostática e evita o acúmulo de desconforto que induz à masturbação mecânica.',
-      en: 'Relaxes the pelvic floor, improves prostate circulation, and relieves localized pressure that triggers mechanical masturbation.',
-      es: 'Relaja el suelo pélvico, mejora la circulación prostática y previene la tensión que incita a la masturbación mecánica.',
-    }
-  },
-  {
-    id: '#19', cat: 'body', icon: '🥊',
-    n: { pt: 'Arte Marcial / Boxe / Jiu-Jitsu', en: 'Martial Arts / Boxing / BJJ', es: 'Artes Marciales / Boxeo' },
-    benefit: {
-      pt: 'Ensina o homem a suportar o desconforto físico, calibra a agressividade natural e reforça a compostura inabalável.',
-      en: 'Teaches a man to endure physical distress, channels primal combativeness, and builds unshakeable composure.',
-      es: 'Enseña a soportar el malestar físico, canaliza la combatividad natural y refuerza una compostura inquebrantable.',
-    }
-  },
+/* Mapeamento de Categoria para cada ID e nome */
+function getHabitCategory(h) {
+  const idStr = String(h.id);
+  const nameLower = String(h.n || '').toLowerCase();
 
-  /* PILAR 2: MENTE & INTELECTO */
-  {
-    id: '#03', cat: 'mind', icon: '📖',
-    n: { pt: 'Leitura Estoica / Filosofia (20m)', en: 'Stoic Reading / Philosophy (20m)', es: 'Lectura Estoica (20m)' },
-    benefit: {
-      pt: 'Treina o foco sustentado, reconstrói o córtex pré-frontal e substitui o consumo de estímulos rápidos por sabedoria densa.',
-      en: 'Rebuilds the prefrontal cortex, trains sustained focus, and replaces short dopamine hits with dense mental wisdom.',
-      es: 'Reconstruye la corteza prefrontal, entrena el enfoque sostenido y sustituye estímulos rápidos por sabiduría densa.',
-    }
-  },
-  {
-    id: '#05', cat: 'mind', icon: '📵',
-    n: { pt: 'Apagão de Telas 1h Antes de Dormir', en: 'Screen Blackout 1h Before Bed', es: 'Apagón de Pantallas 1h Antes' },
-    benefit: {
-      pt: 'Bloqueia o maior canal de recaídas noturnas. Sem luz azul estimulando o cérebro, a mente descansa protegida.',
-      en: 'Blocks the #1 channel for late-night relapses. Without blue light stimulating dopamine, the mind rests guarded.',
-      es: 'Bloquea el canal principal de recaídas nocturnas. Sin luz azul sobreestimulando el cerebro, la mente descansa blindada.',
-    }
-  },
-  {
-    id: '#06', cat: 'mind', icon: '🧹',
-    n: { pt: 'Limpeza de Redes / Zero Gatilhos', en: 'Feed Cleansing / Zero Triggers', es: 'Limpieza de Redes / Cero Detonantes' },
-    benefit: {
-      pt: 'Elimina contas hiperestimulantes, perfis apelativos e algoritmos programados para sequestrar sua dopamina e vontade.',
-      en: 'Unfollows thirst traps, hyperstimulating feeds, and algorithms engineered to hijack your dopamine and willpower.',
-      es: 'Elimina cuentas sugerentes, feeds hiperestimulantes y algoritmos diseñados para secuestrar tu dopamina y voluntad.',
-    }
-  },
-  {
-    id: '#07', cat: 'mind', icon: '🍯',
-    n: { pt: 'Cortar Açúcar & Junk Food', en: 'Cut Sugar & Junk Food', es: 'Cortar Azúcar y Comida Basura' },
-    benefit: {
-      pt: 'Elimina oscilações violentas de glicose e insulina, que provocam névoa mental e enfraquecem a capacidade de dizer não.',
-      en: 'Eliminates violent blood sugar crashes that trigger brain fog and weaken your executive capacity to resist urges.',
-      es: 'Evita caídas drásticas de glucosa que provocan niebla mental y debilitan la capacidad de decir que no a la tentación.',
-    }
-  },
-  {
-    id: '#08', cat: 'mind', icon: '🚶',
-    n: { pt: 'Caminhada Sem Fones (20m)', en: 'Phone-Free Walk (20m)', es: 'Caminata Sin Auriculares (20m)' },
-    benefit: {
-      pt: 'Acalma o sistema nervoso simpático, silencia a hiperestimulação diária e treina o guerreiro a tolerar o próprio silêncio.',
-      en: 'Settles the nervous system, clears out daily sensory overload, and teaches a man to be comfortable in pure silence.',
-      es: 'Calma el sistema nervioso, disipa la sobreestimulación diaria y entrena al guerrero a tolerar el propio silencio.',
-    }
-  },
-  {
-    id: '#20', cat: 'mind', icon: '♟️',
-    n: { pt: 'Xadrez / Treino de Antecipação', en: 'Chess / Strategic Thinking', es: 'Ajedrez / Pensamiento Estratégico' },
-    benefit: {
-      pt: 'Exercita a capacidade de pausar antes de agir, calculando as consequências do próximo movimento contra impulsos cegos.',
-      en: 'Exercises impulse inhibition: teaches you to pause, breathe, and evaluate consequences before making a blind move.',
-      es: 'Ejercita la inhibición de impulsos: enseña a pausar y evaluar las consecuencias antes de dar un movimiento ciego.',
-    }
-  },
+  // Corpo
+  if (['1', '2', '13', '14', '18', '19'].includes(idStr) || nameLower.includes('banho') || nameLower.includes('treino') || nameLower.includes('água') || nameLower.includes('sol') || nameLower.includes('pélvica') || nameLower.includes('força')) {
+    return 'body';
+  }
+  // Mente
+  if (['3', '5', '6', '7', '8', '20'].includes(idStr) || nameLower.includes('leitura') || nameLower.includes('telas') || nameLower.includes('redes') || nameLower.includes('açúcar') || nameLower.includes('caminhada')) {
+    return 'mind';
+  }
+  // Missão
+  if (['16', '21', '22', '23'].includes(idStr) || nameLower.includes('foco') || nameLower.includes('tarefa') || nameLower.includes('financeiro') || nameLower.includes('planejar') || nameLower.includes('trabalho')) {
+    return 'mission';
+  }
+  // Espírito / Honra (padrão para outros)
+  return 'spirit';
+}
 
-  /* PILAR 3: MISSÃO, FOCO & IMPÉRIO */
-  {
-    id: '#16', cat: 'mission', icon: '🎯',
-    n: { pt: 'Foco Profundo 90m (Deep Work)', en: '90m Deep Work Session', es: 'Enfoque Profundo 90m (Deep Work)' },
-    benefit: {
-      pt: 'Canaliza a agressividade e a concentração da retenção seminal em criação de patrimônio, estudos e valor real de mercado.',
-      en: 'Channels retained testosterone and drive into wealth generation, elite studying, and tangible real-world market value.',
-      es: 'Canaliza la energía de la retención seminal en creación de patrimonio, estudios y valor tangible de mercado.',
-    }
-  },
-  {
-    id: '#21', cat: 'mission', icon: '🐸',
-    n: { pt: 'Engolir o Sapo (Tarefa Mais Difícil 1º)', en: 'Eat the Frog (Hardest Task First)', es: 'Hacer lo Más Difícil Primero' },
-    benefit: {
-      pt: 'Executa o dever mais pesado logo pela manhã. Elimina o estresse e a ansiedade acumulada que alimentam recaídas.',
-      en: 'Tackles the most difficult duty at dawn. Eliminates procrastination anxiety, which is a major hidden fuel for relapses.',
-      es: 'Ejecuta el deber más pesado a primera hora. Elimina la ansiedad por postergar, principal combustible oculto de caídas.',
-    }
-  },
-  {
-    id: '#22', cat: 'mission', icon: '📊',
-    n: { pt: 'Fechamento Financeiro Diário', en: 'Daily Financial Tracking', es: 'Control Financiero Diario' },
-    benefit: {
-      pt: 'Ensina controle consciente sobre os recursos materiais. O homem que governa o próprio bolso governa a própria mente.',
-      en: 'Builds conscious mastery over material resources. A man who disciplines his wallet disciplines his mind.',
-      es: 'Enseña control consciente sobre los recursos materiales. El hombre que gobierna su dinero gobierna su mente.',
-    }
-  },
-  {
-    id: '#23', cat: 'mission', icon: '📝',
-    n: { pt: 'Planejar o Dia Seguinte à Noite', en: 'Plan Next Day the Night Before', es: 'Planear el Día Siguiente de Noche' },
-    benefit: {
-      pt: 'Acordar sabendo exatamente para onde marchar elimina a ociosidade matinal, o maior terreno fértil para desvios.',
-      en: 'Waking up with clear marching orders eliminates aimless morning downtime, the fertile ground for moral deviations.',
-      es: 'Despertar sabiendo exactamente hacia dónde marchar elimina la ociosidad matutina, terreno fértil para desvíos.',
-    }
-  },
+/* Banco de Explicações Científicas Contra Recaída */
+function getHabitBenefitText(h, lang) {
+  if (h.why) return h.why;
+  if (h.benefit) return h.benefit;
+  if (h.desc) return h.desc;
 
-  /* PILAR 4: ESPÍRITO, CARÁTER & HONRA */
-  {
-    id: '#04', cat: 'spirit', icon: '⏰',
-    n: { pt: 'Acordar Antes das 06:00 Sem Soneca', en: 'Wake Before 06:00 No Snooze', es: 'Despertar Antes de las 06:00 Sin Siesta' },
-    benefit: {
-      pt: 'Primeira batalha ganha contra o conforto da carne. Rolar na cama é o berço de 60% das recaídas matinais.',
-      en: 'First battle won against flesh comfort. Lingering in bed after waking is the origin of 60% of morning relapses.',
-      es: 'Primera batalla ganada contra la comodidad. Quedarse en la cama es la cuna del 60% de las recaídas matutinas.',
-    }
-  },
-  {
-    id: '#09', cat: 'spirit', icon: '🧘',
-    n: { pt: 'Meditação / Silêncio Absoluto (10m)', en: 'Stillness / Meditation (10m)', es: 'Meditación / Silencio (10m)' },
-    benefit: {
-      pt: 'Treina a mente a ser observadora do impulso e não escrava dele. Separa o guerreiro do animal primitivo.',
-      en: 'Teaches the mind to observe biological urges without reacting. Separates the master warrior from the primitive animal.',
-      es: 'Entrena la mente para ser observadora del impulso y no su esclava. Separa al guerrero del animal primitivo.',
-    }
-  },
-  {
-    id: '#11', cat: 'spirit', icon: '🛏️',
-    n: { pt: 'Arrumar a Cama com Rigor', en: 'Make the Bed with Precision', es: 'Hacer la Cama con Rigor' },
-    benefit: {
-      pt: 'Estabelece ordem militar no seu território físico imediato. A mente reflete a desordem do ambiente em que repousa.',
-      en: 'Establishes military order in your immediate territory. An undisciplined environment fosters an undisciplined mind.',
-      es: 'Establece orden militar en tu territorio inmediato. La mente refleja el desorden del entorno donde descansa.',
-    }
-  },
-  {
-    id: '#12', cat: 'spirit', icon: '🚫',
-    n: { pt: 'Zero Álcool & Substâncias', en: 'Zero Alcohol & Substances', es: 'Cero Alcohol y Sustancias' },
-    benefit: {
-      pt: 'O álcool desliga a censura moral do lobo frontal. Preservar a sobriedade é blindar o escudo contra desastres.',
-      en: 'Alcohol shuts down prefrontal moral inhibition. Preserving absolute sobriety shields you against catastrophic relapses.',
-      es: 'El alcohol desconecta la censura moral del lóbulo frontal. Mantenerse sobrio es blindar el escudo contra desastres.',
-    }
-  },
-  {
-    id: '#15', cat: 'spirit', icon: '📓',
-    n: { pt: 'Diário de Bordo & Honra Noturna', en: 'Captain Log & Evening Review', es: 'Diario de a Bordo y Revisión Nocturna' },
-    benefit: {
-      pt: 'Prestar contas a si mesmo todas as noites. Identifica pontos de fraqueza e celebra o dia vencido com retenção intacta.',
-      en: 'Daily accountability before sleep. Audits weak points, registers triggers, and celebrates another victorious day.',
-      es: 'Rendir cuentas a uno mismo cada noche. Identifica puntos de flaqueza y celebra el día vencido con la retención intacta.',
-    }
-  },
-  {
-    id: '#17', cat: 'spirit', icon: '📵',
-    n: { pt: 'Celular Carregando Fora do Quarto', en: 'Phone Charging Outside Bedroom', es: 'Móvil Cargando Fuera de la Habitación' },
-    benefit: {
-      pt: 'Regra de ferro de ouro: sem telas no leito noturno, você elimina 90% das tentações solitárias e recupera o sono puro.',
-      en: 'Golden ironclad rule: no screens in bed removes 90% of solitary temptations and restores pure restorative sleep.',
-      es: 'Regla de oro: sin pantallas en la cama eliminas el 90% de las tentaciones solitarias y recuperas el sueño puro.',
-    }
-  },
-  {
-    id: '#24', cat: 'spirit', icon: '🤝',
-    n: { pt: 'Ação de Valor Silenciosa / Caridade Oculta', en: 'Silent Act of Honor / Quiet Charity', es: 'Acción de Valor Silenciosa' },
-    benefit: {
-      pt: 'Fazer o bem a alguém sem buscar aplausos ou validação externa. Purifica o ego e constrói grandeza interior genuína.',
-      en: 'Serve someone without seeking applause, recognition, or validation. Purifies the ego and builds quiet inner nobility.',
-      es: 'Hacer el bien sin buscar aplausos ni validación. Purifica el ego y construye una grandeza interior genuina.',
-    }
-  },
-];
+  const idStr = String(h.id);
+  const nameLower = String(h.n || '').toLowerCase();
+
+  if (idStr === '1' || nameLower.includes('banho')) {
+    return lang === 'en'
+      ? 'Cools the pelvic floor, extinguishes sudden urges, and creates an instant spike of clean dopamine.'
+      : lang === 'es'
+      ? 'Enfría el área pélvica, apaga impulsos repentinos y genera dopamina limpia sin estímulos virtuales.'
+      : 'Resfria a região pélvica, elimina impulsos repentinos e gera um pico imediato de dopamina limpa sem estímulo virtual.';
+  }
+  if (idStr === '2' || nameLower.includes('treino') || nameLower.includes('força')) {
+    return lang === 'en'
+      ? 'Transmutes stored sexual energy into muscle density, increases free testosterone, and discharges body restlessness.'
+      : lang === 'es'
+      ? 'Transmuta la energía sexual en músculo, eleva la testosterona libre y descarga la tensión física.'
+      : 'Transmuta a energia seminal represada em densidade muscular, eleva a testosterona livre e descarrega a tensão corporal.';
+  }
+  if (idStr === '13' || nameLower.includes('água')) {
+    return lang === 'en'
+      ? 'Maximizes cellular hydration, optimizes blood flow, and eliminates physical sluggishness.'
+      : lang === 'es'
+      ? 'Mantiene la hidratación celular máxima, optimiza el flujo sanguíneo y aleja la lentitud.'
+      : 'Mantém a hidratação celular máxima, otimiza o fluxo sanguíneo e afasta a letargia que costuma abrir brechas para tentação.';
+  }
+  if (idStr === '4' || nameLower.includes('acordar')) {
+    return lang === 'en'
+      ? 'First battle won against flesh comfort. Lingering in bed after waking is the origin of 60% of morning relapses.'
+      : lang === 'es'
+      ? 'Primera batalla ganada contra la comodidad. Quedarse en la cama es la cuna del 60% de las recaídas matutinas.'
+      : 'Primeira vitória sobre a carne. Ficar enrolando na cama é o ninho de 60% das recaídas matinais. Levantar rápido sela o dia.';
+  }
+  if (idStr === '5' || nameLower.includes('telas')) {
+    return lang === 'en'
+      ? 'Cuts out night blue light that disrupts sleep and stops late-night solitary screen access.'
+      : lang === 'es'
+      ? 'Corta la luz azul nocturna y evita el acceso solitario a pantallas en la noche.'
+      : 'Corta a luz azul noturna que desregula a melatonina e impede o acesso solitário a telas no momento mais vulnerável.';
+  }
+  if (idStr === '17' || nameLower.includes('celular')) {
+    return lang === 'en'
+      ? 'Keeping the phone out of the bedroom eliminates 95% of nighttime and early morning relapse risk.'
+      : lang === 'es'
+      ? 'El teléfono fuera del dormitorio elimina el 95% del riesgo de recaídas nocturnas y matutinas.'
+      : 'Regra de ouro inegociável: celular fora do quarto elimina 95% do risco de recaídas na madrugada.';
+  }
+
+  // Padrão
+  return lang === 'en'
+    ? 'Reinforces cognitive willpower, protects your dopamine baseline, and channels energy into discipline.'
+    : lang === 'es'
+    ? 'Refuerza la fuerza de voluntad cognitiva, protege la dopamina y canaliza energía en disciplina.'
+    : 'Fortalece o córtex pré-frontal, protege os receptores de dopamina e transmuta a energia em autodomínio.';
+}
 
 export default function ForgeView() {
   const { S, update, t, openModal, closeModal, toast } = useApp();
@@ -261,23 +124,10 @@ export default function ForgeView() {
   const [openBenefitId, setOpenBenefitId] = useState(null);
   const [openHistoryId, setOpenHistoryId] = useState(null);
 
-  /* Mesclar catálogo mestre de hábitos com hábitos customizados do usuário */
-  const customHabits = (S && S.customHabits) || [];
-  const customCatalog = customHabits.map((ch) => ({
-    id: ch.id,
-    cat: 'mission',
-    icon: ch.icon || '⚡',
-    n: { pt: ch.n, en: ch.n, es: ch.n },
-    benefit: {
-      pt: 'Hábito personalizado forjado para fortalecer sua rotina e disciplina diária.',
-      en: 'Custom habit forged to reinforce your personal routine and warrior discipline.',
-      es: 'Hábito personalizado forjado para fortalecer tu rutina y disciplina diaria.',
-    },
-  }));
-
-  const mergedCatalog = [...MASTER_HABITS_CATALOG, ...customCatalog];
-
+  /* Carrega os hábitos oficiais do seu app */
+  const ALLH = cxHabits(lang, L.allH(S));
   const d = L.progressDays(S);
+
   let maxSlots = 2;
   try {
     if (typeof L.maxSlots === 'function') {
@@ -295,16 +145,25 @@ export default function ForgeView() {
   const fd = L.fDone(S, today());
   const ff = L.fFailed(S, today());
 
-  const activeHabits = activeIds.map((id) => mergedCatalog.find((h) => h.id === id) || { id, icon: '⚡', n: { pt: id, en: id, es: id }, cat: 'body' });
-  const reserveHabits = mergedCatalog.filter((h) => !activeIds.includes(h.id));
+  /* Busca precisa do hábito: compara como string e como number */
+  const activeHabits = activeIds.map((id) => {
+    return ALLH.find((h) => String(h.id) === String(id)) || {
+      id,
+      n: `Hábito #${id}`,
+      icon: '⚡',
+    };
+  });
+
+  const reserveHabits = ALLH.filter((h) => !activeIds.some((aid) => String(aid) === String(h.id)));
 
   /* Filtrar reserva por categoria */
   const filteredReserve = reserveHabits.filter((h) => {
     if (selectedPillar === 'all') return true;
-    return h.cat === selectedPillar;
+    const cat = getHabitCategory(h);
+    return cat === selectedPillar;
   });
 
-  /* Hábitos negligenciados */
+  /* Hábitos negligenciados (sem fazer há mais de 1 dia) */
   const neglected = activeHabits.filter((h) => {
     try {
       const doneDates = (S && S.forge && S.forge.done) || {};
@@ -312,7 +171,8 @@ export default function ForgeView() {
       for (let i = 1; i <= 7; i++) {
         const ds = dstr(new Date(Date.now() - i * 86400000));
         const list = doneDates[ds] || [];
-        if (!list.includes(h.id)) {
+        const found = list.some((x) => String(x) === String(h.id));
+        if (!found) {
           daysWithout++;
         } else {
           break;
@@ -325,9 +185,10 @@ export default function ForgeView() {
   });
 
   const toggleActive = (id) => {
-    if (activeIds.includes(id)) {
+    const isAct = activeIds.some((aid) => String(aid) === String(id));
+    if (isAct) {
       update((s) => {
-        s.forge.active = (s.forge.active || []).filter((x) => x !== id);
+        s.forge.active = (s.forge.active || []).filter((x) => String(x) !== String(id));
       });
       AF.click();
       toast(t('hab_rem') || 'Hábito movido para a reserva');
@@ -350,13 +211,13 @@ export default function ForgeView() {
     update((s) => {
       const dd = today();
       const a = s.forge.done[dd] = s.forge.done[dd] || [];
-      const i = a.indexOf(id);
-      if (i >= 0) {
-        a.splice(i, 1);
+      const idx = a.findIndex((x) => String(x) === String(id));
+      if (idx >= 0) {
+        a.splice(idx, 1);
       } else {
         a.push(id);
         const f = s.forge.failed[dd] = s.forge.failed[dd] || [];
-        const fi = f.indexOf(id);
+        const fi = f.findIndex((x) => String(x) === String(id));
         if (fi >= 0) f.splice(fi, 1);
       }
     });
@@ -367,13 +228,13 @@ export default function ForgeView() {
     update((s) => {
       const dd = today();
       const f = s.forge.failed[dd] = s.forge.failed[dd] || [];
-      const fi = f.indexOf(id);
-      if (fi >= 0) {
-        f.splice(fi, 1);
+      const idx = f.findIndex((x) => String(x) === String(id));
+      if (idx >= 0) {
+        f.splice(idx, 1);
       } else {
         f.push(id);
         const a = s.forge.done[dd] = s.forge.done[dd] || [];
-        const ai = a.indexOf(id);
+        const ai = a.findIndex((x) => String(x) === String(id));
         if (ai >= 0) a.splice(ai, 1);
       }
     });
@@ -434,7 +295,7 @@ export default function ForgeView() {
               className="btn-gold flex-1 py-2 font-bold text-xs"
               onClick={() => {
                 if (!name.trim()) return toast('Digite o nome do hábito');
-                const newId = 'cust_' + Date.now();
+                const newId = Date.now();
                 update((s) => {
                   s.customHabits = s.customHabits || [];
                   s.customHabits.push({ id: newId, n: name.trim(), icon: icon || '⚡' });
@@ -466,8 +327,10 @@ export default function ForgeView() {
 
     for (let i = 6; i >= 0; i--) {
       const ds = dstr(new Date(Date.now() - i * 86400000));
-      const isD = (doneMap[ds] || []).includes(habitId);
-      const isF = (failMap[ds] || []).includes(habitId);
+      const listDone = doneMap[ds] || [];
+      const listFail = failMap[ds] || [];
+      const isD = listDone.some((x) => String(x) === String(habitId));
+      const isF = listFail.some((x) => String(x) === String(habitId));
       days.push({ ds, isD, isF, label: fmtD(ds) });
     }
 
@@ -550,7 +413,7 @@ export default function ForgeView() {
               >
                 <span className="flex items-center gap-1.5 truncate font-semibold">
                   <span>{h.icon}</span>
-                  <span className="truncate">{h.n[curLang] || h.n.pt}</span>
+                  <span className="truncate">{h.n}</span>
                 </span>
                 <span className="flex-none font-mono text-[10.5px] font-bold text-danger">
                   2+ dias sem fazer
@@ -564,7 +427,7 @@ export default function ForgeView() {
         </Card>
       )}
 
-      {/* 3. ATIVOS NO PROTOCOLO */}
+      {/* 3. ATIVOS NO PROTOCOLO (Com nomes e ícones restaurados) */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <K className="mb-0">⚡ ATIVOS NO PROTOCOLO ({activeCount}/{maxSlots >= 99 ? '∞' : maxSlots} SLOTS)</K>
@@ -573,13 +436,12 @@ export default function ForgeView() {
         {activeHabits.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
             {activeHabits.map((h) => {
-              const isDone = fd.includes(h.id);
-              const isFail = ff.includes(h.id);
+              const isDone = fd.some((x) => String(x) === String(h.id));
+              const isFail = ff.some((x) => String(x) === String(h.id));
               const tm = (L.hTime && L.hTime(S, h.id)) || (S.forge && S.forge.times && S.forge.times[h.id]) || '';
               const isBenefitOpen = openBenefitId === h.id;
               const isHistoryOpen = openHistoryId === h.id;
-              const habitName = (h.n && h.n[curLang]) ? h.n[curLang] : (h.n && h.n.pt) ? h.n.pt : h.n;
-              const benefitText = (h.benefit && h.benefit[curLang]) ? h.benefit[curLang] : (h.benefit && h.benefit.pt) ? h.benefit.pt : h.benefit || '';
+              const benefitText = getHabitBenefitText(h, lang);
 
               return (
                 <Card
@@ -598,7 +460,7 @@ export default function ForgeView() {
                       <span className="text-xl flex-none">{h.icon}</span>
                       <div className="min-w-0">
                         <span className={`text-xs sm:text-[13.5px] font-bold block truncate ${isDone ? 'text-gold' : isFail ? 'text-danger' : 'text-ink'}`}>
-                          {habitName}
+                          {h.n}
                         </span>
                         <span className="text-[9.5px] uppercase font-mono text-muted">
                           #{String(h.id).slice(-4)} · {LBL.activeInProtocol[curLang]}
@@ -708,14 +570,14 @@ export default function ForgeView() {
         )}
       </div>
 
-      {/* 4. RESERVA DA FORJA COM FILTROS DE CATEGORIA (3 Colunas no PC) */}
+      {/* 4. RESERVA DA FORJA COM FILTROS DE CATEGORIA */}
       <div className="mt-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
           <div className="flex items-center gap-2">
             <K className="mb-0">📦 RESERVA DA FORJA ({filteredReserve.length} DISPONÍVEIS)</K>
           </div>
 
-          {/* Barra de Filtros por Categoria / Pilar */}
+          {/* Filtros por Categorias Masculinas */}
           <div className="flex flex-wrap gap-1">
             {[
               { id: 'all', label: PIL.all[curLang] },
@@ -724,7 +586,9 @@ export default function ForgeView() {
               { id: 'mission', label: PIL.mission[curLang] },
               { id: 'spirit', label: PIL.spirit[curLang] },
             ].map((p) => {
-              const count = p.id === 'all' ? reserveHabits.length : reserveHabits.filter((h) => h.cat === p.id).length;
+              const count = p.id === 'all'
+                ? reserveHabits.length
+                : reserveHabits.filter((h) => getHabitCategory(h) === p.id).length;
               const isSelected = selectedPillar === p.id;
               return (
                 <button
@@ -747,12 +611,11 @@ export default function ForgeView() {
           </div>
         </div>
 
-        {/* Grade de 3 Colunas de Hábitos */}
+        {/* Grade de 3 Colunas na Reserva */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {filteredReserve.map((h) => {
             const isBenefitOpen = openBenefitId === h.id;
-            const habitName = (h.n && h.n[curLang]) ? h.n[curLang] : (h.n && h.n.pt) ? h.n.pt : h.n;
-            const benefitText = (h.benefit && h.benefit[curLang]) ? h.benefit[curLang] : (h.benefit && h.benefit.pt) ? h.benefit.pt : h.benefit || '';
+            const benefitText = getHabitBenefitText(h, lang);
 
             return (
               <div
@@ -763,7 +626,7 @@ export default function ForgeView() {
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-lg flex-none">{h.icon}</span>
                     <span className="text-xs font-bold text-ink truncate">
-                      {habitName}
+                      {h.n}
                     </span>
                   </div>
 
