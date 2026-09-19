@@ -3,7 +3,7 @@ import React, { useRef, useState } from 'react';
 import { 
   Cloud, RefreshCw, LogOut, Download, Upload, Skull, Plus, X, 
   ShieldCheck, Languages, Bell, BellOff, UserX, Handshake, Copy, 
-  Trophy, Palette, Check, Sliders, Volume2, Shield, Database, ChevronRight, Lock
+  Trophy, Palette, Check, Volume2, Shield, Database, ChevronRight, Lock
 } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Toggle, Chk, Empty } from '@/components/ui';
@@ -36,7 +36,7 @@ export default function SettingsView() {
   const T = (id, fb) => cx(lang, 'settings', id) || cx(lang, 'life', id) || fb;
   
   // Categorias para organização minimalista
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeCategory, setActiveCategory] = useState('general');
   
   const [pinCur, setPinCur] = useState('');
   const [pinNew, setPinNew] = useState('');
@@ -158,9 +158,9 @@ export default function SettingsView() {
 
   const subLabels = SUB_LBL_FALLBACK[lang] || SUB_LBL_FALLBACK.pt;
 
-  const showGeneral = activeCategory === 'all' || activeCategory === 'general';
-  const showSecurity = activeCategory === 'all' || activeCategory === 'security';
-  const showData = activeCategory === 'all' || activeCategory === 'data';
+  const showGeneral = activeCategory === 'general';
+  const showSecurity = activeCategory === 'security';
+  const showData = activeCategory === 'data';
 
   return (
     <div className="flex flex-col gap-3 pb-16">
@@ -168,7 +168,6 @@ export default function SettingsView() {
       <div className="flex items-center justify-between gap-2 overflow-x-auto rounded-lg border border-line bg-surface p-1.5 shadow-sm">
         <div className="flex items-center gap-1">
           {[
-            { id: 'all', key: 'cat_all', label: 'Todas as Opções', icon: Sliders },
             { id: 'general', key: 'cat_general', label: 'Geral & Visual', icon: Palette },
             { id: 'security', key: 'cat_security', label: 'Segurança & Acesso', icon: Shield },
             { id: 'data', key: 'cat_data', label: 'Conta & Dados', icon: Database },
