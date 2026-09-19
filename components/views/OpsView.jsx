@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Plus, Check, Trash2, Clock, Calendar, Flag, Folder, Layers, CheckCircle2, Circle, AlertCircle, Edit3, ChevronRight, Target, Flame, Archive, AlertTriangle, Link2, Unlink } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Empty } from '@/components/ui';
-import { today, fdmy, dstr, fmtD } from '@/lib/utils';
+import { today, fdmy, dstr, fmtD, daysBetween, parseD } from '@/lib/utils';
 import { AF } from '@/lib/audio';
 import * as L from '@/lib/logic';
 
@@ -73,135 +73,245 @@ export default function OpsView() {
     openModal(<ConfirmModal />);
   };
 
+  /* Helper para label de repetição */
+  const formatRepLabel = (t) => {
+    if (!t.rep || t.rep === 'unica') return null;
+    if (t.rep === 'diaria') return '🔁 Diária';
+    if (t.rep === 'dias_uteis' || t.rep === 'semana') return '🔁 Seg–Sex';
+    if (t.rep === 'fds') return '🔁 Sáb–Dom';
+    if (t.rep === 'semanal') {
+      const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const dName = dayNames[t.repDay == null ? 1 : Number(t.repDay)] || 'Seg';
+      return `🔁 Semanal (${dName})`;
+    }
+    if (t.rep === 'custom') {
+      const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const days = (t.repDays || []).slice().sort((a, b) => a - b).map((i) => dayNames[i]).join(', ');
+      return `🗓️ ${days || 'Personalizada'}`;
+    }
+    return `🔁 ${t.rep}`;
+  };
+
   /* MODAL: Criar / Editar Tarefa (Sem X duplo) */
   const openTaskModal = (taskToEdit = null, defaultProjectId = '') => {
-    let txt = taskToEdit ? taskToEdit.txt : '';
-    let pri = taskToEdit ? taskToEdit.pri : 'media';
-    let rep = taskToEdit ? (taskToEdit.rep || 'unica') : 'unica';
-    let time = taskToEdit ? (taskToEdit.time || '') : '';
-    let projectId = taskToEdit ? (taskToEdit.projectId || '') : defaultProjectId;
+    const TaskModalContent = () => {
+      const [txt, setTxt] = useState(taskToEdit ? taskToEdit.txt : '');
+      const [pri, setPri] = useState(taskToEdit ? taskToEdit.pri : 'media');
+      const [rep, setRep] = useState(taskToEdit ? (taskToEdit.rep || 'unica') : 'unica');
+      const [repDay, setRepDay] = useState(taskToEdit && taskToEdit.repDay != null ? Number(taskToEdit.repDay) : 1);
+      const [repDays, setRepDays] = useState(taskToEdit && Array.isArray(taskToEdit.repDays) ? taskToEdit.repDays : [1]);
+      const [time, setTime] = useState(taskToEdit ? (taskToEdit.time || '') : '');
+      const [projectId, setProjectId] = useState(taskToEdit ? (taskToEdit.projectId || '') : defaultProjectId);
 
-    const TaskModalContent = () => (
-      <div className="text-left">
-        <div className="pb-2 mb-3 border-b border-line">
-          <h3 className="font-display text-xl tracking-wide text-gold">
-            {taskToEdit ? 'EDITAR OPERAÇÃO' : 'CRIAR NOVA OPERAÇÃO'}
-          </h3>
-        </div>
+      const dayList = [
+        { id: 0, l: 'Dom', f: 'Domingo' },
+        { id: 1, l: 'Seg', f: 'Segunda-feira' },
+        { id: 2, l: 'Ter', f: 'Terça-feira' },
+        { id: 3, l: 'Qua', f: 'Quarta-feira' },
+        { id: 4, l: 'Qui', f: 'Quinta-feira' },
+        { id: 5, l: 'Sex', f: 'Sexta-feira' },
+        { id: 6, l: 'Sáb', f: 'Sábado' },
+      ];
 
-        <div className="flex flex-col gap-3">
-          <div>
-            <span className="lbl mb-1 block">Missão / Descrição:</span>
-            <input
-              type="text"
-              placeholder="Ex: Treino de pernas, Fazer Barba, Ler 10 págs..."
-              className="field w-full text-xs sm:text-sm"
-              defaultValue={txt}
-              onChange={(e) => (txt = e.target.value)}
-            />
+      return (
+        <div className="text-left">
+          <div className="pb-2 mb-3 border-b border-line">
+            <h3 className="font-display text-xl tracking-wide text-gold">
+              {taskToEdit ? 'EDITAR OPERAÇÃO' : 'CRIAR NOVA OPERAÇÃO'}
+            </h3>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-3">
             <div>
-              <span className="lbl mb-1 block">Prioridade:</span>
-              <select
-                className="field w-full text-xs font-semibold"
-                defaultValue={pri}
-                onChange={(e) => (pri = e.target.value)}
-              >
-                <option value="alta" className="text-danger font-bold">🔴 Alta (Guerra)</option>
-                <option value="media" className="text-gold font-bold">🟡 Média</option>
-                <option value="baixa" className="text-muted font-bold">⚪ Baixa</option>
-              </select>
-            </div>
-
-            <div>
-              <span className="lbl mb-1 block">Frequência:</span>
-              <select
-                className="field w-full text-xs font-semibold"
-                defaultValue={rep}
-                onChange={(e) => (rep = e.target.value)}
-              >
-                <option value="unica">Única</option>
-                <option value="diaria">Diária</option>
-                <option value="dias_uteis">Dias Úteis (Seg a Sex)</option>
-                <option value="fds">Fins de Semana (Sáb/Dom)</option>
-                <option value="semanal">Semanal (1x por semana)</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <span className="lbl mb-1 block">Horário (Opcional):</span>
+              <span className="lbl mb-1 block">Missão / Descrição:</span>
               <input
-                type="time"
-                className="field w-full text-xs font-mono"
-                defaultValue={time}
-                onChange={(e) => (time = e.target.value)}
+                type="text"
+                placeholder="Ex: Treino de pernas, Fazer Barba, Ler 10 págs..."
+                className="field w-full text-xs sm:text-sm"
+                value={txt}
+                onChange={(e) => setTxt(e.target.value)}
               />
             </div>
 
-            <div>
-              <span className="lbl mb-1 block">Vincular a Projeto:</span>
-              <select
-                className="field w-full text-xs font-semibold"
-                defaultValue={projectId}
-                onChange={(e) => (projectId = e.target.value)}
-              >
-                <option value="">(Nenhum / Avulso)</option>
-                {projects.filter((p) => !p.archived).map((p) => (
-                  <option key={p.id} value={p.id}>{p.title}</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="lbl mb-1 block">Prioridade:</span>
+                <select
+                  className="field w-full text-xs font-semibold"
+                  value={pri}
+                  onChange={(e) => setPri(e.target.value)}
+                >
+                  <option value="alta" className="text-danger font-bold">🔴 Alta (Guerra)</option>
+                  <option value="media" className="text-gold font-bold">🟡 Média</option>
+                  <option value="baixa" className="text-muted font-bold">⚪ Baixa</option>
+                </select>
+              </div>
+
+              <div>
+                <span className="lbl mb-1 block">Frequência:</span>
+                <select
+                  className="field w-full text-xs font-semibold"
+                  value={rep}
+                  onChange={(e) => setRep(e.target.value)}
+                >
+                  <option value="unica">Única</option>
+                  <option value="diaria">Diária</option>
+                  <option value="dias_uteis">Dias Úteis (Seg a Sex)</option>
+                  <option value="fds">Fins de Semana (Sáb/Dom)</option>
+                  <option value="semanal">Semanal (1x por semana)</option>
+                  <option value="custom">Personalizada (Escolher dias)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* SELEÇÃO DO DIA DA SEMANA QUANDO FOR SEMANAL */}
+            {rep === 'semanal' && (
+              <div className="p-2.5 rounded bg-surface2 border border-gold/40 animate-fadeIn">
+                <span className="lbl mb-1.5 block text-gold font-bold">Escolha o dia da semana que repete:</span>
+                <div className="grid grid-cols-7 gap-1">
+                  {dayList.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => setRepDay(d.id)}
+                      className={`py-1.5 rounded text-xs font-bold transition-all text-center ${
+                        repDay === d.id
+                          ? 'bg-gold text-[#141414] font-extrabold shadow-sm'
+                          : 'bg-surface border border-line text-muted hover:text-ink hover:border-gold/50'
+                      }`}
+                      title={d.f}
+                    >
+                      {d.l}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-muted mt-1.5 font-mono">
+                  Repete todo(a) <b className="text-gold uppercase">{dayList[repDay]?.f}</b>.
+                </p>
+              </div>
+            )}
+
+            {/* SELEÇÃO DE MÚLTIPLOS DIAS QUANDO FOR PERSONALIZADA */}
+            {rep === 'custom' && (
+              <div className="p-2.5 rounded bg-surface2 border border-gold/40 animate-fadeIn">
+                <span className="lbl mb-1.5 block text-gold font-bold">Escolha os dias em que repete:</span>
+                <div className="grid grid-cols-7 gap-1">
+                  {dayList.map((d) => {
+                    const isSel = repDays.includes(d.id);
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() =>
+                          setRepDays((prev) =>
+                            prev.includes(d.id)
+                              ? prev.filter((x) => x !== d.id)
+                              : [...prev, d.id]
+                          )
+                        }
+                        className={`py-1.5 rounded text-xs font-bold transition-all text-center ${
+                          isSel
+                            ? 'bg-gold text-[#141414] font-extrabold shadow-sm'
+                            : 'bg-surface border border-line text-muted hover:text-ink hover:border-gold/50'
+                        }`}
+                        title={d.f}
+                      >
+                        {d.l}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-muted mt-1.5 font-mono">
+                  Dias:{' '}
+                  <b className="text-gold">
+                    {repDays.length > 0
+                      ? repDays
+                          .slice()
+                          .sort((a, b) => a - b)
+                          .map((i) => dayList[i]?.l)
+                          .join(', ')
+                      : 'Nenhum dia selecionado'}
+                  </b>
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="lbl mb-1 block">Horário (Opcional):</span>
+                <input
+                  type="time"
+                  className="field w-full text-xs font-mono"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <span className="lbl mb-1 block">Vincular a Projeto:</span>
+                <select
+                  className="field w-full text-xs font-semibold"
+                  value={projectId}
+                  onChange={(e) => setProjectId(e.target.value)}
+                >
+                  <option value="">(Nenhum / Avulso)</option>
+                  {projects.filter((p) => !p.archived).map((p) => (
+                    <option key={p.id} value={p.id}>{p.title}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="mt-4 flex gap-2">
-          <button
-            type="button"
-            className="btn-gold flex-1 py-2 text-xs font-bold"
-            onClick={() => {
-              if (!txt.trim()) return toast('Digite a descrição da operação');
-              update((s) => {
-                s.tasks = s.tasks || [];
-                if (taskToEdit) {
-                  const tTarget = s.tasks.find((x) => String(x.id) === String(taskToEdit.id));
-                  if (tTarget) {
-                    tTarget.txt = txt.trim();
-                    tTarget.pri = pri;
-                    tTarget.rep = rep;
-                    tTarget.time = time || '';
-                    tTarget.projectId = projectId || null;
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              className="btn-gold flex-1 py-2 text-xs font-bold"
+              onClick={() => {
+                if (!txt.trim()) return toast('Digite a descrição da operação');
+                update((s) => {
+                  s.tasks = s.tasks || [];
+                  if (taskToEdit) {
+                    const tTarget = s.tasks.find((x) => String(x.id) === String(taskToEdit.id));
+                    if (tTarget) {
+                      tTarget.txt = txt.trim();
+                      tTarget.pri = pri;
+                      tTarget.rep = rep;
+                      tTarget.repDay = repDay;
+                      tTarget.repDays = repDays;
+                      tTarget.time = time || '';
+                      tTarget.projectId = projectId || null;
+                    }
+                  } else {
+                    s.tasks.push({
+                      id: 'task_' + Date.now(),
+                      txt: txt.trim(),
+                      pri,
+                      rep,
+                      repDay,
+                      repDays,
+                      time: time || '',
+                      projectId: projectId || null,
+                      done: false,
+                      doneDates: [],
+                      createdAt: today(),
+                    });
                   }
-                } else {
-                  s.tasks.push({
-                    id: 'task_' + Date.now(),
-                    txt: txt.trim(),
-                    pri,
-                    rep,
-                    time: time || '',
-                    projectId: projectId || null,
-                    done: false,
-                    doneDates: [],
-                    createdAt: today(),
-                  });
-                }
-              });
-              closeModal();
-              AF.click();
-              toast(taskToEdit ? 'Operação atualizada!' : '✅ Operação criada!');
-            }}
-          >
-            {taskToEdit ? 'Salvar Alterações' : 'Criar Operação'}
-          </button>
-          <button type="button" className="btn-dark py-2 px-4 text-xs font-bold" onClick={closeModal}>
-            Cancelar
-          </button>
+                });
+                closeModal();
+                AF.click();
+                toast(taskToEdit ? 'Operação atualizada!' : '✅ Operação criada!');
+              }}
+            >
+              {taskToEdit ? 'Salvar Alterações' : 'Criar Operação'}
+            </button>
+            <button type="button" className="btn-dark py-2 px-4 text-xs font-bold" onClick={closeModal}>
+              Cancelar
+            </button>
+          </div>
         </div>
-      </div>
-    );
+      );
+    };
     openModal(<TaskModalContent />);
   };
 
@@ -264,126 +374,229 @@ export default function OpsView() {
     openModal(<LinkModalContent />);
   };
 
-  /* MODAL: Criar / Editar Projeto (Sem X duplo) */
+  /* MODAL: Criar / Editar Projeto (Com Início, Duração em Dias e Término) */
   const openProjectModal = (projToEdit = null) => {
-    let pTitle = projToEdit ? projToEdit.title : '';
-    let pDesc = projToEdit ? projToEdit.desc : '';
-    let pDeadline = projToEdit ? (projToEdit.deadline || '') : '';
+    const ProjModalContent = () => {
+      const [pTitle, setPTitle] = useState(projToEdit ? projToEdit.title : '');
+      const [pDesc, setPDesc] = useState(projToEdit ? projToEdit.desc || '' : '');
+      const [pStart, setPStart] = useState(projToEdit ? (projToEdit.start || today()) : today());
 
-    const ProjModalContent = () => (
-      <div className="text-left">
-        <div className="pb-2 mb-3 border-b border-line">
-          <h3 className="font-display text-xl tracking-wide text-gold">
-            {projToEdit ? 'EDITAR PROJETO' : 'NOVO PROJETO ESTRATÉGICO'}
-          </h3>
-        </div>
+      const initialDays = projToEdit && projToEdit.start && projToEdit.deadline
+        ? Math.max(1, daysBetween(projToEdit.start, projToEdit.deadline) + 1)
+        : (projToEdit?.days || 30);
+      const [pDays, setPDays] = useState(initialDays);
 
-        <div className="flex flex-col gap-3">
-          <div>
-            <span className="lbl mb-1 block">Título da Missão / Projeto:</span>
-            <input
-              type="text"
-              placeholder="Ex: Lançamento do Negócio, Cuidar do Jardim..."
-              className="field w-full text-xs sm:text-sm"
-              defaultValue={pTitle}
-              onChange={(e) => (pTitle = e.target.value)}
-            />
+      const initialDead = projToEdit && projToEdit.deadline
+        ? projToEdit.deadline
+        : dstr(new Date(parseD(today()).getTime() + (Number(initialDays) - 1) * 86400000));
+      const [pDeadline, setPDeadline] = useState(initialDead);
+      const [tStart, setTStart] = useState(projToEdit ? (projToEdit.tStart || '') : '');
+      const [tEnd, setTEnd] = useState(projToEdit ? (projToEdit.tEnd || '') : '');
+
+      const syncDead = (st, dy) => {
+        if (st && Number(dy) >= 1) {
+          const newDead = dstr(new Date(parseD(st).getTime() + (Number(dy) - 1) * 86400000));
+          setPDeadline(newDead);
+        }
+      };
+
+      const syncDays = (st, dl) => {
+        if (st && dl) {
+          const diff = daysBetween(st, dl) + 1;
+          setPDays(Math.max(1, diff));
+        }
+      };
+
+      return (
+        <div className="text-left">
+          <div className="pb-2 mb-3 border-b border-line">
+            <h3 className="font-display text-xl tracking-wide text-gold">
+              {projToEdit ? 'EDITAR PROJETO' : 'NOVO PROJETO ESTRATÉGICO'}
+            </h3>
           </div>
 
-          <div>
-            <span className="lbl mb-1 block">Objetivo / Descrição:</span>
-            <textarea
-              rows={3}
-              placeholder="Qual o resultado esperado e por que este projeto é crucial?"
-              className="field w-full text-xs resize-none"
-              defaultValue={pDesc}
-              onChange={(e) => (pDesc = e.target.value)}
-            />
-          </div>
+          <div className="flex flex-col gap-3">
+            <div>
+              <span className="lbl mb-1 block">Título da Missão / Projeto:</span>
+              <input
+                type="text"
+                placeholder="Ex: Lançamento do Negócio, Cuidar do Jardim..."
+                className="field w-full text-xs sm:text-sm"
+                value={pTitle}
+                onChange={(e) => setPTitle(e.target.value)}
+              />
+            </div>
 
-          <div>
-            <span className="lbl mb-1 block">Prazo Limite (Opcional):</span>
-            <input
-              type="date"
-              className="field w-full text-xs font-mono"
-              defaultValue={pDeadline}
-              onChange={(e) => (pDeadline = e.target.value)}
-            />
-          </div>
+            <div>
+              <span className="lbl mb-1 block">Objetivo / Descrição:</span>
+              <textarea
+                rows={2}
+                placeholder="Qual o resultado esperado e por que este projeto é crucial?"
+                className="field w-full text-xs resize-none"
+                value={pDesc}
+                onChange={(e) => setPDesc(e.target.value)}
+              />
+            </div>
 
-          {/* Se estiver editando, oferece botões rápidos de tarefas */}
-          {projToEdit && (
-            <div className="pt-2 border-t border-line/60">
-              <span className="lbl mb-1.5 block">Ações Rápidas de Tarefas:</span>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeModal();
-                    setTimeout(() => openTaskModal(null, projToEdit.id), 150);
-                  }}
-                  className="btn-dark py-1.5 px-2.5 text-xs font-bold flex-1 flex items-center justify-center gap-1 border-gold/40 text-gold"
-                >
-                  <Plus size={12} />
-                  <span>+ Nova Tarefa Neste Projeto</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeModal();
-                    setTimeout(() => openLinkTaskModal(projToEdit), 150);
-                  }}
-                  className="btn-dark py-1.5 px-2.5 text-xs font-bold flex-1 flex items-center justify-center gap-1"
-                >
-                  <Link2 size={12} />
-                  <span>Vincular Tarefa Existente</span>
-                </button>
+            {/* CRONOGRAMA COMPLETO: INÍCIO, DURAÇÃO EM DIAS E TÉRMINO */}
+            <div className="rounded border border-gold/40 bg-surface2/90 p-2.5">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-gold font-bold block mb-2">
+                📅 Cronograma: Início, Duração e Término
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <span className="lbl mb-1 block">Data de Início:</span>
+                  <input
+                    type="date"
+                    className="field w-full text-xs font-mono"
+                    value={pStart}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setPStart(val);
+                      if (pDays) syncDead(val, pDays);
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <span className="lbl mb-1 block">Duração (Dias):</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="3650"
+                    placeholder="Ex: 30"
+                    className="field w-full text-xs font-mono font-bold text-gold"
+                    value={pDays}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setPDays(val);
+                      if (pStart && val) syncDead(pStart, val);
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <span className="lbl mb-1 block">Término / Encerramento:</span>
+                  <input
+                    type="date"
+                    className="field w-full text-xs font-mono"
+                    value={pDeadline}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setPDeadline(val);
+                      if (pStart && val) syncDays(pStart, val);
+                    }}
+                  />
+                </div>
               </div>
             </div>
-          )}
-        </div>
 
-        <div className="mt-4 flex gap-2">
-          <button
-            type="button"
-            className="btn-gold flex-1 py-2 text-xs font-bold"
-            onClick={() => {
-              if (!pTitle.trim()) return toast('Digite o nome do projeto');
-              update((s) => {
-                s.projects = s.projects || [];
-                if (projToEdit) {
-                  const pTarget = s.projects.find((p) => String(p.id) === String(projToEdit.id));
-                  if (pTarget) {
-                    pTarget.title = pTitle.trim();
-                    pTarget.desc = pDesc.trim();
-                    pTarget.deadline = pDeadline || '';
+            {/* JANELA DIÁRIA DE FOCO (OPCIONAL) */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="lbl mb-1 block">Janela Diária — Início:</span>
+                <input
+                  type="time"
+                  className="field w-full text-xs font-mono"
+                  value={tStart}
+                  onChange={(e) => setTStart(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <span className="lbl mb-1 block">Janela Diária — Fim:</span>
+                <input
+                  type="time"
+                  className="field w-full text-xs font-mono"
+                  value={tEnd}
+                  onChange={(e) => setTEnd(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Se estiver editando, oferece botões rápidos de tarefas */}
+            {projToEdit && (
+              <div className="pt-2 border-t border-line/60">
+                <span className="lbl mb-1.5 block">Ações Rápidas de Tarefas:</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeModal();
+                      setTimeout(() => openTaskModal(null, projToEdit.id), 150);
+                    }}
+                    className="btn-dark py-1.5 px-2.5 text-xs font-bold flex-1 flex items-center justify-center gap-1 border-gold/40 text-gold"
+                  >
+                    <Plus size={12} />
+                    <span>+ Nova Tarefa Neste Projeto</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeModal();
+                      setTimeout(() => openLinkTaskModal(projToEdit), 150);
+                    }}
+                    className="btn-dark py-1.5 px-2.5 text-xs font-bold flex-1 flex items-center justify-center gap-1"
+                  >
+                    <Link2 size={12} />
+                    <span>Vincular Tarefa Existente</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              className="btn-gold flex-1 py-2 text-xs font-bold"
+              onClick={() => {
+                if (!pTitle.trim()) return toast('Digite o nome do projeto');
+                update((s) => {
+                  s.projects = s.projects || [];
+                  if (projToEdit) {
+                    const pTarget = s.projects.find((p) => String(p.id) === String(projToEdit.id));
+                    if (pTarget) {
+                      pTarget.title = pTitle.trim();
+                      pTarget.desc = pDesc.trim();
+                      pTarget.start = pStart || today();
+                      pTarget.days = Number(pDays) || 30;
+                      pTarget.deadline = pDeadline || '';
+                      pTarget.tStart = tStart || '';
+                      pTarget.tEnd = tEnd || '';
+                    }
+                  } else {
+                    s.projects.push({
+                      id: 'proj_' + Date.now(),
+                      title: pTitle.trim(),
+                      desc: pDesc.trim(),
+                      start: pStart || today(),
+                      days: Number(pDays) || 30,
+                      deadline: pDeadline || '',
+                      tStart: tStart || '',
+                      tEnd: tEnd || '',
+                      status: 'ativo',
+                      archived: false,
+                      steps: [],
+                      createdAt: today(),
+                    });
                   }
-                } else {
-                  s.projects.push({
-                    id: 'proj_' + Date.now(),
-                    title: pTitle.trim(),
-                    desc: pDesc.trim(),
-                    deadline: pDeadline || '',
-                    status: 'ativo',
-                    archived: false,
-                    steps: [],
-                    createdAt: today(),
-                  });
-                }
-              });
-              closeModal();
-              AF.click();
-              toast(projToEdit ? 'Projeto atualizado!' : '✅ Projeto criado com sucesso!');
-            }}
-          >
-            {projToEdit ? 'Salvar Alterações' : 'Criar Projeto'}
-          </button>
-          <button type="button" className="btn-dark py-2 px-4 text-xs font-bold" onClick={closeModal}>
-            Cancelar
-          </button>
+                });
+                closeModal();
+                AF.click();
+                toast(projToEdit ? 'Projeto atualizado!' : '✅ Projeto criado com sucesso!');
+              }}
+            >
+              {projToEdit ? 'Salvar Alterações' : 'Criar Projeto'}
+            </button>
+            <button type="button" className="btn-dark py-2 px-4 text-xs font-bold" onClick={closeModal}>
+              Cancelar
+            </button>
+          </div>
         </div>
-      </div>
-    );
+      );
+    };
     openModal(<ProjModalContent />);
   };
 
@@ -791,9 +1004,9 @@ export default function OpsView() {
                               {tItem.time}
                             </span>
                           )}
-                          {tItem.rep && tItem.rep !== 'unica' && (
-                            <span className="text-muted">
-                              🔁 {tItem.rep}
+                          {formatRepLabel(tItem) && (
+                            <span className="text-muted font-bold">
+                              {formatRepLabel(tItem)}
                             </span>
                           )}
                           {parentProj && (
@@ -1058,8 +1271,18 @@ export default function OpsView() {
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-line/40 flex items-center justify-between text-[10px] font-mono text-muted">
-                      {proj.deadline ? (
+                    <div className="pt-2 border-t border-line/40 flex flex-wrap items-center justify-between gap-1 text-[10px] font-mono text-muted">
+                      {proj.start && proj.deadline ? (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="flex items-center gap-1 text-gold2 font-semibold">
+                            <Calendar size={11} />
+                            {fmtD(proj.start)} ➔ {fmtD(proj.deadline)}
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded bg-gold/10 text-gold border border-gold/30 font-bold">
+                            {L.projTotal(proj)} dias {L.projCurDay(proj) > 0 ? `(Dia ${L.projCurDay(proj)})` : ''}
+                          </span>
+                        </div>
+                      ) : proj.deadline ? (
                         <span className="flex items-center gap-1 text-gold2">
                           <Calendar size={11} />
                           Prazo: {fmtD(proj.deadline)}
@@ -1067,7 +1290,15 @@ export default function OpsView() {
                       ) : (
                         <span>Sem prazo definido</span>
                       )}
-                      <span>{projTasks.length} tarefas vinculadas</span>
+                      <div className="flex items-center gap-2">
+                        {proj.tStart && proj.tEnd && (
+                          <span className="flex items-center gap-0.5 text-muted">
+                            <Clock size={10} />
+                            {proj.tStart}–{proj.tEnd}
+                          </span>
+                        )}
+                        <span>{projTasks.length} tarefas</span>
+                      </div>
                     </div>
                   </Card>
                 );
