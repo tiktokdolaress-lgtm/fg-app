@@ -224,41 +224,43 @@ export default function StatsView() {
         ))}
       </div>
 
-      {/* 2. Heatmap & Consistência da Forja */}
-      <div className="grid gap-3.5 lg:grid-cols-2">
-        <Card>
-          <div className="mb-3 flex items-center justify-between">
-            <K style={{ margin: 0 }}>
-              {T('map_k', 'MAPA — ')}
-              {ref
-                .toLocaleDateString(localeCode[lang] || 'pt-BR', { month: 'long', year: 'numeric' })
-                .toUpperCase()}
-            </K>
-            <div className="flex gap-1.5">
-              <button className="chip-dim px-2 py-1" onClick={() => setHmOff(hmOff - 1)}>
-                <ChevronLeft size={14} />
-              </button>
-              <button
-                className="chip-dim px-2 py-1"
-                disabled={hmOff >= 0}
-                style={hmOff >= 0 ? { opacity: 0.35 } : {}}
-                onClick={() => setHmOff(Math.min(0, hmOff + 1))}
-              >
-                <ChevronRight size={14} />
-              </button>
+      {/* 2. Heatmap & Consistência da Forja (Linha Equilibrada sem Vácuo) */}
+      <div className="grid gap-3.5 lg:grid-cols-2 items-stretch">
+        <Card className="flex flex-col justify-between">
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <K style={{ margin: 0 }}>
+                {T('map_k', 'MAPA — ')}
+                {ref
+                  .toLocaleDateString(localeCode[lang] || 'pt-BR', { month: 'long', year: 'numeric' })
+                  .toUpperCase()}
+              </K>
+              <div className="flex gap-1.5">
+                <button className="chip-dim px-2 py-1" onClick={() => setHmOff(hmOff - 1)}>
+                  <ChevronLeft size={14} />
+                </button>
+                <button
+                  className="chip-dim px-2 py-1"
+                  disabled={hmOff >= 0}
+                  style={hmOff >= 0 ? { opacity: 0.35 } : {}}
+                  onClick={() => setHmOff(Math.min(0, hmOff + 1))}
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+            <div className="hm">
+              {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                <b key={'w' + i} className="grid place-items-center border-none bg-transparent text-[9px] text-muted">
+                  {T('wd' + i, (weekdayLetters[lang] || weekdayLetters.pt)[i])}
+                </b>
+              ))}
+              {grid.map((c, i) =>
+                c.hidden ? <b key={i} className="invisible" /> : <b key={i} className={c.cls} title={c.ds} />
+              )}
             </div>
           </div>
-          <div className="hm">
-            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-              <b key={'w' + i} className="grid place-items-center border-none bg-transparent text-[9px] text-muted">
-                {T('wd' + i, (weekdayLetters[lang] || weekdayLetters.pt)[i])}
-              </b>
-            ))}
-            {grid.map((c, i) =>
-              c.hidden ? <b key={i} className="invisible" /> : <b key={i} className={c.cls} title={c.ds} />
-            )}
-          </div>
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10.5px] text-muted">
+          <div className="mt-3 pt-3 border-t border-line/60 flex flex-wrap gap-x-4 gap-y-1 text-[10.5px] text-muted">
             <span>
               <b className="lv1 mr-1 inline-block h-3 w-3 rounded bg-gold/25" />
               {T('lg1', '1 pilar')}
@@ -282,30 +284,69 @@ export default function StatsView() {
           </div>
         </Card>
 
-        <Card>
-          <K>{T('cons_k', '🔨 CONSISTÊNCIA DA FORJA — MÊS ATUAL')}</K>
-          {consist.length ? (
-            consist.map((c) => (
-              <div key={c.h.id} className="mb-2.5">
-                <div className="mb-1 flex justify-between text-[12px] font-bold">
-                  <span>
-                    {c.h.icon} {c.h.n}
-                  </span>
-                  <span className="font-mono text-muted">
-                    {c.cnt}/{elapsed} · {c.pct}%
-                  </span>
-                </div>
-                <div className="bar">
-                  <i style={{ width: c.pct + '%' }} />
-                </div>
+        {/* Card de Consistência com Resumo Mensal Integrado para Preenchimento Perfeito */}
+        <Card className="flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <K style={{ margin: 0 }}>{T('cons_k', '🔨 CONSISTÊNCIA DA FORJA — MÊS ATUAL')}</K>
+              <span className="text-[10px] font-mono font-bold text-gold px-2 py-0.5 rounded bg-gold/10 border border-gold/25">
+                {elapsed} {elapsed === 1 ? 'dia corrido' : 'dias corridos'}
+              </span>
+            </div>
+
+            {consist.length ? (
+              <div className="space-y-2.5">
+                {consist.map((c) => (
+                  <div key={c.h.id} className="p-2 rounded bg-surface2 border border-line/50">
+                    <div className="mb-1 flex justify-between text-[12px] font-bold">
+                      <span className="flex items-center gap-1.5 truncate">
+                        <span>{c.h.icon}</span>
+                        <span className="truncate">{c.h.n}</span>
+                      </span>
+                      <span className="font-mono text-gold2 text-xs flex-none ml-2">
+                        {c.cnt}/{elapsed} <span className="text-muted font-normal">({c.pct}%)</span>
+                      </span>
+                    </div>
+                    <div className="bar">
+                      <i style={{ width: c.pct + '%' }} />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))
-          ) : (
-            <Empty>{T('cons_empty', 'Ative hábitos na Forja para medir consistência.')}</Empty>
-          )}
+            ) : (
+              <Empty>{T('cons_empty', 'Ative hábitos na Forja para medir consistência.')}</Empty>
+            )}
+          </div>
+
+          {/* Resumo Tático Mensal: Preenche perfeitamente a parte inferior, eliminando qualquer espaço vago */}
+          <div className="mt-3 pt-3 border-t border-line/60">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted block mb-2">
+              RESUMO DE DISCIPLINA NO MÊS
+            </span>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="p-2 rounded bg-surface2 border border-line">
+                <b className="block font-display text-lg text-gold leading-none">
+                  {consist.reduce((acc, cur) => acc + cur.cnt, 0)}
+                </b>
+                <small className="text-[9px] uppercase tracking-wider text-muted block mt-1">Concluídos</small>
+              </div>
+              <div className="p-2 rounded bg-surface2 border border-line">
+                <b className="block font-display text-lg text-gold leading-none">
+                  {consist.length ? Math.round(consist.reduce((acc, cur) => acc + cur.pct, 0) / consist.length) : 0}%
+                </b>
+                <small className="text-[9px] uppercase tracking-wider text-muted block mt-1">Adesão Média</small>
+              </div>
+              <div className="p-2 rounded bg-surface2 border border-line truncate">
+                <b className="block font-display text-lg text-gold leading-none truncate">
+                  {consist.length ? [...consist].sort((a, b) => b.pct - a.pct)[0]?.h.icon : '—'}
+                </b>
+                <small className="text-[9px] uppercase tracking-wider text-muted block mt-1 truncate">Líder</small>
+              </div>
+            </div>
+          </div>
         </Card>
 
-        {/* 3. Relatório Semanal de Guerra */}
+        {/* 3. Relatório Semanal de Guerra (Largura Total) */}
         <Card className="lg:col-span-2">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <K style={{ margin: 0 }}>{T('wk_k', '📜 RELATÓRIO SEMANAL DE GUERRA (ÚLTIMOS 7 DIAS)')}</K>
@@ -351,143 +392,173 @@ export default function StatsView() {
           </p>
         </Card>
 
-        {/* 4. Ranking de Gatilhos & Auditoria */}
-        {triggerRank.length > 0 && (
-          <Card className="border-danger/30">
-            <K className="text-danger flex items-center gap-1.5 text-xs font-bold font-mono uppercase">
-              <ShieldAlert size={14} />
-              O QUE MAIS TE FAZ CAIR (RANKING DE GATILHOS)
+        {/* 4. Linha Equilibrada: Mapa de Risco por Horário (Esq) + Salão da Fama (Dir) */}
+        <Card className="flex flex-col justify-between">
+          <div>
+            <K>
+              <Clock3 size={12} className="mr-1 inline text-gold" /> {T('risk_k', 'MAPA DE RISCO POR HORÁRIO')}
             </K>
-            <div className="flex flex-col gap-2 mt-2">
-              {triggerRank.map((item, idx) => (
-                <div key={item.id} className="flex flex-col gap-1 p-2 rounded bg-surface2 border border-line/40">
-                  <div className="flex justify-between items-center text-xs font-semibold">
-                    <span className="text-ink flex items-center gap-1.5">
-                      <span className="text-danger font-mono font-bold text-[11px]">#{idx + 1}</span>
-                      {item.name}
-                    </span>
-                    <span className="font-mono text-danger font-bold text-xs">
-                      {item.count}x ({item.pct}%)
-                    </span>
-                  </div>
-                  <div className="w-full bg-[#1b1b22] h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-danger h-full rounded-full transition-all duration-500"
-                      style={{ width: `${item.pct}%` }}
-                    />
-                  </div>
+            {us.total ? (
+              <>
+                <div className="grid grid-cols-12 gap-1 my-2">
+                  {us.buckets.map((b, h) => {
+                    const max = Math.max(1, ...us.buckets.map((y) => y.sum + y.n));
+                    const lvl = (b.sum + b.n) / max;
+                    return (
+                      <b
+                        key={h}
+                        title={h + 'h · ' + b.n + T('risk_reg', ' registro(s)')}
+                        className="aspect-square rounded border border-line"
+                        style={{ background: lvl > 0 ? `rgba(255,77,77,${0.15 + lvl * 0.85})` : '#202026' }}
+                      />
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {/* 5. Mapa de Risco por Horário */}
-        <Card className={triggerRank.length === 0 ? '' : ''}>
-          <K>
-            <Clock3 size={12} className="mr-1 inline" /> {T('risk_k', 'MAPA DE RISCO POR HORÁRIO')}
-          </K>
-          {us.total ? (
-            <>
-              <div className="grid grid-cols-12 gap-1">
-                {us.buckets.map((b, h) => {
-                  const max = Math.max(1, ...us.buckets.map((y) => y.sum + y.n));
-                  const lvl = (b.sum + b.n) / max;
-                  return (
-                    <b
-                      key={h}
-                      title={h + 'h · ' + b.n + T('risk_reg', ' registro(s)')}
-                      className="aspect-square rounded border border-line"
-                      style={{ background: lvl > 0 ? `rgba(255,77,77,${0.15 + lvl * 0.85})` : '#202026' }}
-                    />
-                  );
-                })}
+                <div className="p-2 rounded bg-danger/10 border border-danger/30 text-xs font-bold text-danger flex items-center justify-between">
+                  <span>{T('risk_win', '🎯 Janela Crítica de Alerta:')}</span>
+                  <span className="font-mono">{us.window[0]}h – {us.window[1]}h</span>
+                </div>
+              </>
+            ) : (
+              <div className="p-3 my-2 rounded bg-surface2 border border-line text-xs text-muted leading-relaxed">
+                Nenhum impulso crítico registrado ainda. Acione o botão S.O.S em momentos de urgência para mapear com precisão cirúrgica seus horários de maior vulnerabilidade.
               </div>
-              <p className="mt-3 text-[12.5px] font-bold text-danger">
-                {T('risk_win', '🎯 Sua janela de risco: ')}
-                {us.window[0]}h – {us.window[1]}h
-              </p>
-              <p className="fnote" style={{ textAlign: 'left' }}>
-                {us.total}
-                {T(
-                  'risk_note',
-                  ' impulso(s) registrado(s) no S.O.S. Reforce suas defesas (hábitos, ambiente, celular fora do quarto) nessa janela.'
-                )}
-              </p>
-            </>
-          ) : (
-            <Empty>
-              {T('risk_e1', 'Acione o S.O.S e registre a intensidade do impulso (1–10).')}
-              <br />
-              {T('risk_e2', 'Com alguns registros, seu mapa de risco por horário aparece aqui.')}
-            </Empty>
-          )}
-        </Card>
-
-        {/* 6. Salão da Fama Anônimo */}
-        <Card>
-          <K>
-            <Trophy size={12} className="mr-1 inline" /> {T('hall_k', 'SALÃO DA FAMA ANÔNIMO')}
-          </K>
-          {hall === null ? (
-            <Empty>{T('loading', 'Carregando...')}</Empty>
-          ) : hall.length ? (
-            <div className="max-h-[260px] space-y-1.5 overflow-y-auto pr-1">
-              {hall.map((h, i) => (
-                <div
-                  key={i}
-                  className={`flex items-center gap-2.5 rounded-r border p-2 text-[12.5px] font-bold ${
-                    h.name === S.hallName ? 'border-gold/60 bg-gold/10 text-gold' : 'border-line bg-surface2'
-                  }`}
-                >
-                  <span className="w-7 text-center font-display text-[15px] text-gold2">
-                    {i + 1}
-                    {T('ord', 'º')}
-                  </span>
-                  <span className="flex-1 truncate">
-                    {h.name} {h.name === S.hallName ? T('you', '(você)') : ''}
-                  </span>
-                  <span>{h.tier}</span>
-                  <span className="font-mono text-gold">{h.days}d</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <Empty>
-              {T('hall_e1', 'Nenhum guerreiro optou pelo Salão ainda.')}
-              <br />
-              {T('hall_e2', 'Ative nas Configurações para entrar no ranking anônimo.')}
-            </Empty>
-          )}
-          <p className="fnote" style={{ textAlign: 'left' }}>
-            {T('hall_note', 'Ranking opcional com pseudônimos — sem nomes, sem e-mails, sem fotos. Só dias e patamar.')}
+            )}
+          </div>
+          <p className="fnote mt-2 pt-2 border-t border-line/60" style={{ textAlign: 'left' }}>
+            {us.total ? `${us.total} ${T('risk_note', 'impulsos registrados. Mantenha telas longe do quarto nessa janela.')}` : 'Defesa preventiva ativa: mantenha o celular fora do quarto após as 22h.'}
           </p>
         </Card>
 
-        {/* 7. Histórico de Intervenções S.O.S */}
-        <Card className="lg:col-span-2">
-          <K>
-            <ShieldCheck size={12} className="mr-1 inline" /> {T('sos_k', 'HISTÓRICO DE INTERVENÇÕES S.O.S VENCIDAS')}
-          </K>
-          {sosHist.length ? (
-            sosHist.map((e, i) => (
-              <div
-                key={i}
-                className="mb-1.5 flex justify-between rounded-r border border-line bg-surface2 p-2.5 text-[12.5px] font-semibold"
-              >
-                <b>{T('sos_item', '🛡️ Intervenção S.O.S Vencida')}</b>
-                <span className="font-mono text-[11px] text-muted">
-                  {fdmy(e.d || dstr(new Date(e.ts || Date.now())))} · {e.h || '--:--'}
-                </span>
+        <Card className="flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <K style={{ margin: 0 }}>
+                <Trophy size={12} className="mr-1 inline text-gold" /> {T('hall_k', 'SALÃO DA FAMA ANÔNIMO')}
+              </K>
+              <span className="text-[10px] font-mono text-muted">
+                {S.hallOptIn ? '🛡️ Participando' : 'Modo Privado'}
+              </span>
+            </div>
+            {hall === null ? (
+              <Empty>{T('loading', 'Carregando...')}</Empty>
+            ) : hall.length ? (
+              <div className="max-h-[200px] space-y-1.5 overflow-y-auto pr-1">
+                {hall.map((h, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-center gap-2.5 rounded-r border p-2 text-[12px] font-bold ${
+                      h.name === S.hallName ? 'border-gold/60 bg-gold/10 text-gold' : 'border-line bg-surface2'
+                    }`}
+                  >
+                    <span className="w-6 text-center font-display text-sm text-gold2">
+                      {i + 1}º
+                    </span>
+                    <span className="flex-1 truncate">
+                      {h.name} {h.name === S.hallName ? '(você)' : ''}
+                    </span>
+                    <span className="text-xs">{h.tier}</span>
+                    <span className="font-mono text-gold text-xs">{h.days}d</span>
+                  </div>
+                ))}
               </div>
-            ))
-          ) : (
-            <Empty>
-              {T('sos_e1', 'Nenhuma intervenção S.O.S vencida ainda.')}
-              <br />
-              {T('sos_e2', 'Quando você concluir um protocolo de emergência, o registro aparece aqui com data e hora.')}
-            </Empty>
-          )}
+            ) : (
+              <div className="p-3 rounded bg-surface2 border border-line text-xs text-muted">
+                {T('hall_e1', 'Nenhum guerreiro optou pelo Salão ainda.')} Ative nas Configurações para ingressar.
+              </div>
+            )}
+          </div>
+          <p className="fnote mt-2 pt-2 border-t border-line/60" style={{ textAlign: 'left' }}>
+            {T('hall_note', 'Ranking anônimo com pseudônimos — apenas dias e patamar.')}
+          </p>
+        </Card>
+
+        {/* 5. Linha Equilibrada: Gatilhos & Auditoria (Esq) + Histórico S.O.S (Dir) */}
+        <Card className="flex flex-col justify-between border-danger/30">
+          <div>
+            <K className="text-danger flex items-center gap-1.5 text-xs font-bold font-mono uppercase mb-2">
+              <ShieldAlert size={14} />
+              {triggerRank.length > 0 ? 'RANKING DE GATILHOS (AUDITORIA)' : 'BLINDAGEM CONTRA GATILHOS'}
+            </K>
+            {triggerRank.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {triggerRank.slice(0, 4).map((item, idx) => (
+                  <div key={item.id} className="flex flex-col gap-1 p-2 rounded bg-surface2 border border-line/40">
+                    <div className="flex justify-between items-center text-xs font-semibold">
+                      <span className="text-ink flex items-center gap-1.5 truncate">
+                        <span className="text-danger font-mono font-bold text-[11px]">#{idx + 1}</span>
+                        <span className="truncate">{item.name}</span>
+                      </span>
+                      <span className="font-mono text-danger font-bold text-xs flex-none ml-2">
+                        {item.count}x ({item.pct}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-[#1b1b22] h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="bg-danger h-full rounded-full transition-all duration-500"
+                        style={{ width: `${item.pct}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2 text-xs">
+                <div className="p-2.5 rounded bg-surface2 border border-line flex items-center gap-2">
+                  <span className="text-ok font-bold text-sm">✓</span>
+                  <span className="text-ink">Nenhuma queda recente registrada. Defesas intactas!</span>
+                </div>
+                <div className="p-2 rounded bg-surface2/60 border border-line/50 text-[11px] text-muted space-y-1">
+                  <div className="font-bold text-gold2">Top Gatilhos Críticos a Vigiar:</div>
+                  <div>• Redes Sociais no escuro da madrugada</div>
+                  <div>• Estresse acumulado e cansaço sem treino</div>
+                  <div>• Tédio e isolamento com computador aberto</div>
+                </div>
+              </div>
+            )}
+          </div>
+          <p className="fnote mt-2 pt-2 border-t border-line/60" style={{ textAlign: 'left' }}>
+            Identificar o gatilho antecipadamente desativa a cascata impulsiva no cérebro.
+          </p>
+        </Card>
+
+        <Card className="flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <K style={{ margin: 0 }} className="flex items-center gap-1.5">
+                <ShieldCheck size={14} className="text-gold" />
+                <span>INTERVENÇÕES S.O.S VENCIDAS</span>
+              </K>
+              <span className="text-xs font-mono font-bold text-gold px-2 py-0.5 rounded bg-gold/10 border border-gold/30">
+                {L.sosWins(S)} Vencidas
+              </span>
+            </div>
+            {sosHist.length ? (
+              <div className="max-h-[220px] space-y-1.5 overflow-y-auto pr-1">
+                {sosHist.map((e, i) => (
+                  <div
+                    key={i}
+                    className="flex justify-between items-center rounded-r border border-line bg-surface2 p-2 text-[12px] font-semibold"
+                  >
+                    <span className="flex items-center gap-1.5 text-gold">
+                      <span>🛡️</span>
+                      <span>{T('sos_item', 'Intervenção Vencida')}</span>
+                    </span>
+                    <span className="font-mono text-[10.5px] text-muted">
+                      {fdmy(e.d || dstr(new Date(e.ts || Date.now())))} · {e.h || '--:--'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-3 rounded bg-surface2 border border-line text-xs text-muted leading-relaxed">
+                {T('sos_e1', 'Nenhuma intervenção S.O.S registrada ainda.')} Em momentos de urgência, use o botão de emergência flutuante para resfriar a mente e salvar seu streak.
+              </div>
+            )}
+          </div>
+          <p className="fnote mt-2 pt-2 border-t border-line/60" style={{ textAlign: 'left' }}>
+            Cada vitória no S.O.S recalibra os receptores de dopamina pré-frontais.
+          </p>
         </Card>
       </div>
     </div>
