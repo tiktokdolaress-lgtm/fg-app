@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Plus, Flame, Clock, Check, X, ChevronDown, ChevronUp, AlertTriangle, ShieldCheck, Sparkles, CalendarDays, Info } from 'lucide-react';
+import { Plus, Flame, Clock, Check, X, ChevronDown, ChevronUp, AlertTriangle, ShieldCheck, Sparkles, CalendarDays, Dumbbell, Brain, Briefcase, Award, Layers } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Empty } from '@/components/ui';
 import { FORGE_RULES, DEFAULT_HABITS } from '@/lib/data';
@@ -9,187 +9,275 @@ import * as L from '@/lib/logic';
 import { AF } from '@/lib/audio';
 import { today, fdmy, dstr, fmtD } from '@/lib/utils';
 
-/* Textos Traduzidos dos Botões de Benefício e Histórico */
+/* Categorias / Pilares da Masculinidade Trilíngues */
+const PILLARS_I18N = {
+  all: { pt: 'Todos', en: 'All', es: 'Todos' },
+  body: { pt: '🏛️ Corpo & Vigor', en: '🏛️ Body & Vigor', es: '🏛️ Cuerpo y Vigor' },
+  mind: { pt: '🧠 Mente & Foco', en: '🧠 Mind & Focus', es: '🧠 Mente y Enfoque' },
+  mission: { pt: '💼 Missão & Finanças', en: '💼 Mission & Wealth', es: '💼 Misión y Finanzas' },
+  spirit: { pt: '⚔️ Espírito & Honra', en: '⚔️ Spirit & Honor', es: '⚔️ Espíritu y Honor' },
+};
+
+/* Textos Traduzidos dos Botões e Ações */
 const LABELS_I18N = {
-  viewBenefit: {
-    pt: 'VER BENEFÍCIOS & PROTEÇÃO',
-    en: 'VIEW BENEFITS & PROTECTION',
-    es: 'VER BENEFICIOS Y PROTECCIÓN',
-  },
-  hideBenefit: {
-    pt: 'OCULTAR BENEFÍCIOS',
-    en: 'HIDE BENEFITS',
-    es: 'OCULTAR BENEFICIOS',
-  },
-  viewHistory: {
-    pt: 'HISTÓRICO DOS ÚLTIMOS 7 DIAS',
-    en: 'LAST 7 DAYS HISTORY',
-    es: 'HISTORIAL DE LOS ÚLTIMOS 7 DÍAS',
-  },
-  hideHistory: {
-    pt: 'OCULTAR HISTÓRICO',
-    en: 'HIDE HISTORY',
-    es: 'OCULTAR HISTORIAL',
-  },
-  activeInProtocol: {
-    pt: 'NO PROTOCOLO',
-    en: 'IN PROTOCOL',
-    es: 'EN PROTOCOLO',
-  },
-  activeBtn: {
-    pt: 'ATIVO',
-    en: 'ACTIVE',
-    es: 'ACTIVO',
-  },
-  activateBtn: {
-    pt: '+ ATIVAR',
-    en: '+ ACTIVATE',
-    es: '+ ACTIVAR',
-  },
-  completeBtn: {
-    pt: 'CONCLUÍDO HOJE',
-    en: 'DONE TODAY',
-    es: 'COMPLETO HOY',
-  },
-  toCompleteBtn: {
-    pt: 'CONCLUIR HOJE',
-    en: 'MARK AS DONE',
-    es: 'MARCAR HECHO',
-  },
-  failBtn: {
-    pt: 'FALHEI',
-    en: 'FAILED',
-    es: 'FALLÉ',
-  },
+  viewBenefit: { pt: 'VER BENEFÍCIOS & PROTEÇÃO', en: 'VIEW BENEFITS & PROTECTION', es: 'VER BENEFICIOS Y PROTECCIÓN' },
+  hideBenefit: { pt: 'OCULTAR BENEFÍCIOS', en: 'HIDE BENEFITS', es: 'OCULTAR BENEFICIOS' },
+  viewHistory: { pt: 'HISTÓRICO DOS ÚLTIMOS 7 DIAS', en: 'LAST 7 DAYS HISTORY', es: 'HISTORIAL DE LOS ÚLTIMOS 7 DÍAS' },
+  hideHistory: { pt: 'OCULTAR HISTÓRICO', en: 'HIDE HISTORY', es: 'OCULTAR HISTORIAL' },
+  activeInProtocol: { pt: 'NO PROTOCOLO', en: 'IN PROTOCOL', es: 'EN PROTOCOLO' },
+  activeBtn: { pt: 'ATIVO', en: 'ACTIVE', es: 'ACTIVO' },
+  activateBtn: { pt: '+ ATIVAR', en: '+ ACTIVATE', es: '+ ACTIVAR' },
+  completeBtn: { pt: 'CONCLUÍDO HOJE', en: 'DONE TODAY', es: 'COMPLETO HOY' },
+  toCompleteBtn: { pt: 'CONCLUIR HOJE', en: 'MARK AS DONE', es: 'MARCAR HECHO' },
+  failBtn: { pt: 'FALHEI', en: 'FAILED', es: 'FALLÉ' },
 };
 
-/* Banco de dados fallback de benefícios contra recaída caso não venha do store */
-const HABIT_BENEFITS_FALLBACK = {
-  '#01': {
-    pt: '🧊 Resfria a região pélvica, elimina impulsos sexuais imediatos e força um choque de dopamina limpa sem estímulo virtual.',
-    en: '🧊 Cools the pelvic area, extinguishes immediate sexual urges, and delivers a natural dopamine surge without screens.',
-    es: '🧊 Enfría la zona pélvica, apaga impulsos sexuales inmediatos y genera dopamina limpia sin estímulos virtuales.',
+/* Catálogo Expandido de Hábitos Masculinos com Pilares e Benefícios Científicos */
+const MASTER_HABITS_CATALOG = [
+  /* PILAR 1: CORPO & TESTOSTERONA */
+  {
+    id: '#01', cat: 'body', icon: '🧊',
+    n: { pt: 'Banho Gelado', en: 'Cold Shower', es: 'Ducha Fría' },
+    benefit: {
+      pt: 'Resfria a região pélvica, extingue impulsos sexuais repentinos e gera um pico imediato de dopamina limpa sem pornografia.',
+      en: 'Cools the pelvic floor, extinguishes sudden sexual urges, and creates an instant spike of clean dopamine without porn.',
+      es: 'Enfría el área pélvica, apaga impulsos sexuales repentinos y genera un pico inmediato de dopamina limpia sin pantallas.',
+    }
   },
-  '#02': {
-    pt: '🏋️ Transmuta a energia sexual acumulada em massa muscular, eleva a testosterona livre e descarrega a inquietação mental.',
-    en: '🏋️ Transmutes stored sexual energy into muscle, boosts free testosterone, and exhausts mental restlessness.',
-    es: '🏋️ Transmuta la energía sexual en músculo, eleva la testosterona libre y descarga la inquietud mental.',
+  {
+    id: '#02', cat: 'body', icon: '🏋️',
+    n: { pt: 'Treino de Força / Musculação', en: 'Strength Training / Gym', es: 'Entrenamiento de Fuerza' },
+    benefit: {
+      pt: 'Transmuta a energia seminal represada em densidade muscular, aumenta a testosterona livre e descarrega a tensão corporal.',
+      en: 'Transmutes stored seminal energy into muscle density, increases free testosterone, and discharges body restlessness.',
+      es: 'Transmuta la energía seminal en densidad muscular, eleva la testosterona libre y descarga la tensión física.',
+    }
   },
-  '#03': {
-    pt: '📖 Treina a atenção sustentada, reconstrói o córtex pré-frontal e substitui o hábito de rolar feeds hiperestimulantes.',
-    en: '📖 Rebuilds the prefrontal cortex, trains sustained focus, and replaces the urge to doomscroll hyperstimulating feeds.',
-    es: '📖 Reconstruye la corteza prefrontal, entrena la atención y sustituye el hábito de ver feeds hiperestimulantes.',
+  {
+    id: '#13', cat: 'body', icon: '💧',
+    n: { pt: '3L a 4L de Água', en: '3L to 4L of Water', es: '3L a 4L de Agua' },
+    benefit: {
+      pt: 'Mantém a hidratação celular máxima, otimiza o fluxo sanguíneo e elimina a letargia que costuma abrir portas para a recaída.',
+      en: 'Maximizes cellular hydration, optimizes blood flow, and eliminates physical sluggishness that invites relapse.',
+      es: 'Mantiene la hidratación celular máxima, optimiza el flujo sanguíneo y aleja la lentitud que abre paso a la recaída.',
+    }
   },
-  '#04': {
-    pt: '⏰ Quebra a preguiça matinal na cama (o maior ninho de recaídas matinais). Levantar rápido sela o dia com vitória.',
-    en: '⏰ Destroys morning lingering in bed (the #1 trigger for morning relapses). Getting up fast seals the day with victory.',
-    es: '⏰ Destruye la pereza en la cama (el mayor nido de recaídas matutinas). Levantarse rápido asegura la victoria diaria.',
+  {
+    id: '#14', cat: 'body', icon: '☀️',
+    n: { pt: 'Sol Matinal (15m)', en: 'Morning Sunlight (15m)', es: 'Sol Matutino (15m)' },
+    benefit: {
+      pt: 'Calibra o ritmo circadiano cerebral, sintetiza vitamina D e garante sono profundo à noite (onde a testosterona é forjada).',
+      en: 'Calibrates brain circadian rhythm, synthesizes vitamin D, and ensures deep sleep at night (where testosterone is built).',
+      es: 'Calibra el ritmo circadiano cerebral, sintetiza vitamina D y asegura un sueño profundo (donde se forja la testosterona).',
+    }
   },
-  '#05': {
-    pt: '📵 Corta a luz azul noturna que desregula a melatonina e impede o acesso solitário a telas no momento de maior vulnerabilidade.',
-    en: '📵 Cuts out night blue light that disrupts sleep and stops late-night solitary screen access when defenses are lowest.',
-    es: '📵 Corta la luz azul nocturna y evita el acceso solitario a pantallas en el momento de mayor vulnerabilidad.',
+  {
+    id: '#18', cat: 'body', icon: '🧘‍♂️',
+    n: { pt: 'Mobilidade Pélvica / Kegel Invertido', en: 'Pelvic Mobility / Reverse Kegel', es: 'Movilidad Pélvica' },
+    benefit: {
+      pt: 'Relaxa o assoalho pélvico, melhora a circulação prostática e evita o acúmulo de desconforto que induz à masturbação mecânica.',
+      en: 'Relaxes the pelvic floor, improves prostate circulation, and relieves localized pressure that triggers mechanical masturbation.',
+      es: 'Relaja el suelo pélvico, mejora la circulación prostática y previene la tensión que incita a la masturbación mecánica.',
+    }
   },
-  '#06': {
-    pt: '🧹 Elimina perfis de gatilho, fotos apelativas e feeds algorítmicos feitos para drenar sua energia e provocar recaídas.',
-    en: '🧹 Eliminates trigger accounts, thirst traps, and algorithmic feeds engineered to hijack your impulses and drain vitality.',
-    es: '🧹 Elimina cuentas trampa, fotos sugerentes y feeds algorítmicos diseñados para detonar impulsos y drenar energía.',
+  {
+    id: '#19', cat: 'body', icon: '🥊',
+    n: { pt: 'Arte Marcial / Boxe / Jiu-Jitsu', en: 'Martial Arts / Boxing / BJJ', es: 'Artes Marciales / Boxeo' },
+    benefit: {
+      pt: 'Ensina o homem a suportar o desconforto físico, calibra a agressividade natural e reforça a compostura inabalável.',
+      en: 'Teaches a man to endure physical distress, channels primal combativeness, and builds unshakeable composure.',
+      es: 'Enseña a soportar el malestar físico, canaliza la combatividad natural y refuerza una compostura inquebrantable.',
+    }
   },
-  '#07': {
-    pt: '🍬 Evita picos e quedas de glicose no sangue, que causam cansaço mental e fraqueza para resistir a tentações imediatas.',
-    en: '🍬 Prevents blood sugar crashes that cause cognitive fatigue and weaken impulse control against instant gratification.',
-    es: '🍬 Evita caídas de glucosa que provocan fatiga mental y debilitan el autocontrol frente a la gratificación instantánea.',
-  },
-  '#08': {
-    pt: '🚶 Caminhar em silêncio acalma o sistema nervoso, estimula a introspecção e reduz a dependência de estímulos constantes.',
-    en: '🚶 Walking in silence settles the nervous system, stimulates deep thought, and resets tolerance to constant stimulation.',
-    es: '🚶 Caminar en silencio calma el sistema nervioso, estimula la introspección y reduce la necesidad de estimulación continua.',
-  },
-  '#09': {
-    pt: '🧘 Ensina a observar pensamentos invasivos sem reagir fisicamente a eles. Cria a barreira entre o impulso e a ação.',
-    en: '🧘 Teaches you to observe intrusive sexual urges without reacting to them. Creates the crucial space between urge and action.',
-    es: '🧘 Enseña a observar pensamientos intrusivos sin reaccionar a ellos. Crea la barrera entre el impulso y la acción.',
-  },
-  '#10': {
-    pt: '⏳ Limpa o organismo por autofagia e treina a resistência da mente a apetites e vontades biológicas automáticas.',
-    en: '⏳ Promotes cellular autophagy and trains mental resilience against immediate biological cravings and automatic desires.',
-    es: '⏳ Limpia el organismo por autofagia y entrena la resistencia de la mente frente a apetitos biológicos automáticos.',
-  },
-  '#11': {
-    pt: '🛏️ Primeira vitória disciplinar do dia. Estabelece ordem física imediata no quarto, repelindo desleixo e acomodação.',
-    en: '🛏️ First disciplined win of the day. Sets immediate physical order in your room, repelling sloppy thinking and laziness.',
-    es: '🛏️ Primera victoria de disciplina del día. Establece orden físico inmediato, repeliendo el descuido y la pereza.',
-  },
-  '#12': {
-    pt: '🚫 O álcool destrói a inibição do córtex frontal — 80% das recaídas graves ocorrem sob efeito de substâncias.',
-    en: '🚫 Alcohol impairs frontal lobe inhibition — over 80% of severe relapses happen under the influence of substances.',
-    es: '🚫 El alcohol destruye la inhibición frontal — más del 80% de las recaídas graves ocurren bajo efectos de sustancias.',
-  },
-  '#13': {
-    pt: '💧 Mantém a hidratação celular máxima, otimiza o fluxo sanguíneo e afasta a letargia que costuma abrir brechas para tentação.',
-    en: '💧 Maximizes cellular hydration, optimizes blood flow, and dispels the physical sluggishness that invites temptation.',
-    es: '💧 Mantiene la hidratación celular máxima, optimiza el flujo sanguíneo y aleja la lentitud que abre paso a la tentación.',
-  },
-  '#14': {
-    pt: '☀️ Regula o ciclo circadiano, melhora a produção de vitamina D e garante sono de qualidade profunda à noite.',
-    en: '☀️ Sets your circadian clock, boosts vitamin D synthesis, and guarantees deep restorative sleep at night.',
-    es: '☀️ Regula el reloj circadiano, potencia la vitamina D y asegura un descanso profundo y reparador por la noche.',
-  },
-  '#15': {
-    pt: '📓 Externaliza a ansiedade, documenta gatilhos identificados e fortalece o compromisso diário do guerreiro consigo mesmo.',
-    en: '📓 Externalizes anxiety, tracks identified triggers, and reinforces daily accountability to your higher self.',
-    es: '📓 Externaliza la ansiedad, registra detonantes identificados y refuerza el compromiso diario con tu mejor versión.',
-  },
-  '#16': {
-    pt: '🎯 Foco profundo (Deep Work): produz valor real para a sua vida financeira e mental, canalizando a testosterona retida.',
-    en: '🎯 Deep Work: builds high-value tangible results in your life and career, channeling retained testosterone into creation.',
-    es: '🎯 Enfoque profundo (Deep Work): genera valor real para tu vida y carrera, canalizando la testosterona retenida.',
-  },
-  '#17': {
-    pt: '📵 Regra inegociável: o celular longe da cama elimina 95% do risco de recaídas no fim da noite e início da manhã.',
-    en: '📵 Non-negotiable rule: keeping the phone out of the bedroom eliminates 95% of nighttime and early morning relapse risk.',
-    es: '📵 Regla innegociable: el teléfono lejos de la cama elimina el 95% del riesgo de recaídas nocturnas y matutinas.',
-  },
-  '#18': {
-    pt: '🧘‍♂️ Alivia tensões da musculatura do assoalho pélvico, melhora a circulação na região e evita o acúmulo de desconforto prostático.',
-    en: '🧘‍♂️ Relieves pelvic floor muscle tension, improves blood circulation, and prevents localized tightness and discomfort.',
-    es: '🧘‍♂️ Alivia tensiones en el suelo pélvico, optimiza la circulación y previene la incomodidad prostática localizada.',
-  },
-};
 
-function getHabitBenefit(h, lang) {
-  const currentLang = ['pt', 'en', 'es'].includes(lang) ? lang : 'pt';
-  if (h.why) return h.why;
-  if (h.benefit) return h.benefit;
-  if (h.desc) return h.desc;
+  /* PILAR 2: MENTE & INTELECTO */
+  {
+    id: '#03', cat: 'mind', icon: '📖',
+    n: { pt: 'Leitura Estoica / Filosofia (20m)', en: 'Stoic Reading / Philosophy (20m)', es: 'Lectura Estoica (20m)' },
+    benefit: {
+      pt: 'Treina o foco sustentado, reconstrói o córtex pré-frontal e substitui o consumo de estímulos rápidos por sabedoria densa.',
+      en: 'Rebuilds the prefrontal cortex, trains sustained focus, and replaces short dopamine hits with dense mental wisdom.',
+      es: 'Reconstruye la corteza prefrontal, entrena el enfoque sostenido y sustituye estímulos rápidos por sabiduría densa.',
+    }
+  },
+  {
+    id: '#05', cat: 'mind', icon: '📵',
+    n: { pt: 'Apagão de Telas 1h Antes de Dormir', en: 'Screen Blackout 1h Before Bed', es: 'Apagón de Pantallas 1h Antes' },
+    benefit: {
+      pt: 'Bloqueia o maior canal de recaídas noturnas. Sem luz azul estimulando o cérebro, a mente descansa protegida.',
+      en: 'Blocks the #1 channel for late-night relapses. Without blue light stimulating dopamine, the mind rests guarded.',
+      es: 'Bloquea el canal principal de recaídas nocturnas. Sin luz azul sobreestimulando el cerebro, la mente descansa blindada.',
+    }
+  },
+  {
+    id: '#06', cat: 'mind', icon: '🧹',
+    n: { pt: 'Limpeza de Redes / Zero Gatilhos', en: 'Feed Cleansing / Zero Triggers', es: 'Limpieza de Redes / Cero Detonantes' },
+    benefit: {
+      pt: 'Elimina contas hiperestimulantes, perfis apelativos e algoritmos programados para sequestrar sua dopamina e vontade.',
+      en: 'Unfollows thirst traps, hyperstimulating feeds, and algorithms engineered to hijack your dopamine and willpower.',
+      es: 'Elimina cuentas sugerentes, feeds hiperestimulantes y algoritmos diseñados para secuestrar tu dopamina y voluntad.',
+    }
+  },
+  {
+    id: '#07', cat: 'mind', icon: '🍯',
+    n: { pt: 'Cortar Açúcar & Junk Food', en: 'Cut Sugar & Junk Food', es: 'Cortar Azúcar y Comida Basura' },
+    benefit: {
+      pt: 'Elimina oscilações violentas de glicose e insulina, que provocam névoa mental e enfraquecem a capacidade de dizer não.',
+      en: 'Eliminates violent blood sugar crashes that trigger brain fog and weaken your executive capacity to resist urges.',
+      es: 'Evita caídas drásticas de glucosa que provocan niebla mental y debilitan la capacidad de decir que no a la tentación.',
+    }
+  },
+  {
+    id: '#08', cat: 'mind', icon: '🚶',
+    n: { pt: 'Caminhada Sem Fones (20m)', en: 'Phone-Free Walk (20m)', es: 'Caminata Sin Auriculares (20m)' },
+    benefit: {
+      pt: 'Acalma o sistema nervoso simpático, silencia a hiperestimulação diária e treina o guerreiro a tolerar o próprio silêncio.',
+      en: 'Settles the nervous system, clears out daily sensory overload, and teaches a man to be comfortable in pure silence.',
+      es: 'Calma el sistema nervioso, disipa la sobreestimulación diaria y entrena al guerrero a tolerar el propio silencio.',
+    }
+  },
+  {
+    id: '#20', cat: 'mind', icon: '♟️',
+    n: { pt: 'Xadrez / Treino de Antecipação', en: 'Chess / Strategic Thinking', es: 'Ajedrez / Pensamiento Estratégico' },
+    benefit: {
+      pt: 'Exercita a capacidade de pausar antes de agir, calculando as consequências do próximo movimento contra impulsos cegos.',
+      en: 'Exercises impulse inhibition: teaches you to pause, breathe, and evaluate consequences before making a blind move.',
+      es: 'Ejercita la inhibición de impulsos: enseña a pausar y evaluar las consecuencias antes de dar un movimiento ciego.',
+    }
+  },
 
-  // Busca pelo fallback
-  const idKey = '#' + String(h.id).replace(/\D/g, '').padStart(2, '0');
-  const found = HABIT_BENEFITS_FALLBACK[idKey] || HABIT_BENEFITS_FALLBACK[h.id];
-  if (found) {
-    return found[currentLang] || found.pt;
-  }
+  /* PILAR 3: MISSÃO, FOCO & IMPÉRIO */
+  {
+    id: '#16', cat: 'mission', icon: '🎯',
+    n: { pt: 'Foco Profundo 90m (Deep Work)', en: '90m Deep Work Session', es: 'Enfoque Profundo 90m (Deep Work)' },
+    benefit: {
+      pt: 'Canaliza a agressividade e a concentração da retenção seminal em criação de patrimônio, estudos e valor real de mercado.',
+      en: 'Channels retained testosterone and drive into wealth generation, elite studying, and tangible real-world market value.',
+      es: 'Canaliza la energía de la retención seminal en creación de patrimonio, estudios y valor tangible de mercado.',
+    }
+  },
+  {
+    id: '#21', cat: 'mission', icon: '🐸',
+    n: { pt: 'Engolir o Sapo (Tarefa Mais Difícil 1º)', en: 'Eat the Frog (Hardest Task First)', es: 'Hacer lo Más Difícil Primero' },
+    benefit: {
+      pt: 'Executa o dever mais pesado logo pela manhã. Elimina o estresse e a ansiedade acumulada que alimentam recaídas.',
+      en: 'Tackles the most difficult duty at dawn. Eliminates procrastination anxiety, which is a major hidden fuel for relapses.',
+      es: 'Ejecuta el deber más pesado a primera hora. Elimina la ansiedad por postergar, principal combustible oculto de caídas.',
+    }
+  },
+  {
+    id: '#22', cat: 'mission', icon: '📊',
+    n: { pt: 'Fechamento Financeiro Diário', en: 'Daily Financial Tracking', es: 'Control Financiero Diario' },
+    benefit: {
+      pt: 'Ensina controle consciente sobre os recursos materiais. O homem que governa o próprio bolso governa a própria mente.',
+      en: 'Builds conscious mastery over material resources. A man who disciplines his wallet disciplines his mind.',
+      es: 'Enseña control consciente sobre los recursos materiales. El hombre que gobierna su dinero gobierna su mente.',
+    }
+  },
+  {
+    id: '#23', cat: 'mission', icon: '📝',
+    n: { pt: 'Planejar o Dia Seguinte à Noite', en: 'Plan Next Day the Night Before', es: 'Planear el Día Siguiente de Noche' },
+    benefit: {
+      pt: 'Acordar sabendo exatamente para onde marchar elimina a ociosidade matinal, o maior terreno fértil para desvios.',
+      en: 'Waking up with clear marching orders eliminates aimless morning downtime, the fertile ground for moral deviations.',
+      es: 'Despertar sabiendo exactamente hacia dónde marchar elimina la ociosidad matutina, terreno fértil para desvíos.',
+    }
+  },
 
-  // Padrão
-  return currentLang === 'en'
-    ? 'Builds cognitive discipline, transmutes retained sexual energy, and protects your dopamine receptors against cheap stimulation.'
-    : currentLang === 'es'
-    ? 'Forja disciplina cognitiva, transmuta la energía sexual retenida y protege tus receptores de dopamina contra la estimulación barata.'
-    : 'Forja disciplina mental inquebrável, transmuta a energia sexual retida e blinda seus receptores de dopamina contra estímulos baratos.';
-}
+  /* PILAR 4: ESPÍRITO, CARÁTER & HONRA */
+  {
+    id: '#04', cat: 'spirit', icon: '⏰',
+    n: { pt: 'Acordar Antes das 06:00 Sem Soneca', en: 'Wake Before 06:00 No Snooze', es: 'Despertar Antes de las 06:00 Sin Siesta' },
+    benefit: {
+      pt: 'Primeira batalha ganha contra o conforto da carne. Rolar na cama é o berço de 60% das recaídas matinais.',
+      en: 'First battle won against flesh comfort. Lingering in bed after waking is the origin of 60% of morning relapses.',
+      es: 'Primera batalla ganada contra la comodidad. Quedarse en la cama es la cuna del 60% de las recaídas matutinas.',
+    }
+  },
+  {
+    id: '#09', cat: 'spirit', icon: '🧘',
+    n: { pt: 'Meditação / Silêncio Absoluto (10m)', en: 'Stillness / Meditation (10m)', es: 'Meditación / Silencio (10m)' },
+    benefit: {
+      pt: 'Treina a mente a ser observadora do impulso e não escrava dele. Separa o guerreiro do animal primitivo.',
+      en: 'Teaches the mind to observe biological urges without reacting. Separates the master warrior from the primitive animal.',
+      es: 'Entrena la mente para ser observadora del impulso y no su esclava. Separa al guerrero del animal primitivo.',
+    }
+  },
+  {
+    id: '#11', cat: 'spirit', icon: '🛏️',
+    n: { pt: 'Arrumar a Cama com Rigor', en: 'Make the Bed with Precision', es: 'Hacer la Cama con Rigor' },
+    benefit: {
+      pt: 'Estabelece ordem militar no seu território físico imediato. A mente reflete a desordem do ambiente em que repousa.',
+      en: 'Establishes military order in your immediate territory. An undisciplined environment fosters an undisciplined mind.',
+      es: 'Establece orden militar en tu territorio inmediato. La mente refleja el desorden del entorno donde descansa.',
+    }
+  },
+  {
+    id: '#12', cat: 'spirit', icon: '🚫',
+    n: { pt: 'Zero Álcool & Substâncias', en: 'Zero Alcohol & Substances', es: 'Cero Alcohol y Sustancias' },
+    benefit: {
+      pt: 'O álcool desliga a censura moral do lobo frontal. Preservar a sobriedade é blindar o escudo contra desastres.',
+      en: 'Alcohol shuts down prefrontal moral inhibition. Preserving absolute sobriety shields you against catastrophic relapses.',
+      es: 'El alcohol desconecta la censura moral del lóbulo frontal. Mantenerse sobrio es blindar el escudo contra desastres.',
+    }
+  },
+  {
+    id: '#15', cat: 'spirit', icon: '📓',
+    n: { pt: 'Diário de Bordo & Honra Noturna', en: 'Captain Log & Evening Review', es: 'Diario de a Bordo y Revisión Nocturna' },
+    benefit: {
+      pt: 'Prestar contas a si mesmo todas as noites. Identifica pontos de fraqueza e celebra o dia vencido com retenção intacta.',
+      en: 'Daily accountability before sleep. Audits weak points, registers triggers, and celebrates another victorious day.',
+      es: 'Rendir cuentas a uno mismo cada noche. Identifica puntos de flaqueza y celebra el día vencido con la retención intacta.',
+    }
+  },
+  {
+    id: '#17', cat: 'spirit', icon: '📵',
+    n: { pt: 'Celular Carregando Fora do Quarto', en: 'Phone Charging Outside Bedroom', es: 'Móvil Cargando Fuera de la Habitación' },
+    benefit: {
+      pt: 'Regra de ferro de ouro: sem telas no leito noturno, você elimina 90% das tentações solitárias e recupera o sono puro.',
+      en: 'Golden ironclad rule: no screens in bed removes 90% of solitary temptations and restores pure restorative sleep.',
+      es: 'Regla de oro: sin pantallas en la cama eliminas el 90% de las tentaciones solitarias y recuperas el sueño puro.',
+    }
+  },
+  {
+    id: '#24', cat: 'spirit', icon: '🤝',
+    n: { pt: 'Ação de Valor Silenciosa / Caridade Oculta', en: 'Silent Act of Honor / Quiet Charity', es: 'Acción de Valor Silenciosa' },
+    benefit: {
+      pt: 'Fazer o bem a alguém sem buscar aplausos ou validação externa. Purifica o ego e constrói grandeza interior genuína.',
+      en: 'Serve someone without seeking applause, recognition, or validation. Purifies the ego and builds quiet inner nobility.',
+      es: 'Hacer el bien sin buscar aplausos ni validación. Purifica el ego y construye una grandeza interior genuina.',
+    }
+  },
+];
 
 export default function ForgeView() {
   const { S, update, t, openModal, closeModal, toast } = useApp();
   const lang = (S && S.settings && S.settings.lang) || 'pt';
   const curLang = ['pt', 'en', 'es'].includes(lang) ? lang : 'pt';
   const LBL = LABELS_I18N;
+  const PIL = PILLARS_I18N;
 
+  const [selectedPillar, setSelectedPillar] = useState('all');
   const [openBenefitId, setOpenBenefitId] = useState(null);
   const [openHistoryId, setOpenHistoryId] = useState(null);
 
-  const ALLH = cxHabits(lang, L.allH(S));
+  /* Mesclar catálogo mestre de hábitos com hábitos customizados do usuário */
+  const customHabits = (S && S.customHabits) || [];
+  const customCatalog = customHabits.map((ch) => ({
+    id: ch.id,
+    cat: 'mission',
+    icon: ch.icon || '⚡',
+    n: { pt: ch.n, en: ch.n, es: ch.n },
+    benefit: {
+      pt: 'Hábito personalizado forjado para fortalecer sua rotina e disciplina diária.',
+      en: 'Custom habit forged to reinforce your personal routine and warrior discipline.',
+      es: 'Hábito personalizado forjado para fortalecer tu rutina y disciplina diaria.',
+    },
+  }));
+
+  const mergedCatalog = [...MASTER_HABITS_CATALOG, ...customCatalog];
+
   const d = L.progressDays(S);
-  
   let maxSlots = 2;
   try {
     if (typeof L.maxSlots === 'function') {
@@ -207,8 +295,14 @@ export default function ForgeView() {
   const fd = L.fDone(S, today());
   const ff = L.fFailed(S, today());
 
-  const activeHabits = activeIds.map((id) => ALLH.find((h) => h.id === id)).filter(Boolean);
-  const reserveHabits = ALLH.filter((h) => !activeIds.includes(h.id));
+  const activeHabits = activeIds.map((id) => mergedCatalog.find((h) => h.id === id) || { id, icon: '⚡', n: { pt: id, en: id, es: id }, cat: 'body' });
+  const reserveHabits = mergedCatalog.filter((h) => !activeIds.includes(h.id));
+
+  /* Filtrar reserva por categoria */
+  const filteredReserve = reserveHabits.filter((h) => {
+    if (selectedPillar === 'all') return true;
+    return h.cat === selectedPillar;
+  });
 
   /* Hábitos negligenciados */
   const neglected = activeHabits.filter((h) => {
@@ -365,7 +459,6 @@ export default function ForgeView() {
     openModal(<CreateH />);
   };
 
-  /* Renderizador das bolinhas de 7 dias do hábito */
   const renderLast7Days = (habitId) => {
     const days = [];
     const doneMap = (S && S.forge && S.forge.done) || {};
@@ -457,7 +550,7 @@ export default function ForgeView() {
               >
                 <span className="flex items-center gap-1.5 truncate font-semibold">
                   <span>{h.icon}</span>
-                  <span className="truncate">{h.n}</span>
+                  <span className="truncate">{h.n[curLang] || h.n.pt}</span>
                 </span>
                 <span className="flex-none font-mono text-[10.5px] font-bold text-danger">
                   2+ dias sem fazer
@@ -485,7 +578,8 @@ export default function ForgeView() {
               const tm = (L.hTime && L.hTime(S, h.id)) || (S.forge && S.forge.times && S.forge.times[h.id]) || '';
               const isBenefitOpen = openBenefitId === h.id;
               const isHistoryOpen = openHistoryId === h.id;
-              const benefitText = getHabitBenefit(h, lang);
+              const habitName = (h.n && h.n[curLang]) ? h.n[curLang] : (h.n && h.n.pt) ? h.n.pt : h.n;
+              const benefitText = (h.benefit && h.benefit[curLang]) ? h.benefit[curLang] : (h.benefit && h.benefit.pt) ? h.benefit.pt : h.benefit || '';
 
               return (
                 <Card
@@ -504,7 +598,7 @@ export default function ForgeView() {
                       <span className="text-xl flex-none">{h.icon}</span>
                       <div className="min-w-0">
                         <span className={`text-xs sm:text-[13.5px] font-bold block truncate ${isDone ? 'text-gold' : isFail ? 'text-danger' : 'text-ink'}`}>
-                          {h.n}
+                          {habitName}
                         </span>
                         <span className="text-[9.5px] uppercase font-mono text-muted">
                           #{String(h.id).slice(-4)} · {LBL.activeInProtocol[curLang]}
@@ -562,16 +656,13 @@ export default function ForgeView() {
                     </button>
                   </div>
 
-                  {/* BOTÕES EXPANSÍVEIS TÁTICOS: Histórico 7 Dias & Benefícios */}
+                  {/* BOTÕES EXPANSÍVEIS TÁTICOS */}
                   <div className="mt-2.5 pt-2 border-t border-line/40 flex flex-col gap-1.5">
-                    
                     {/* Botão: Histórico dos Últimos 7 Dias */}
                     <div>
                       <button
                         type="button"
-                        onClick={() => {
-                          setOpenHistoryId(isHistoryOpen ? null : h.id);
-                        }}
+                        onClick={() => setOpenHistoryId(isHistoryOpen ? null : h.id)}
                         className="text-[10px] text-muted hover:text-gold flex items-center justify-between w-full font-mono py-0.5"
                       >
                         <span className="flex items-center gap-1">
@@ -587,9 +678,7 @@ export default function ForgeView() {
                     <div>
                       <button
                         type="button"
-                        onClick={() => {
-                          setOpenBenefitId(isBenefitOpen ? null : h.id);
-                        }}
+                        onClick={() => setOpenBenefitId(isBenefitOpen ? null : h.id)}
                         className="text-[10px] text-muted hover:text-gold flex items-center justify-between w-full font-mono py-0.5"
                       >
                         <span className="flex items-center gap-1">
@@ -607,7 +696,6 @@ export default function ForgeView() {
                         </div>
                       )}
                     </div>
-
                   </div>
                 </Card>
               );
@@ -620,17 +708,51 @@ export default function ForgeView() {
         )}
       </div>
 
-      {/* 4. RESERVA DA FORJA (3 Colunas no PC com Botão de Benefício Restaurado) */}
+      {/* 4. RESERVA DA FORJA COM FILTROS DE CATEGORIA (3 Colunas no PC) */}
       <div className="mt-2">
-        <div className="flex items-center justify-between mb-2">
-          <K className="mb-0">📦 RESERVA DA FORJA ({reserveHabits.length} DISPONÍVEIS)</K>
-          <span className="text-[10px] text-muted font-mono">Clique para ativar no protocolo</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+          <div className="flex items-center gap-2">
+            <K className="mb-0">📦 RESERVA DA FORJA ({filteredReserve.length} DISPONÍVEIS)</K>
+          </div>
+
+          {/* Barra de Filtros por Categoria / Pilar */}
+          <div className="flex flex-wrap gap-1">
+            {[
+              { id: 'all', label: PIL.all[curLang] },
+              { id: 'body', label: PIL.body[curLang] },
+              { id: 'mind', label: PIL.mind[curLang] },
+              { id: 'mission', label: PIL.mission[curLang] },
+              { id: 'spirit', label: PIL.spirit[curLang] },
+            ].map((p) => {
+              const count = p.id === 'all' ? reserveHabits.length : reserveHabits.filter((h) => h.cat === p.id).length;
+              const isSelected = selectedPillar === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setSelectedPillar(p.id)}
+                  className={`text-[10px] font-mono px-2 py-1 rounded transition-all flex items-center gap-1 ${
+                    isSelected
+                      ? 'bg-gold text-[#141414] font-bold shadow-sm'
+                      : 'bg-surface2 text-muted hover:text-ink border border-line'
+                  }`}
+                >
+                  <span>{p.label}</span>
+                  <span className={`text-[9px] px-1 py-0.2 rounded ${isSelected ? 'bg-black/20 text-black' : 'bg-surface text-muted'}`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
+        {/* Grade de 3 Colunas de Hábitos */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          {reserveHabits.map((h) => {
+          {filteredReserve.map((h) => {
             const isBenefitOpen = openBenefitId === h.id;
-            const benefitText = getHabitBenefit(h, lang);
+            const habitName = (h.n && h.n[curLang]) ? h.n[curLang] : (h.n && h.n.pt) ? h.n.pt : h.n;
+            const benefitText = (h.benefit && h.benefit[curLang]) ? h.benefit[curLang] : (h.benefit && h.benefit.pt) ? h.benefit.pt : h.benefit || '';
 
             return (
               <div
@@ -641,7 +763,7 @@ export default function ForgeView() {
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-lg flex-none">{h.icon}</span>
                     <span className="text-xs font-bold text-ink truncate">
-                      {h.n}
+                      {habitName}
                     </span>
                   </div>
 
