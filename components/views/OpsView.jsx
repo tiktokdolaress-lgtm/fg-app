@@ -1,11 +1,17 @@
 'use client';
 import React, { useState } from 'react';
-import { Plus, Check, Trash2, Clock, Calendar, Flag, Folder, Layers, CheckCircle2, Circle, AlertCircle, Edit3, ChevronRight, Target, Flame, Archive, AlertTriangle, Link2, Unlink } from 'lucide-react';
+import { Plus, Check, Trash2, Clock, Calendar, Flag, Folder, Layers, CheckCircle2, Circle, AlertCircle, Edit3, ChevronRight, Target, Flame, Archive, AlertTriangle, Link2, Unlink, MoreVertical, ArchiveRestore } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Empty } from '@/components/ui';
 import { today, fdmy, dstr, fmtD, daysBetween, parseD } from '@/lib/utils';
 import { AF } from '@/lib/audio';
 import * as L from '@/lib/logic';
+
+const OPS_CATEGORIES = [
+  { id: 'tasks', label: 'Tarefas & Operações', icon: Target },
+  { id: 'projects', label: 'Projetos Estratégicos', icon: Layers },
+  { id: 'archive', label: 'Arquivo & Concluídos', icon: Archive },
+];
 
 const I18N = {
   tabTasks: { pt: '🎯 TAREFAS & OPERAÇÕES', en: '🎯 TASKS & OPERATIONS', es: '🎯 TAREAS Y OPERACIONES' },
@@ -29,6 +35,7 @@ export default function OpsView() {
   const tx = I18N;
 
   const [activeMainTab, setActiveMainTab] = useState('tasks');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [filter, setFilter] = useState('today');
   const [projFilter, setProjFilter] = useState('ativos'); // 'ativos', 'concluidos', 'arquivados'
 
@@ -855,46 +862,134 @@ export default function OpsView() {
 
   return (
     <div className="grid gap-3.5">
-      {/* 1. SELETOR DE ABAS PRINCIPAIS */}
-      <Card className="border-gold/30 bg-surface2/60 p-2.5 sm:p-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setActiveMainTab('tasks')}
-              className={`text-xs sm:text-sm font-mono font-bold px-3.5 py-2 rounded transition-all flex items-center gap-1.5 ${
-                activeMainTab === 'tasks'
-                  ? 'bg-gold text-[#141414] shadow-sm'
-                  : 'bg-surface text-muted hover:text-ink border border-line'
-              }`}
-            >
-              <span>{tx.tabTasks[curLang]}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${activeMainTab === 'tasks' ? 'bg-black/20 text-black' : 'bg-surface2 text-muted'}`}>
-                {tasks.filter((t) => !t.archived).length}
-              </span>
-            </button>
+      {/* SELETOR DE CATEGORIAS RESPONSIVO (Desktop: Abas / Mobile: 3 Pontinhos) */}
+      <div className="flex items-center justify-between gap-2 border-b border-line pb-3">
+        {/* Mobile: Categoria Ativa + Ação Rápida + 3 Pontinhos */}
+        <div className="sm:hidden flex items-center justify-between w-full relative">
+          <div className="flex items-center gap-2">
+            {(() => {
+              const currentCat = OPS_CATEGORIES.find((c) => c.id === activeMainTab) || OPS_CATEGORIES[0];
+              const IconComp = currentCat.icon;
+              return (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface2 border border-gold/30 text-gold font-bold text-xs">
+                  <IconComp size={15} />
+                  <span>{currentCat.label}</span>
+                </div>
+              );
+            })()}
+          </div>
 
-            <button
-              type="button"
-              onClick={() => setActiveMainTab('projects')}
-              className={`text-xs sm:text-sm font-mono font-bold px-3.5 py-2 rounded transition-all flex items-center gap-1.5 ${
-                activeMainTab === 'projects'
-                  ? 'bg-gold text-[#141414] shadow-sm'
-                  : 'bg-surface text-muted hover:text-ink border border-line'
-              }`}
-            >
-              <span>{tx.tabProjects[curLang]}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${activeMainTab === 'projects' ? 'bg-black/20 text-black' : 'bg-surface2 text-muted'}`}>
-                {projects.filter((p) => !p.archived).length}
-              </span>
-            </button>
+          <div className="flex items-center gap-2">
+            {activeMainTab === 'tasks' && (
+              <button
+                type="button"
+                onClick={() => openTaskModal()}
+                className="btn-gold py-1.5 px-2.5 text-xs font-bold flex items-center gap-1 shadow-sm"
+              >
+                <Plus size={13} strokeWidth={2.5} />
+                <span>Tarefa</span>
+              </button>
+            )}
+            {activeMainTab === 'projects' && (
+              <button
+                type="button"
+                onClick={() => openProjectModal()}
+                className="btn-gold py-1.5 px-2.5 text-xs font-bold flex items-center gap-1 shadow-sm"
+              >
+                <Plus size={13} strokeWidth={2.5} />
+                <span>Projeto</span>
+              </button>
+            )}
+
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-lg border border-line bg-surface hover:border-gold/50 text-ink transition-colors flex items-center justify-center"
+                aria-label="Abrir menu de categorias"
+              >
+                <MoreVertical size={16} />
+              </button>
+
+              {mobileMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-52 rounded-lg border border-line bg-surface2 shadow-xl z-50 p-1">
+                  {OPS_CATEGORIES.map((cat) => {
+                    const Icon = cat.icon;
+                    const isSelected = activeMainTab === cat.id;
+                    const count = cat.id === 'tasks'
+                      ? tasks.filter((t) => !t.archived).length
+                      : cat.id === 'projects'
+                      ? projects.filter((p) => !p.archived).length
+                      : projects.filter((p) => p.archived).length;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveMainTab(cat.id);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-semibold transition-colors ${
+                          isSelected
+                            ? 'bg-gold/15 text-gold font-bold'
+                            : 'text-muted hover:text-ink hover:bg-surface'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Icon size={14} className={isSelected ? 'text-gold' : 'text-muted'} />
+                          <span>{cat.label}</span>
+                        </div>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface border border-line">
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop: Abas Horizontais com Botões de Criação */}
+        <div className="hidden sm:flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            {OPS_CATEGORIES.map((cat) => {
+              const Icon = cat.icon;
+              const isSelected = activeMainTab === cat.id;
+              const count = cat.id === 'tasks'
+                ? tasks.filter((t) => !t.archived).length
+                : cat.id === 'projects'
+                ? projects.filter((p) => !p.archived).length
+                : projects.filter((p) => p.archived).length;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setActiveMainTab(cat.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all border ${
+                    isSelected
+                      ? 'border-gold bg-gold/15 text-gold shadow-sm'
+                      : 'border-line bg-surface hover:bg-surface2 text-muted hover:text-ink'
+                  }`}
+                >
+                  <Icon size={14} className={isSelected ? 'text-gold' : 'text-muted'} />
+                  <span>{cat.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                    isSelected ? 'bg-gold/20 text-gold' : 'bg-surface2 text-muted'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-3">
-            {activeMainTab === 'tasks' ? (
+            {activeMainTab === 'tasks' && (
               <>
                 <div className="flex items-center gap-2">
-                  <div className="text-right hidden sm:block">
+                  <div className="text-right">
                     <span className="text-[9px] font-mono text-muted uppercase block">{tx.progress[curLang]}</span>
                     <b className="text-xs font-mono text-gold">{completedToday}/{todayTasks.length} ({pct}%)</b>
                   </div>
@@ -912,7 +1007,9 @@ export default function OpsView() {
                   <span>{tx.newTask[curLang]}</span>
                 </button>
               </>
-            ) : (
+            )}
+
+            {activeMainTab === 'projects' && (
               <button
                 type="button"
                 onClick={() => openProjectModal()}
@@ -924,11 +1021,10 @@ export default function OpsView() {
             )}
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* 2. CONTEÚDO PRINCIPAL */}
-      {activeMainTab === 'tasks' ? (
-        /* ABA DE TAREFAS */
+      {/* 1. ABA DE TAREFAS */}
+      {activeMainTab === 'tasks' && (
         <Card className="p-3.5 sm:p-4">
           <div className="flex items-center justify-between gap-2 mb-3 pb-2.5 border-b border-line/60">
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 max-w-full -mx-0.5 px-0.5">
@@ -1059,8 +1155,10 @@ export default function OpsView() {
             </div>
           )}
         </Card>
-      ) : (
-        /* ABA DE PROJETOS ESTRATÉGICOS */
+      )}
+
+      {/* 2. ABA DE PROJETOS ESTRATÉGICOS */}
+      {activeMainTab === 'projects' && (
         <div className="flex flex-col gap-3">
           {/* Sub-filtros de Projetos com Scroll Horizontal Suave */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 max-w-full -mx-0.5 px-0.5">
@@ -1356,6 +1454,102 @@ export default function OpsView() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* 3. ABA DE ARQUIVO GERAL */}
+      {activeMainTab === 'archive' && (
+        <div className="grid gap-3.5">
+          {/* Projetos Arquivados */}
+          <Card className="p-4 border-line">
+            <div className="flex items-center justify-between mb-3">
+              <K className="mb-0">🏛️ PROJETOS ARQUIVADOS ({projects.filter((p) => p.archived).length})</K>
+            </div>
+            {projects.filter((p) => p.archived).length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {projects.filter((p) => p.archived).map((proj) => {
+                  const projTasks = tasks.filter((t) => String(t.projectId) === String(proj.id));
+                  return (
+                    <div
+                      key={proj.id}
+                      className="p-3.5 rounded-lg border border-line/60 bg-surface2/60 flex flex-col justify-between gap-3"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h4 className="text-sm font-bold text-ink truncate">{proj.title}</h4>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface border border-line text-muted">
+                            Arquivado
+                          </span>
+                        </div>
+                        {proj.desc && (
+                          <p className="text-xs text-muted line-clamp-2 mb-2">{proj.desc}</p>
+                        )}
+                        <span className="text-[11px] font-mono text-muted">
+                          Tarefas vinculadas: <b className="text-ink">{projTasks.length}</b>
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-line/50">
+                        <button
+                          type="button"
+                          onClick={() => requestArchiveProject(proj)}
+                          className="btn-gold py-1.5 px-3 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+                        >
+                          <ArchiveRestore size={12} />
+                          <span>Desarquivar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => requestDeleteProject(proj)}
+                          className="btn-dark py-1.5 px-2.5 text-xs text-muted hover:text-danger hover:border-danger/40 transition-colors"
+                          title="Excluir Definitivamente"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-6 text-center text-xs text-muted">
+                Nenhum projeto arquivado.
+              </div>
+            )}
+          </Card>
+
+          {/* Tarefas Arquivadas (se houver) */}
+          {tasks.filter((t) => t.archived).length > 0 && (
+            <Card className="p-4 border-line">
+              <div className="flex items-center justify-between mb-3">
+                <K className="mb-0">🎯 TAREFAS ARQUIVADAS ({tasks.filter((t) => t.archived).length})</K>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {tasks.filter((t) => t.archived).map((tItem) => (
+                  <div
+                    key={tItem.id}
+                    className="p-2.5 rounded border border-line/50 bg-surface2/40 flex items-center justify-between gap-2"
+                  >
+                    <span className="text-xs text-muted truncate">{tItem.txt}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        update((s) => {
+                          const target = (s.tasks || []).find((x) => String(x.id) === String(tItem.id));
+                          if (target) target.archived = false;
+                        });
+                        AF.click();
+                        toast('Tarefa restaurada!');
+                      }}
+                      className="text-[10px] font-mono px-2 py-0.5 rounded border border-line bg-surface hover:border-gold hover:text-gold text-muted font-bold flex-none"
+                    >
+                      Restaurar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
         </div>
       )}
     </div>

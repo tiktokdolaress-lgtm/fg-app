@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { RefreshCw, Trophy, CalendarDays, Flame, ShieldCheck, Droplets, Hand, HeartPulse, Check, X, Zap, Sparkles, ShieldAlert, Target, Compass } from 'lucide-react';
+import { RefreshCw, Trophy, CalendarDays, Flame, ShieldCheck, Droplets, Hand, HeartPulse, Check, X, Zap, Sparkles, ShieldAlert, Target, Compass, MoreVertical, LayoutDashboard } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Bar, Chk, Empty } from '@/components/ui';
 import { METAS, NEXTF, FAIL_PEN, TRIGGERS, FAIL_LBL, TIERS, QUOTES } from '@/lib/data';
@@ -8,6 +8,12 @@ import { cx, cxHabits, cxTiers, cxQuotes } from '@/lib/content-i18n';
 import * as L from '@/lib/logic';
 import { AF, metaSfx } from '@/lib/audio';
 import { today, dstr, fdmy, fmtD, pad, yesterday } from '@/lib/utils';
+
+const QG_CATEGORIES = [
+  { id: 'overview', label: 'Progresso & Status', icon: Compass },
+  { id: 'combat', label: 'Combate & Rotina', icon: ShieldCheck },
+  { id: 'timeline', label: 'Linha do Tempo', icon: CalendarDays },
+];
 
 /* Dicionário Internacional dos Efeitos Biológicos e Mentais (PT / EN / ES) */
 const BIO_EFFECTS_I18N = {
@@ -130,6 +136,8 @@ export default function QgView() {
   const curLang = ['pt', 'en', 'es'].includes(lang) ? lang : 'pt';
   const [ciDate, setCiDate] = useState(today());
   const [qgRange, setQgRange] = useState(30);
+  const [activeCategory, setActiveCategory] = useState('overview');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   /* i18n */
   const tiers = cxTiers(lang, TIERS);
@@ -352,303 +360,460 @@ export default function QgView() {
 
   const ring = 213.6 * (1 - S.purity / 100);
 
-  return (
-    <div className="grid gap-3.5">
-      {/* 1. Código do Guerreiro */}
-      <Card className="border-gold/40 bg-gradient-to-br from-surface to-gold/5 py-3.5 px-4 sm:px-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <span className="k mb-1">⚡ {t('code')}</span>
-            <p className="border-l-[3px] border-gold2 pl-3 text-[15px] sm:text-[16px] font-bold italic leading-snug text-[#f3ead2]">
-              "{mantra}"
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-none justify-end">
-            <span className="k2 hidden xl:inline text-[10px]">{t('phrase_n')}{(S.phraseIdx % mantraPool.length) + 1}{t('phrase_of')}{mantraPool.length}</span>
-            <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { AF.click(); update((s) => { s.phraseIdx = (s.phraseIdx + 1) % L.mantraPool(s, quotes).length; }); }}>
-              <RefreshCw size={13} /> {t('swap')}
-            </button>
+  const getCategoryLabel = (id) => {
+    const map = {
+      overview: { pt: 'Progresso & Status', en: 'Progress & Status', es: 'Progreso y Estado' },
+      combat: { pt: 'Combate & Rotina', en: 'Combat & Routine', es: 'Combate y Rutina' },
+      timeline: { pt: 'Linha do Tempo', en: 'Timeline', es: 'Línea de Tiempo' },
+      all: { pt: 'Visão Completa', en: 'Full View', es: 'Vista Completa' },
+    };
+    return map[id]?.[curLang] || map[id]?.pt || id;
+  };
+
+  /* Blocos Modulares de Renderização */
+  const renderMantra = () => (
+    <Card className="border-gold/40 bg-gradient-to-br from-surface to-gold/5 py-3.5 px-4 sm:px-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <span className="k mb-1">⚡ {t('code')}</span>
+          <p className="border-l-[3px] border-gold2 pl-3 text-[15px] sm:text-[16px] font-bold italic leading-snug text-[#f3ead2]">
+            "{mantra}"
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-none justify-end">
+          <span className="k2 hidden xl:inline text-[10px]">{t('phrase_n')}{(S.phraseIdx % mantraPool.length) + 1}{t('phrase_of')}{mantraPool.length}</span>
+          <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { AF.click(); update((s) => { s.phraseIdx = (s.phraseIdx + 1) % L.mantraPool(s, quotes).length; }); }}>
+            <RefreshCw size={13} /> {t('swap')}
+          </button>
+        </div>
+      </div>
+    </Card>
+  );
+
+  const renderProgressHero = () => (
+    <Card glow className="overflow-hidden text-center relative flex-1 flex flex-col justify-between">
+      <div className="pointer-events-none absolute left-1/2 top-[6%] h-[340px] w-[340px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,200,70,.14),transparent_65%)]" style={{ animation: 'breathe 5s ease-in-out infinite' }} />
+      <K className="text-center">{tier.min >= 90 ? t('prog_aura') : t('prog')}</K>
+      
+      <div className="relative my-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+        <div className="col-span-2 bg-gradient-to-b from-[#FFE79A] via-gold to-gold2 bg-clip-text font-display text-[clamp(76px,11vw,120px)] leading-[.92] text-transparent drop-shadow-[0_4px_22px_rgba(255,200,70,.3)] sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:py-2">
+          {d}
+          <small className="mt-1.5 block font-body text-[10.5px] font-extrabold tracking-[.28em] text-muted" style={{ WebkitTextFillColor: '#8E8E93' }}>{L.modeA(S) ? t('daysClean') : t('days')}</small>
+        </div>
+        <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-1 sm:row-start-2">
+          <div className="relative mx-auto h-[66px] w-[66px]">
+            <svg width="66" height="66" viewBox="0 0 80 80" className="-rotate-90">
+              <circle cx="40" cy="40" r="34" fill="none" stroke="#26262c" strokeWidth="7" />
+              <circle cx="40" cy="40" r="34" fill="none" stroke="#FFC846" strokeWidth="7" strokeLinecap="round" strokeDasharray="213.6" strokeDashoffset={ring.toFixed(1)} style={{ transition: 'stroke-dashoffset .8s' }} />
+            </svg>
+            <div className="absolute inset-0 grid place-content-center">
+              <b className="font-display text-base text-gold">{S.purity}%</b>
+              <small className="text-[7px] font-extrabold tracking-[.18em] text-muted">{t('purity')}</small>
+            </div>
           </div>
         </div>
-      </Card>
+        <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-1 sm:row-start-1 sm:self-center"><b className="block font-display text-xl sm:text-2xl text-gold">{pornFree}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hporn')}</small></div>
+        <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-3 sm:row-start-1 sm:self-center"><b className="block font-display text-xl sm:text-2xl text-gold">{mastFree}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hmast')}</small></div>
+        <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-2 sm:row-start-2"><b className="block font-display text-xl sm:text-2xl text-gold">🔥 {streak}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hstreak')}</small></div>
+        <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-3 sm:row-start-2"><b className="block font-display text-xl sm:text-2xl text-gold">🛡️ {L.sosWins(S)}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hsos')}</small></div>
+        {tier.min >= 365 && <div className="col-span-2 rounded-r border border-[#EDEDF2] bg-gradient-to-br from-[#EDEDF2] to-[#8F96A0] p-2.5 shadow-[0_0_18px_rgba(230,232,240,.35)] sm:col-span-3 sm:col-start-1 sm:row-start-3"><b className="block font-display text-2xl text-[#141414]">🐉</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-[#33383f]">{t('titan')}</small></div>}
+      </div>
 
-      {/* 2. GRADE SUPERIOR EQUILIBRADA (Progresso vs Check-in & Forja) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch">
-        
-        {/* COLUNA ESQUERDA (7 colunas): Hero, Métricas, Nível, Efeitos e NOVO PROTOCOLO TÁTICO */}
-        <div className="lg:col-span-7 flex flex-col gap-3.5 justify-between">
-          <Card glow className="overflow-hidden text-center relative flex-1 flex flex-col justify-between">
-            <div className="pointer-events-none absolute left-1/2 top-[6%] h-[340px] w-[340px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,200,70,.14),transparent_65%)]" style={{ animation: 'breathe 5s ease-in-out infinite' }} />
-            <K className="text-center">{tier.min >= 90 ? t('prog_aura') : t('prog')}</K>
-            
-            <div className="relative my-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              <div className="col-span-2 bg-gradient-to-b from-[#FFE79A] via-gold to-gold2 bg-clip-text font-display text-[clamp(76px,11vw,120px)] leading-[.92] text-transparent drop-shadow-[0_4px_22px_rgba(255,200,70,.3)] sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:py-2">
-                {d}
-                <small className="mt-1.5 block font-body text-[10.5px] font-extrabold tracking-[.28em] text-muted" style={{ WebkitTextFillColor: '#8E8E93' }}>{L.modeA(S) ? t('daysClean') : t('days')}</small>
+      {/* Nível e Progresso */}
+      <div className="relative text-left mt-2">
+        <K>{t('tier')} — {tier.icon} {tier.name}</K>
+        <Bar pct={lvlPct} />
+        <div className="mt-1.5 flex justify-between text-[11px] font-extrabold tracking-[.06em] text-muted"><span>{lvlTxt}</span><span className="font-mono">{d}d</span></div>
+        {goalMeta && <div className="mt-1 text-[10.5px] font-bold text-gold2">{d >= goalMeta.d ? t('goal_done') + goalMeta.icon + ' ' + goalMeta.n + '!' : t('goal_next') + goalMeta.icon + ' ' + goalMeta.n + t('goal_in') + goalMeta.d + t('goal_days') + (goalMeta.d - d) + t('goal_close')}</div>}
+        {tier.reward && <div className="mt-0.5 text-[10.5px] font-bold text-gold2">{t('reward_l')}{tier.reward}</div>}
+
+        {/* Efeitos biológicos ativos neste marco */}
+        <div className="mt-3 pt-2.5 border-t border-line/60">
+          <div className="mb-2 flex items-center gap-1.5">
+            <Zap size={13} className="text-gold" />
+            <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold2">
+              {bioData.header}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+            {bioData.perks.map((perk, idx) => (
+              <div key={idx} className="flex items-center gap-1.5 rounded-r border border-line bg-surface2 px-2.5 py-1.5 text-left text-[11px] font-medium text-ink">
+                <ShieldCheck size={12} className="flex-none text-gold" />
+                <span className="truncate">{perk}</span>
               </div>
-              <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-1 sm:row-start-2">
-                <div className="relative mx-auto h-[66px] w-[66px]">
-                  <svg width="66" height="66" viewBox="0 0 80 80" className="-rotate-90">
-                    <circle cx="40" cy="40" r="34" fill="none" stroke="#26262c" strokeWidth="7" />
-                    <circle cx="40" cy="40" r="34" fill="none" stroke="#FFC846" strokeWidth="7" strokeLinecap="round" strokeDasharray="213.6" strokeDashoffset={ring.toFixed(1)} style={{ transition: 'stroke-dashoffset .8s' }} />
-                  </svg>
-                  <div className="absolute inset-0 grid place-content-center">
-                    <b className="font-display text-base text-gold">{S.purity}%</b>
-                    <small className="text-[7px] font-extrabold tracking-[.18em] text-muted">{t('purity')}</small>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+
+  const renderTacticalProtocol = () => (
+    <Card className="border-gold/20 bg-surface2/80 p-3.5">
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-1.5">
+          <Compass size={14} className="text-gold" />
+          <span className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-gold2">
+            {tac.title[curLang]}
+          </span>
+        </div>
+        <span className="text-[9.5px] font-mono font-bold text-gold/80 px-2 py-0.5 rounded bg-gold/10 border border-gold/20">
+          QG ATIVO
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-left">
+        <div className="rounded-r border border-danger/30 bg-danger/5 p-2.5">
+          <div className="flex items-center gap-1.5 text-danger font-bold text-[10.5px] uppercase tracking-wider mb-1">
+            <ShieldAlert size={13} />
+            <span>{tac.riskTitle[curLang]}</span>
+          </div>
+          <p className="text-[11px] text-muted leading-tight">
+            {tac.riskDesc[curLang]}
+          </p>
+        </div>
+
+        <div className="rounded-r border border-gold/30 bg-gold/5 p-2.5">
+          <div className="flex items-center gap-1.5 text-gold font-bold text-[10.5px] uppercase tracking-wider mb-1">
+            <Target size={13} />
+            <span>{tac.goldenRuleTitle[curLang]}</span>
+          </div>
+          <p className="text-[11px] text-muted leading-tight">
+            {tac.goldenRuleDesc[curLang]}
+          </p>
+        </div>
+
+        <div className="rounded-r border border-ok/30 bg-ok/5 p-2.5">
+          <div className="flex items-center gap-1.5 text-ok font-bold text-[10.5px] uppercase tracking-wider mb-1">
+            <Flame size={13} />
+            <span>{tac.energyTitle[curLang]}</span>
+          </div>
+          <p className="text-[11px] text-muted leading-tight">
+            {tac.energyDesc[curLang]}
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+
+  const renderDailyCheckin = () => (
+    <Card>
+      <K>{t('checkin')}{L.modeA(S) ? t('two_pil') : ''}</K>
+      <div className="mb-2.5 flex items-center justify-between gap-1.5">
+        <button
+          type="button"
+          className="chip-dim flex-none px-2.5 py-1 text-[11px]"
+          onClick={() => { AF.click(); setCiDate(yesterday(ciDate)); }}
+        >
+          ◀ {t('prev_d')}
+        </button>
+        <button
+          type="button"
+          className="chip flex-1 justify-center py-1 text-[11.5px] font-bold"
+          onClick={() => { AF.click(); setCiDate(today()); }}
+        >
+          📅 {t('today_b')} ({fdmy(today())})
+        </button>
+        <button
+          type="button"
+          className="chip-dim flex-none px-2.5 py-1 text-[11px] disabled:opacity-30 disabled:cursor-not-allowed"
+          disabled={ciDate >= today()}
+          onClick={() => { AF.click(); setCiDate(dstr(new Date(L.parseD(ciDate).getTime() + 86400000))); }}
+        >
+          {t('next_d')} ▶
+        </button>
+      </div>
+      {ciDate !== today() && <div className="chip mb-2 cursor-default">{t('editing_r')}{fdmy(ciDate)}</div>}
+      <div className="flex flex-col gap-2">
+        {L.pillars(S).map((k) => {
+          const FAILMAP = { p: 'porn', m: 'mast', r: 'ejac' };
+          const failTypes = String(cView.fail || '').split('+').filter(Boolean);
+          return (
+            <Chk key={k} on={!!cView[k]} failed={!cView[k] && failTypes.includes(FAILMAP[k])} onClick={() => setCI(k, !cView[k], ciDate)}>
+              {t(k === 'p' ? 'c1' : k === 'm' ? 'c2' : 'c3')}
+            </Chk>
+          );
+        })}
+      </div>
+      {ciDate === today()
+        ? <button className="btn-red btn-big mt-3" onClick={failFlow}>{t('fail')}</button>
+        : <p className="fnote mt-1">{t('retro')}</p>}
+    </Card>
+  );
+
+  const renderForgeToday = () => (
+    <Card className="flex-1 flex flex-col justify-between">
+      <div>
+        <K>🔨 {t('forgeToday')} — {doneF}{t('of_w')}{S.forge.active.length}</K>
+        {act.length ? (
+          <div className="flex flex-col gap-1.5 mt-1">
+            {act.map((id) => {
+              const h = ALLH.find((x) => x.id === id); if (!h) return null;
+              const dn = fd.includes(id), isF = ff.includes(id), tm = L.hTime(S, id);
+              return (
+                <div key={id} className={`flex items-center gap-2 rounded-r border p-2 text-left text-xs sm:text-[13px] font-semibold transition-colors ${dn ? 'border-gold/50 bg-gold/10' : isF ? 'border-danger/50 bg-danger/10' : 'border-line bg-surface2'}`}>
+                  <span className="w-[22px] text-center text-base">{h.icon}</span>
+                  <span className={`min-w-0 flex-1 truncate ${dn ? 'text-muted line-through' : isF ? 'text-danger line-through opacity-80' : ''}`}>{h.n}</span>
+                  {tm && <span className="font-mono text-[10px] text-gold2">⏰{tm}</span>}
+                  <div className="flex items-center gap-1.5 flex-none">
+                    <button
+                      type="button"
+                      title="Marcar como Falho"
+                      onClick={(e) => toggleHabitFailed(id, e)}
+                      className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
+                        isF 
+                          ? 'border-danger bg-danger text-white shadow-sm' 
+                          : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-danger/60 hover:text-danger'
+                      }`}
+                    >
+                      <X size={13} strokeWidth={2.5} />
+                    </button>
+                    <button
+                      type="button"
+                      title="Marcar como Cumprido"
+                      onClick={(e) => toggleHabitDone(id, e)}
+                      className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
+                        dn 
+                          ? 'border-gold bg-gold text-[#141414] shadow-sm' 
+                          : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-gold/60 hover:text-gold'
+                      }`}
+                    >
+                      <Check size={13} strokeWidth={2.5} />
+                    </button>
                   </div>
                 </div>
-              </div>
-              <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-1 sm:row-start-1 sm:self-center"><b className="block font-display text-xl sm:text-2xl text-gold">{pornFree}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hporn')}</small></div>
-              <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-3 sm:row-start-1 sm:self-center"><b className="block font-display text-xl sm:text-2xl text-gold">{mastFree}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hmast')}</small></div>
-              <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-2 sm:row-start-2"><b className="block font-display text-xl sm:text-2xl text-gold">🔥 {streak}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hstreak')}</small></div>
-              <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-3 sm:row-start-2"><b className="block font-display text-xl sm:text-2xl text-gold">🛡️ {L.sosWins(S)}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hsos')}</small></div>
-              {tier.min >= 365 && <div className="col-span-2 rounded-r border border-[#EDEDF2] bg-gradient-to-br from-[#EDEDF2] to-[#8F96A0] p-2.5 shadow-[0_0_18px_rgba(230,232,240,.35)] sm:col-span-3 sm:col-start-1 sm:row-start-3"><b className="block font-display text-2xl text-[#141414]">🐉</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-[#33383f]">{t('titan')}</small></div>}
-            </div>
+              );
+            })}
+          </div>
+        ) : (
+          <><Empty>{t('ef1')}<br />{t('ef2')} <b className="text-gold">{t('forge_b')}</b>.</Empty>
+            <button className="btn-ghost btn-big mt-2" onClick={() => setTab('forge')}>{t('goforge')}</button></>
+        )}
+      </div>
+      {act.length > 0 && (
+        <div className="bar mt-3"><i style={{ width: (S.forge.active.length ? (doneF / S.forge.active.length) * 100 : 0) + '%' }} /></div>
+      )}
+    </Card>
+  );
 
-            {/* Nível e Progresso */}
-            <div className="relative text-left mt-2">
-              <K>{t('tier')} — {tier.icon} {tier.name}</K>
-              <Bar pct={lvlPct} />
-              <div className="mt-1.5 flex justify-between text-[11px] font-extrabold tracking-[.06em] text-muted"><span>{lvlTxt}</span><span className="font-mono">{d}d</span></div>
-              {goalMeta && <div className="mt-1 text-[10.5px] font-bold text-gold2">{d >= goalMeta.d ? t('goal_done') + goalMeta.icon + ' ' + goalMeta.n + '!' : t('goal_next') + goalMeta.icon + ' ' + goalMeta.n + t('goal_in') + goalMeta.d + t('goal_days') + (goalMeta.d - d) + t('goal_close')}</div>}
-              {tier.reward && <div className="mt-0.5 text-[10.5px] font-bold text-gold2">{t('reward_l')}{tier.reward}</div>}
+  const renderTasksToday = () => (
+    <Card className="flex-1 flex flex-col justify-between">
+      <div>
+        <K>🎯 {t('tasksToday')} — {openTasks.length}{t('pend_w')}</K>
+        {openTasks.length ? (
+          <div className="flex flex-col gap-2 mt-1">
+            {openTasks.map((x) => (
+              <button key={x.id} className="flex items-center gap-2.5 rounded-r border border-line bg-surface2 p-2.5 text-left text-[13px] font-semibold" onClick={() => { update((s) => { const tt = s.tasks.find((y) => y.id == x.id); if (!tt) return; if ((tt.rep || 'unica') === 'unica') tt.done = !tt.done; else { const dd = today(); tt.doneDates = tt.doneDates || []; const i = tt.doneDates.indexOf(dd); if (i >= 0) tt.doneDates.splice(i, 1); else tt.doneDates.push(dd); } }); AF.click(); }}>
+                <span className={`h-2.5 w-2.5 flex-none rounded-full ${{ alta: 'bg-danger', media: 'bg-gold', baixa: 'bg-muted' }[x.pri] || 'bg-muted'}`} />
+                <span className="min-w-0 flex-1 truncate">{x.txt}</span>
+                {x.time && <span className="font-mono text-[11px] text-gold2">{x.time}</span>}
+                <span className="grid h-[20px] w-[20px] flex-none place-items-center rounded-md border border-[#3c3c46] text-transparent">✓</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="py-4 text-center">
+            <Empty>{t('eo1')}<b className="text-gold">{t('ops_b')}</b>.</Empty>
+          </div>
+        )}
+      </div>
+      <button className="btn-ghost w-full text-xs mt-2 py-1.5" onClick={() => setTab('tasks')}>
+        + Gerenciar Operações
+      </button>
+    </Card>
+  );
 
-              {/* Efeitos biológicos ativos neste marco */}
-              <div className="mt-3 pt-2.5 border-t border-line/60">
-                <div className="mb-2 flex items-center gap-1.5">
-                  <Zap size={13} className="text-gold" />
-                  <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold2">
-                    {bioData.header}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                  {bioData.perks.map((perk, idx) => (
-                    <div key={idx} className="flex items-center gap-1.5 rounded-r border border-line bg-surface2 px-2.5 py-1.5 text-left text-[11px] font-medium text-ink">
-                      <ShieldCheck size={12} className="flex-none text-gold" />
-                      <span className="truncate">{perk}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* NOVO BLOCO TÁTICO: Preenche perfeitamente a base da coluna esquerda */}
-          <Card className="border-gold/20 bg-surface2/80 p-3.5">
-            <div className="flex items-center justify-between mb-2.5">
-              <div className="flex items-center gap-1.5">
-                <Compass size={14} className="text-gold" />
-                <span className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-gold2">
-                  {tac.title[curLang]}
-                </span>
-              </div>
-              <span className="text-[9.5px] font-mono font-bold text-gold/80 px-2 py-0.5 rounded bg-gold/10 border border-gold/20">
-                QG ATIVO
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-left">
-              {/* Alerta de Zona Crítica */}
-              <div className="rounded-r border border-danger/30 bg-danger/5 p-2.5">
-                <div className="flex items-center gap-1.5 text-danger font-bold text-[10.5px] uppercase tracking-wider mb-1">
-                  <ShieldAlert size={13} />
-                  <span>{tac.riskTitle[curLang]}</span>
-                </div>
-                <p className="text-[11px] text-muted leading-tight">
-                  {tac.riskDesc[curLang]}
-                </p>
-              </div>
-
-              {/* Regra de Ouro */}
-              <div className="rounded-r border border-gold/30 bg-gold/5 p-2.5">
-                <div className="flex items-center gap-1.5 text-gold font-bold text-[10.5px] uppercase tracking-wider mb-1">
-                  <Target size={13} />
-                  <span>{tac.goldenRuleTitle[curLang]}</span>
-                </div>
-                <p className="text-[11px] text-muted leading-tight">
-                  {tac.goldenRuleDesc[curLang]}
-                </p>
-              </div>
-
-              {/* Energia & Foco */}
-              <div className="rounded-r border border-ok/30 bg-ok/5 p-2.5">
-                <div className="flex items-center gap-1.5 text-ok font-bold text-[10.5px] uppercase tracking-wider mb-1">
-                  <Flame size={13} />
-                  <span>{tac.energyTitle[curLang]}</span>
-                </div>
-                <p className="text-[11px] text-muted leading-tight">
-                  {tac.energyDesc[curLang]}
-                </p>
-              </div>
-            </div>
-          </Card>
+  const renderTimeline = () => (
+    <Card className="flex-1 flex flex-col justify-between">
+      <div>
+        <K>{t('tlt')}</K>
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {[7, 14, 30, 60, 90, 365].map((n) => (
+            <button key={n} className={qgRange === n ? 'chip' : 'chip-dim'} style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setQgRange(n); }}>{n}{t('daysuf')}</button>
+          ))}
         </div>
-
-        {/* COLUNA DIREITA (5 colunas): Check-in Diário de Combate + Forja Hoje */}
-        <div className="lg:col-span-5 flex flex-col gap-3.5 justify-between">
-          {/* Check-in Diário */}
-          <Card>
-            <K>{t('checkin')}{L.modeA(S) ? t('two_pil') : ''}</K>
-            <div className="mb-2.5 flex items-center justify-between gap-1.5">
-              <button
-                type="button"
-                className="chip-dim flex-none px-2.5 py-1 text-[11px]"
-                onClick={() => { AF.click(); setCiDate(yesterday(ciDate)); }}
-              >
-                ◀ {t('prev_d')}
-              </button>
-              <button
-                type="button"
-                className="chip flex-1 justify-center py-1 text-[11.5px] font-bold"
-                onClick={() => { AF.click(); setCiDate(today()); }}
-              >
-                📅 {t('today_b')} ({fdmy(today())})
-              </button>
-              <button
-                type="button"
-                className="chip-dim flex-none px-2.5 py-1 text-[11px] disabled:opacity-30 disabled:cursor-not-allowed"
-                disabled={ciDate >= today()}
-                onClick={() => { AF.click(); setCiDate(dstr(new Date(L.parseD(ciDate).getTime() + 86400000))); }}
-              >
-                {t('next_d')} ▶
-              </button>
-            </div>
-            {ciDate !== today() && <div className="chip mb-2 cursor-default">{t('editing_r')}{fdmy(ciDate)}</div>}
-            <div className="flex flex-col gap-2">
-              {L.pillars(S).map((k) => {
-                const FAILMAP = { p: 'porn', m: 'mast', r: 'ejac' };
-                const failTypes = String(cView.fail || '').split('+').filter(Boolean);
-                return (
-                  <Chk key={k} on={!!cView[k]} failed={!cView[k] && failTypes.includes(FAILMAP[k])} onClick={() => setCI(k, !cView[k], ciDate)}>
-                    {t(k === 'p' ? 'c1' : k === 'm' ? 'c2' : 'c3')}
-                  </Chk>
-                );
-              })}
-            </div>
-            {ciDate === today()
-              ? <button className="btn-red btn-big mt-3" onClick={failFlow}>{t('fail')}</button>
-              : <p className="fnote mt-1">{t('retro')}</p>}
-          </Card>
-
-          {/* Forja Hoje (Hábitos diários) */}
-          <Card className="flex-1 flex flex-col justify-between">
-            <div>
-              <K>🔨 {t('forgeToday')} — {doneF}{t('of_w')}{S.forge.active.length}</K>
-              {act.length ? (
-                <div className="flex flex-col gap-1.5 mt-1">
-                  {act.map((id) => {
-                    const h = ALLH.find((x) => x.id === id); if (!h) return null;
-                    const dn = fd.includes(id), isF = ff.includes(id), tm = L.hTime(S, id);
-                    return (
-                      <div key={id} className={`flex items-center gap-2 rounded-r border p-2 text-left text-xs sm:text-[13px] font-semibold transition-colors ${dn ? 'border-gold/50 bg-gold/10' : isF ? 'border-danger/50 bg-danger/10' : 'border-line bg-surface2'}`}>
-                        <span className="w-[22px] text-center text-base">{h.icon}</span>
-                        <span className={`min-w-0 flex-1 truncate ${dn ? 'text-muted line-through' : isF ? 'text-danger line-through opacity-80' : ''}`}>{h.n}</span>
-                        {tm && <span className="font-mono text-[10px] text-gold2">⏰{tm}</span>}
-                        <div className="flex items-center gap-1.5 flex-none">
-                          <button
-                            type="button"
-                            title="Marcar como Falho"
-                            onClick={(e) => toggleHabitFailed(id, e)}
-                            className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
-                              isF 
-                                ? 'border-danger bg-danger text-white shadow-sm' 
-                                : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-danger/60 hover:text-danger'
-                            }`}
-                          >
-                            <X size={13} strokeWidth={2.5} />
-                          </button>
-                          <button
-                            type="button"
-                            title="Marcar como Cumprido"
-                            onClick={(e) => toggleHabitDone(id, e)}
-                            className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
-                              dn 
-                                ? 'border-gold bg-gold text-[#141414] shadow-sm' 
-                                : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-gold/60 hover:text-gold'
-                            }`}
-                          >
-                            <Check size={13} strokeWidth={2.5} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <><Empty>{t('ef1')}<br />{t('ef2')} <b className="text-gold">{t('forge_b')}</b>.</Empty>
-                  <button className="btn-ghost btn-big mt-2" onClick={() => setTab('forge')}>{t('goforge')}</button></>
-              )}
-            </div>
-            {act.length > 0 && (
-              <div className="bar mt-3"><i style={{ width: (S.forge.active.length ? (doneF / S.forge.active.length) * 100 : 0) + '%' }} /></div>
-            )}
-          </Card>
+        <div className="mb-2.5 flex flex-wrap gap-1.5">
+          <span className="chip cursor-default text-[10.5px]">🏆 {wins}{t('winsw')}</span>
+          <span className="chip-dim cursor-default border-danger/50 text-danger text-[10.5px]">💥 {falls}{t('fallsw')}</span>
+          <span className="chip-dim cursor-default text-[10.5px]">◐ {part}{t('partw')}</span>
+          <span className="chip-dim cursor-default text-[10.5px]">⚡ {rate}{t('ratew')}</span>
+          <span className="chip-dim cursor-default border-ok/45 text-ok text-[10.5px]" title={lw ? t('lastw') + fdmy(lw.d) + t('atw') + lw.h : t('nosos')}>🛡️ {L.sosWins(S)}{t('sosw')}</span>
+        </div>
+        <div className="flex flex-wrap gap-[5px]">
+          {cells.map((c) => (
+            <button key={c.ds} title={c.ds + ' · ' + c.lab + t('taped')} className={`tlc ${c.cls}`} onClick={() => dayEditor(c.ds)} />
+          ))}
         </div>
       </div>
+      <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted pt-2 border-t border-line/40">
+        <span><b className="tlc w mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_v')}</span>
+        <span><b className="tlc p mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_p')}</span>
+        <span><b className="tlc f mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_f')}</span>
+        <span><b className="mr-1 inline-block h-[13px] w-[13px] rounded bg-[#202026]" />{t('tl_n')}</span>
+        <span className="w-full">{t('tl_hint')}</span>
+      </div>
+    </Card>
+  );
 
-      {/* 3. BASE HORIZONTAL ALINHADA: Operações do Dia & Linha do Tempo */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch">
-        {/* Operações & Tarefas (5 colunas) */}
-        <div className="lg:col-span-5 flex flex-col">
-          <Card className="flex-1 flex flex-col justify-between">
-            <div>
-              <K>🎯 {t('tasksToday')} — {openTasks.length}{t('pend_w')}</K>
-              {openTasks.length ? (
-                <div className="flex flex-col gap-2 mt-1">
-                  {openTasks.map((x) => (
-                    <button key={x.id} className="flex items-center gap-2.5 rounded-r border border-line bg-surface2 p-2.5 text-left text-[13px] font-semibold" onClick={() => { update((s) => { const tt = s.tasks.find((y) => y.id == x.id); if (!tt) return; if ((tt.rep || 'unica') === 'unica') tt.done = !tt.done; else { const dd = today(); tt.doneDates = tt.doneDates || []; const i = tt.doneDates.indexOf(dd); if (i >= 0) tt.doneDates.splice(i, 1); else tt.doneDates.push(dd); } }); AF.click(); }}>
-                      <span className={`h-2.5 w-2.5 flex-none rounded-full ${{ alta: 'bg-danger', media: 'bg-gold', baixa: 'bg-muted' }[x.pri] || 'bg-muted'}`} />
-                      <span className="min-w-0 flex-1 truncate">{x.txt}</span>
-                      {x.time && <span className="font-mono text-[11px] text-gold2">{x.time}</span>}
-                      <span className="grid h-[20px] w-[20px] flex-none place-items-center rounded-md border border-[#3c3c46] text-transparent">✓</span>
-                    </button>
-                  ))}
+  return (
+    <div className="grid gap-3.5">
+      {/* SELETOR DE CATEGORIAS RESPONSIVO (Desktop: Abas / Mobile: 3 Pontinhos) */}
+      <div className="flex items-center justify-between gap-2 border-b border-line pb-3">
+        {/* Mobile: Categoria Ativa + 3 Pontinhos */}
+        <div className="sm:hidden flex items-center justify-between w-full relative">
+          <div className="flex items-center gap-2">
+            {(() => {
+              const currentCat = QG_CATEGORIES.find((c) => c.id === activeCategory) || QG_CATEGORIES[0];
+              const IconComp = currentCat.icon;
+              return (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface2 border border-gold/30 text-gold font-bold text-xs">
+                  <IconComp size={15} />
+                  <span>{getCategoryLabel(currentCat.id)}</span>
                 </div>
-              ) : (
-                <div className="py-4 text-center">
-                  <Empty>{t('eo1')}<b className="text-gold">{t('ops_b')}</b>.</Empty>
-                </div>
-              )}
-            </div>
-            <button className="btn-ghost w-full text-xs mt-2 py-1.5" onClick={() => setTab('tasks')}>
-              + Gerenciar Operações
+              );
+            })()}
+          </div>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-lg border border-line bg-surface hover:border-gold/50 text-ink transition-colors flex items-center justify-center"
+              aria-label="Abrir menu de categorias"
+            >
+              <MoreVertical size={16} />
             </button>
-          </Card>
+
+            {mobileMenuOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-60 rounded-lg border border-line bg-surface2 shadow-xl z-50 p-1">
+                {QG_CATEGORIES.map((cat) => {
+                  const Icon = cat.icon;
+                  const isSelected = activeCategory === cat.id;
+                  const badge = cat.id === 'overview' ? `${d}d` : cat.id === 'combat' ? `${doneF}/${S.forge.active.length}` : cat.id === 'timeline' ? `${rate}%` : null;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveCategory(cat.id);
+                        setMobileMenuOpen(false);
+                        AF.click();
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-semibold transition-colors ${
+                        isSelected
+                          ? 'bg-gold/15 text-gold font-bold'
+                          : 'text-muted hover:text-ink hover:bg-surface'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon size={14} className={isSelected ? 'text-gold' : 'text-muted'} />
+                        <span>{getCategoryLabel(cat.id)}</span>
+                      </div>
+                      {badge && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface border border-line">
+                          {badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Linha do Tempo de Combate (7 colunas) */}
-        <div className="lg:col-span-7 flex flex-col">
-          <Card className="flex-1 flex flex-col justify-between">
-            <div>
-              <K>{t('tlt')}</K>
-              <div className="mb-2 flex flex-wrap gap-1.5">
-                {[7, 14, 30, 60, 90, 365].map((n) => (
-                  <button key={n} className={qgRange === n ? 'chip' : 'chip-dim'} style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setQgRange(n); }}>{n}{t('daysuf')}</button>
-                ))}
-              </div>
-              <div className="mb-2.5 flex flex-wrap gap-1.5">
-                <span className="chip cursor-default text-[10.5px]">🏆 {wins}{t('winsw')}</span>
-                <span className="chip-dim cursor-default border-danger/50 text-danger text-[10.5px]">💥 {falls}{t('fallsw')}</span>
-                <span className="chip-dim cursor-default text-[10.5px]">◐ {part}{t('partw')}</span>
-                <span className="chip-dim cursor-default text-[10.5px]">⚡ {rate}{t('ratew')}</span>
-                <span className="chip-dim cursor-default border-ok/45 text-ok text-[10.5px]" title={lw ? t('lastw') + fdmy(lw.d) + t('atw') + lw.h : t('nosos')}>🛡️ {L.sosWins(S)}{t('sosw')}</span>
-              </div>
-              <div className="flex flex-wrap gap-[5px]">
-                {cells.map((c) => (
-                  <button key={c.ds} title={c.ds + ' · ' + c.lab + t('taped')} className={`tlc ${c.cls}`} onClick={() => dayEditor(c.ds)} />
-                ))}
-              </div>
-            </div>
-            <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted pt-2 border-t border-line/40">
-              <span><b className="tlc w mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_v')}</span>
-              <span><b className="tlc p mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_p')}</span>
-              <span><b className="tlc f mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_f')}</span>
-              <span><b className="mr-1 inline-block h-[13px] w-[13px] rounded bg-[#202026]" />{t('tl_n')}</span>
-              <span className="w-full">{t('tl_hint')}</span>
-            </div>
-          </Card>
+        {/* Desktop: Abas Horizontais */}
+        <div className="hidden sm:flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            {QG_CATEGORIES.map((cat) => {
+              const Icon = cat.icon;
+              const isSelected = activeCategory === cat.id;
+              const badge = cat.id === 'overview' ? `${d}d` : cat.id === 'combat' ? `${doneF}/${S.forge.active.length}` : cat.id === 'timeline' ? `${rate}%` : null;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveCategory(cat.id);
+                    AF.click();
+                  }}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all border ${
+                    isSelected
+                      ? 'border-gold bg-gold/15 text-gold shadow-sm'
+                      : 'border-line bg-surface hover:bg-surface2 text-muted hover:text-ink'
+                  }`}
+                >
+                  <Icon size={14} className={isSelected ? 'text-gold' : 'text-muted'} />
+                  <span>{getCategoryLabel(cat.id)}</span>
+                  {badge && (
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                      isSelected ? 'bg-gold/20 text-gold' : 'bg-surface2 text-muted'
+                    }`}>
+                      {badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
+
+      {/* RENDERIZAÇÃO CONDICIONAL POR CATEGORIA */}
+      {/* 1. VISÃO GERAL (Progresso, Nível, Pureza, Mantra, Protocolo Tático) */}
+      {activeCategory === 'overview' && (
+        <div className="grid gap-3.5">
+          {renderMantra()}
+          {renderProgressHero()}
+          {renderTacticalProtocol()}
+        </div>
+      )}
+
+      {/* 2. COMBATE & ROTINA (Check-in Diário, Forja Hoje, Operações & Tarefas, Protocolo Tático) */}
+      {activeCategory === 'combat' && (
+        <div className="grid gap-3.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {renderDailyCheckin()}
+            {renderForgeToday()}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {renderTasksToday()}
+            {renderTacticalProtocol()}
+          </div>
+        </div>
+      )}
+
+      {/* 3. LINHA DO TEMPO (Histórico de Vitórias, Quedas, SOS, Navegação de Dias) */}
+      {activeCategory === 'timeline' && (
+        <div className="grid gap-3.5">
+          {renderTimeline()}
+        </div>
+      )}
+
+      {/* 4. VISÃO COMPLETA (Grid tradicional para quem prefere tudo aberto de uma vez no Desktop) */}
+      {activeCategory === 'all' && (
+        <div className="grid gap-3.5">
+          {renderMantra()}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch">
+            <div className="lg:col-span-7 flex flex-col gap-3.5 justify-between">
+              {renderProgressHero()}
+              {renderTacticalProtocol()}
+            </div>
+            <div className="lg:col-span-5 flex flex-col gap-3.5 justify-between">
+              {renderDailyCheckin()}
+              {renderForgeToday()}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch">
+            <div className="lg:col-span-5 flex flex-col">
+              {renderTasksToday()}
+            </div>
+            <div className="lg:col-span-7 flex flex-col">
+              {renderTimeline()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,12 +10,17 @@ import {
   Trophy,
   ShieldAlert,
   Skull,
+  MoreVertical,
+  Check,
+  BarChart2,
+  Flame,
 } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Empty } from '@/components/ui';
 import * as L from '@/lib/logic';
 import { cx, cxHabits } from '@/lib/content-i18n';
 import { today, dstr, fdmy } from '@/lib/utils';
+import { AF } from '@/lib/audio';
 
 const TRIGGER_LABELS = {
   madrugada: 'Madrugada / Tarde da Noite',
@@ -30,11 +35,19 @@ const TRIGGER_LABELS = {
   banho: 'Banho Demorado / Sozinho',
 };
 
+const STATS_CATEGORIES = [
+  { id: 'general', key: 'cat_general', label: 'Geral & Consistência', icon: BarChart2 },
+  { id: 'risk', key: 'cat_risk', label: 'Risco & S.O.S', icon: ShieldAlert },
+  { id: 'hall', key: 'cat_hall', label: 'Salão da Fama & Honra', icon: Trophy },
+];
+
 export default function StatsView() {
   const { S } = useApp();
   const lang = (S && S.settings && S.settings.lang) || 'pt';
   const T = (id, fb) => cx(lang, 'stats', id) || fb;
 
+  const [activeCategory, setActiveCategory] = useState('general');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hmOff, setHmOff] = useState(0);
   const [hall, setHall] = useState(null);
 
@@ -209,24 +222,130 @@ export default function StatsView() {
   };
 
   const localeCode = { pt: 'pt-BR', en: 'en-US', es: 'es-ES' };
+  const currentCategory = STATS_CATEGORIES.find((c) => c.id === activeCategory) || STATS_CATEGORIES[0];
+  const CurrentIcon = currentCategory.icon;
 
   return (
     <div className="flex flex-col gap-4 pb-16">
-      {/* 1. Grade de KPIs Principais */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
-        {KPIS.map(([v, lb], i) => (
-          <div key={i} className="rounded-r border border-line bg-surface p-3 text-center">
-            <b className="block font-display text-[26px] leading-none text-gold">{v}</b>
-            <small className="mt-1 block text-[9.5px] font-extrabold uppercase tracking-[.12em] text-muted">
-              {lb}
-            </small>
+      {/* SELETOR DE CATEGORIAS: Desktop Tabs & Mobile 3-Dots Dropdown */}
+      <Card className="border-gold/30 bg-surface2/60 p-2.5 sm:p-3">
+        {/* Mobile: Categoria Ativa + Botão de 3 Pontinhos */}
+        <div className="relative flex items-center justify-between sm:hidden">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-md bg-gold/10 border border-gold/30 flex items-center justify-center text-gold">
+              <CurrentIcon size={16} />
+            </div>
+            <div>
+              <span className="text-[10px] font-mono text-muted uppercase font-bold tracking-wider block">Categoria</span>
+              <span className="text-xs font-bold font-mono text-gold">{currentCategory.label}</span>
+            </div>
           </div>
-        ))}
-      </div>
 
-      {/* 2. Heatmap & Consistência da Forja (Linha Equilibrada sem Vácuo) */}
-      <div className="grid gap-3.5 lg:grid-cols-2 items-stretch">
-        <Card className="flex flex-col justify-between">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                AF.click();
+                setMobileMenuOpen(!mobileMenuOpen);
+              }}
+              className={`p-2 rounded-md border transition-all ${
+                mobileMenuOpen
+                  ? 'bg-gold text-[#141414] border-gold shadow-sm'
+                  : 'bg-surface border-line text-muted hover:text-ink hover:border-gold/40'
+              }`}
+              title="Opções de Estatísticas"
+            >
+              <MoreVertical size={16} />
+            </button>
+
+            {/* Dropdown Flutuante no Mobile */}
+            {mobileMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-full mt-1.5 w-56 rounded-lg border border-gold/30 bg-[#1a1a20] shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-3 py-1.5 text-[10px] font-mono text-muted uppercase font-bold border-b border-line/60">
+                    Navegação de Estatísticas
+                  </div>
+                  {STATS_CATEGORIES.map((cat) => {
+                    const CatIcon = cat.icon;
+                    const isSel = activeCategory === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          AF.click();
+                          setActiveCategory(cat.id);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2.5 text-xs font-mono font-semibold flex items-center justify-between transition-colors ${
+                          isSel
+                            ? 'bg-gold/15 text-gold border-l-2 border-gold font-bold'
+                            : 'text-ink hover:bg-surface2'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <CatIcon size={14} className={isSel ? 'text-gold' : 'text-muted'} />
+                          <span>{cat.label}</span>
+                        </div>
+                        {isSel && <Check size={14} className="text-gold flex-none" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Desktop: Abas Segmentadas */}
+        <div className="hidden sm:grid sm:grid-cols-3 gap-1.5">
+          {STATS_CATEGORIES.map((cat) => {
+            const CatIcon = cat.icon;
+            const isSel = activeCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  AF.click();
+                  setActiveCategory(cat.id);
+                }}
+                className={`py-2 px-3 rounded text-xs font-mono font-bold transition-all flex items-center justify-center gap-2 ${
+                  isSel
+                    ? 'bg-gold text-[#141414] shadow-sm'
+                    : 'bg-surface text-muted hover:text-ink hover:border-gold/40 border border-line'
+                }`}
+              >
+                <CatIcon size={14} />
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* CATEGORIA 1: GERAL & CONSISTÊNCIA */}
+      {activeCategory === 'general' && (
+        <div className="flex flex-col gap-4 animate-in fade-in duration-150">
+          {/* 1. Grade de KPIs Principais */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+            {KPIS.map(([v, lb], i) => (
+              <div key={i} className="rounded-r border border-line bg-surface p-3 text-center">
+                <b className="block font-display text-[26px] leading-none text-gold">{v}</b>
+                <small className="mt-1 block text-[9.5px] font-extrabold uppercase tracking-[.12em] text-muted">
+                  {lb}
+                </small>
+              </div>
+            ))}
+          </div>
+
+          {/* 2. Heatmap & Consistência da Forja */}
+          <div className="grid gap-3.5 lg:grid-cols-2 items-stretch">
+            <Card className="flex flex-col justify-between">
           <div>
             <div className="mb-3 flex items-center justify-between">
               <K style={{ margin: 0 }}>
@@ -380,7 +499,7 @@ export default function StatsView() {
               </small>
             </div>
           </div>
-          <p className="fnote" style={{ textAlign: 'left' }}>
+          <p className="fnote mt-3" style={{ textAlign: 'left' }}>
             {T('wk_part', 'Parciais: ')}
             {wr.part} · {T('wk_none', 'Sem registro: ')}
             {wr.none} · {T('wk_pur', 'Pureza atual: ')}
@@ -391,8 +510,15 @@ export default function StatsView() {
             {T('wk_push', ' Todo domingo você recebe um push avisando que o relatório está pronto.')}
           </p>
         </Card>
+      </div>
+    </div>
+  )}
 
-        {/* 4. Linha Equilibrada: Mapa de Risco por Horário (Esq) + Salão da Fama (Dir) */}
+  {/* CATEGORIA 2: RISCO & S.O.S */}
+  {activeCategory === 'risk' && (
+    <div className="flex flex-col gap-4 animate-in fade-in duration-150">
+      <div className="grid gap-3.5 lg:grid-cols-2 items-stretch">
+        {/* Mapa de Risco por Horário */}
         <Card className="flex flex-col justify-between">
           <div>
             <K>
@@ -430,98 +556,7 @@ export default function StatsView() {
           </p>
         </Card>
 
-        <Card className="flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <K style={{ margin: 0 }}>
-                <Trophy size={12} className="mr-1 inline text-gold" /> {T('hall_k', 'SALÃO DA FAMA ANÔNIMO')}
-              </K>
-              <span className="text-[10px] font-mono text-muted">
-                {S.hallOptIn ? '🛡️ Participando' : 'Modo Privado'}
-              </span>
-            </div>
-            {hall === null ? (
-              <Empty>{T('loading', 'Carregando...')}</Empty>
-            ) : hall.length ? (
-              <div className="max-h-[200px] space-y-1.5 overflow-y-auto pr-1">
-                {hall.map((h, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-center gap-2.5 rounded-r border p-2 text-[12px] font-bold ${
-                      h.name === S.hallName ? 'border-gold/60 bg-gold/10 text-gold' : 'border-line bg-surface2'
-                    }`}
-                  >
-                    <span className="w-6 text-center font-display text-sm text-gold2">
-                      {i + 1}º
-                    </span>
-                    <span className="flex-1 truncate">
-                      {h.name} {h.name === S.hallName ? '(você)' : ''}
-                    </span>
-                    <span className="text-xs">{h.tier}</span>
-                    <span className="font-mono text-gold text-xs">{h.days}d</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-3 rounded bg-surface2 border border-line text-xs text-muted">
-                {T('hall_e1', 'Nenhum guerreiro optou pelo Salão ainda.')} Ative nas Configurações para ingressar.
-              </div>
-            )}
-          </div>
-          <p className="fnote mt-2 pt-2 border-t border-line/60" style={{ textAlign: 'left' }}>
-            {T('hall_note', 'Ranking anônimo com pseudônimos — apenas dias e patamar.')}
-          </p>
-        </Card>
-
-        {/* 5. Linha Equilibrada: Gatilhos & Auditoria (Esq) + Histórico S.O.S (Dir) */}
-        <Card className="flex flex-col justify-between border-danger/30">
-          <div>
-            <K className="text-danger flex items-center gap-1.5 text-xs font-bold font-mono uppercase mb-2">
-              <ShieldAlert size={14} />
-              {triggerRank.length > 0 ? 'RANKING DE GATILHOS (AUDITORIA)' : 'BLINDAGEM CONTRA GATILHOS'}
-            </K>
-            {triggerRank.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                {triggerRank.slice(0, 4).map((item, idx) => (
-                  <div key={item.id} className="flex flex-col gap-1 p-2 rounded bg-surface2 border border-line/40">
-                    <div className="flex justify-between items-center text-xs font-semibold">
-                      <span className="text-ink flex items-center gap-1.5 truncate">
-                        <span className="text-danger font-mono font-bold text-[11px]">#{idx + 1}</span>
-                        <span className="truncate">{item.name}</span>
-                      </span>
-                      <span className="font-mono text-danger font-bold text-xs flex-none ml-2">
-                        {item.count}x ({item.pct}%)
-                      </span>
-                    </div>
-                    <div className="w-full bg-[#1b1b22] h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className="bg-danger h-full rounded-full transition-all duration-500"
-                        style={{ width: `${item.pct}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-2 text-xs">
-                <div className="p-2.5 rounded bg-surface2 border border-line flex items-center gap-2">
-                  <span className="text-ok font-bold text-sm">✓</span>
-                  <span className="text-ink">Nenhuma queda recente registrada. Defesas intactas!</span>
-                </div>
-                <div className="p-2 rounded bg-surface2/60 border border-line/50 text-[11px] text-muted space-y-1">
-                  <div className="font-bold text-gold2">Top Gatilhos Críticos a Vigiar:</div>
-                  <div>• Redes Sociais no escuro da madrugada</div>
-                  <div>• Estresse acumulado e cansaço sem treino</div>
-                  <div>• Tédio e isolamento com computador aberto</div>
-                </div>
-              </div>
-            )}
-          </div>
-          <p className="fnote mt-2 pt-2 border-t border-line/60" style={{ textAlign: 'left' }}>
-            Identificar o gatilho antecipadamente desativa a cascata impulsiva no cérebro.
-          </p>
-        </Card>
-
+        {/* Histórico S.O.S */}
         <Card className="flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -561,6 +596,147 @@ export default function StatsView() {
           </p>
         </Card>
       </div>
+
+      {/* Ranking de Gatilhos & Auditoria */}
+      <Card className="border-danger/30">
+        <div>
+          <K className="text-danger flex items-center gap-1.5 text-xs font-bold font-mono uppercase mb-2">
+            <ShieldAlert size={14} />
+            {triggerRank.length > 0 ? 'RANKING DE GATILHOS (AUDITORIA)' : 'BLINDAGEM CONTRA GATILHOS'}
+          </K>
+          {triggerRank.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {triggerRank.slice(0, 4).map((item, idx) => (
+                <div key={item.id} className="flex flex-col gap-1 p-2 rounded bg-surface2 border border-line/40">
+                  <div className="flex justify-between items-center text-xs font-semibold">
+                    <span className="text-ink flex items-center gap-1.5 truncate">
+                      <span className="text-danger font-mono font-bold text-[11px]">#{idx + 1}</span>
+                      <span className="truncate">{item.name}</span>
+                    </span>
+                    <span className="font-mono text-danger font-bold text-xs flex-none ml-2">
+                      {item.count}x ({item.pct}%)
+                    </span>
+                  </div>
+                  <div className="w-full bg-[#1b1b22] h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-danger h-full rounded-full transition-all duration-500"
+                      style={{ width: `${item.pct}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2 text-xs">
+              <div className="p-2.5 rounded bg-surface2 border border-line flex items-center gap-2">
+                <span className="text-ok font-bold text-sm">✓</span>
+                <span className="text-ink">Nenhuma queda recente registrada. Defesas intactas!</span>
+              </div>
+              <div className="p-2 rounded bg-surface2/60 border border-line/50 text-[11px] text-muted space-y-1">
+                <div className="font-bold text-gold2">Top Gatilhos Críticos a Vigiar:</div>
+                <div>• Redes Sociais no escuro da madrugada</div>
+                <div>• Estresse acumulado e cansaço sem treino</div>
+                <div>• Tédio e isolamento com computador aberto</div>
+              </div>
+            </div>
+          )}
+        </div>
+        <p className="fnote mt-2 pt-2 border-t border-line/60" style={{ textAlign: 'left' }}>
+          Identificar o gatilho antecipadamente desativa a cascata impulsiva no cérebro.
+        </p>
+      </Card>
+    </div>
+  )}
+
+  {/* CATEGORIA 3: SALÃO DA FAMA & HONRA */}
+  {activeCategory === 'hall' && (
+    <div className="flex flex-col gap-4 animate-in fade-in duration-150">
+      {/* Resumo de Honra & Conquistas */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        <div className="p-3 rounded border border-line bg-surface text-center">
+          <span className="text-[10px] font-mono text-muted uppercase font-bold tracking-wider">Streak Atual</span>
+          <b className="block font-display text-2xl text-gold mt-1">🔥 {S.streak || 0}d</b>
+        </div>
+        <div className="p-3 rounded border border-line bg-surface text-center">
+          <span className="text-[10px] font-mono text-muted uppercase font-bold tracking-wider">Índice de Pureza</span>
+          <b className="block font-display text-2xl text-gold mt-1">✦ {S.purity || 100}%</b>
+        </div>
+        <div className="col-span-2 sm:col-span-1 p-3 rounded border border-line bg-surface text-center">
+          <span className="text-[10px] font-mono text-muted uppercase font-bold tracking-wider">Status no Salão</span>
+          <span className={`block font-mono text-xs font-bold mt-2 ${S.hallOptIn ? 'text-gold' : 'text-muted'}`}>
+            {S.hallOptIn ? `🛡️ ${S.hallName || 'Ativo'}` : '🔒 Privado'}
+          </span>
+        </div>
+      </div>
+
+      {/* Salão da Fama Anônimo */}
+      <Card className="flex flex-col justify-between">
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <K style={{ margin: 0 }}>
+              <Trophy size={12} className="mr-1 inline text-gold" /> {T('hall_k', 'SALÃO DA FAMA ANÔNIMO')}
+            </K>
+            <span className="text-[10px] font-mono text-muted">
+              {S.hallOptIn ? '🛡️ Participando' : 'Modo Privado'}
+            </span>
+          </div>
+          {hall === null ? (
+            <Empty>{T('loading', 'Carregando...')}</Empty>
+          ) : hall.length ? (
+            <div className="max-h-[300px] space-y-1.5 overflow-y-auto pr-1">
+              {hall.map((h, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center gap-2.5 rounded-r border p-2.5 text-[12px] font-bold ${
+                    h.name === S.hallName ? 'border-gold/60 bg-gold/10 text-gold' : 'border-line bg-surface2'
+                  }`}
+                >
+                  <span className="w-7 text-center font-display text-sm text-gold2">
+                    {i + 1}º
+                  </span>
+                  <span className="flex-1 truncate">
+                    {h.name} {h.name === S.hallName ? '(você)' : ''}
+                  </span>
+                  <span className="text-xs text-muted">{h.tier}</span>
+                  <span className="font-mono text-gold text-xs font-bold">{h.days}d</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-3 rounded bg-surface2 border border-line text-xs text-muted">
+              {T('hall_e1', 'Nenhum guerreiro optou pelo Salão ainda.')} Ative nas Configurações para ingressar.
+            </div>
+          )}
+        </div>
+        <p className="fnote mt-3 pt-2 border-t border-line/60" style={{ textAlign: 'left' }}>
+          {T('hall_note', 'Ranking anônimo com pseudônimos — apenas dias e patamar.')}
+        </p>
+      </Card>
+
+      {/* Cartão de Compartilhamento Semanal */}
+      <Card className="p-3.5 bg-gradient-to-br from-surface to-gold/5 border-gold/40">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>
+            <span className="text-xs font-bold font-mono text-gold flex items-center gap-1.5 uppercase tracking-wider">
+              <Share2 size={13} />
+              <span>Cartão Semanal de Honra & Vitória</span>
+            </span>
+            <p className="text-xs text-muted mt-1 leading-relaxed">
+              Exporte o seu resumo semanal oficial com gráficos vetoriais, dias limpos e streak para compartilhar ou salvar nas suas notas.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn-gold px-4 py-2 text-xs font-bold flex items-center gap-1.5 whitespace-nowrap flex-none w-full sm:w-auto justify-center"
+            onClick={shareImage}
+          >
+            <Share2 size={13} />
+            <span>Exportar Imagem</span>
+          </button>
+        </div>
+      </Card>
+    </div>
+  )}
     </div>
   );
 }

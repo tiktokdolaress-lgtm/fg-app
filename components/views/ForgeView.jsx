@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Plus, Flame, Clock, Check, X, ChevronDown, ChevronUp, AlertTriangle, ShieldCheck, Sparkles, CalendarDays, Edit3, Trash2, Archive, ArchiveRestore } from 'lucide-react';
+import { Plus, Flame, Clock, Check, X, ChevronDown, ChevronUp, AlertTriangle, ShieldCheck, Sparkles, CalendarDays, Edit3, Trash2, Archive, ArchiveRestore, MoreVertical } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Empty } from '@/components/ui';
 import { FORGE_RULES, DEFAULT_HABITS } from '@/lib/data';
@@ -8,6 +8,12 @@ import { cxHabits } from '@/lib/content-i18n';
 import * as L from '@/lib/logic';
 import { AF } from '@/lib/audio';
 import { today, fdmy, dstr, fmtD } from '@/lib/utils';
+
+const FORGE_CATEGORIES = [
+  { id: 'active', label: 'Protocolo Ativo', icon: Flame },
+  { id: 'reserve', label: 'Reserva da Forja', icon: Sparkles },
+  { id: 'rules', label: 'Regras & Slots', icon: ShieldCheck },
+];
 
 /* Categorias / Pilares da Masculinidade Trilíngues */
 const PILLARS_I18N = {
@@ -123,6 +129,8 @@ export default function ForgeView() {
   const [selectedPillar, setSelectedPillar] = useState('all');
   const [openBenefitId, setOpenBenefitId] = useState(null);
   const [openHistoryId, setOpenHistoryId] = useState(null);
+  const [activeCategory, setActiveCategory] = useState('active');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   /* Carrega todos os hábitos do usuário */
   const ALLH = cxHabits(lang, L.allH(S));
@@ -473,45 +481,129 @@ export default function ForgeView() {
 
   return (
     <div className="grid gap-3.5">
-      {/* 1. TOPO COMPACTO: Regras de Desbloqueio e Slots */}
-      <Card className="p-3.5 sm:p-4 border-gold/30 bg-surface2/60">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1.5">
-              <K className="mb-0">REGRAS DE SLOTS POR PATAMAR</K>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gold/10 border border-gold/30 text-gold font-bold">
-                {activeCount}/{maxSlots >= 99 ? '∞' : maxSlots} SLOTS ATIVOS
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted overflow-x-auto no-scrollbar pb-1 -mx-0.5 px-0.5">
-              {FORGE_RULES && FORGE_RULES.map((r, i) => {
-                const isCur = d >= r.min && (i === FORGE_RULES.length - 1 || d < FORGE_RULES[i + 1].min);
-                return (
-                  <span
-                    key={r.min}
-                    className={`shrink-0 px-2 py-0.5 rounded border transition-colors ${
-                      isCur
-                        ? 'border-gold bg-gold/15 text-gold font-bold shadow-[0_0_8px_rgba(255,200,70,0.25)]'
-                        : 'border-line/60 bg-surface text-muted/80'
-                    }`}
-                  >
-                    {r.min}+d → {r.slots >= 99 ? '∞' : r.slots} {r.slots === 1 ? 'hábito' : 'hábitos'}
-                  </span>
-                );
-              })}
-            </div>
+      {/* SELETOR DE CATEGORIAS RESPONSIVO (Desktop: Abas / Mobile: 3 Pontinhos) */}
+      <div className="flex items-center justify-between gap-2 border-b border-line pb-3">
+        {/* Mobile: Categoria Ativa + 3 Pontinhos */}
+        <div className="sm:hidden flex items-center justify-between w-full relative">
+          <div className="flex items-center gap-2">
+            {(() => {
+              const currentCat = FORGE_CATEGORIES.find((c) => c.id === activeCategory) || FORGE_CATEGORIES[0];
+              const IconComp = currentCat.icon;
+              return (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface2 border border-gold/30 text-gold font-bold text-xs">
+                  <IconComp size={15} />
+                  <span>{currentCat.label}</span>
+                </div>
+              );
+            })()}
           </div>
 
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="btn-gold flex-none py-2 px-4 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm"
-          >
-            <Plus size={14} strokeWidth={2.5} />
-            <span>CRIAR HÁBITO</span>
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-lg border border-line bg-surface hover:border-gold/50 text-ink transition-colors flex items-center justify-center"
+              aria-label="Abrir menu de categorias"
+            >
+              <MoreVertical size={16} />
+            </button>
+
+            {mobileMenuOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-48 rounded-lg border border-line bg-surface2 shadow-xl z-50 p-1">
+                {FORGE_CATEGORIES.map((cat) => {
+                  const Icon = cat.icon;
+                  const isSelected = activeCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveCategory(cat.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-semibold transition-colors ${
+                        isSelected
+                          ? 'bg-gold/15 text-gold font-bold'
+                          : 'text-muted hover:text-ink hover:bg-surface'
+                      }`}
+                    >
+                      <Icon size={14} className={isSelected ? 'text-gold' : 'text-muted'} />
+                      <span>{cat.label}</span>
+                      {isSelected && <Check size={12} className="ml-auto text-gold" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
-      </Card>
+
+        {/* Desktop: Abas Horizontais */}
+        <div className="hidden sm:flex items-center gap-2 w-full">
+          {FORGE_CATEGORIES.map((cat) => {
+            const Icon = cat.icon;
+            const isSelected = activeCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setActiveCategory(cat.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all border ${
+                  isSelected
+                    ? 'border-gold bg-gold/15 text-gold shadow-sm'
+                    : 'border-line bg-surface hover:bg-surface2 text-muted hover:text-ink'
+                }`}
+              >
+                <Icon size={14} className={isSelected ? 'text-gold' : 'text-muted'} />
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 1. PROTOCOLO ATIVO */}
+      {activeCategory === 'active' && (
+        <div className="grid gap-3.5">
+          {/* TOPO COMPACTO: Regras de Desbloqueio e Slots */}
+          <Card className="p-3.5 sm:p-4 border-gold/30 bg-surface2/60">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <K className="mb-0">REGRAS DE SLOTS POR PATAMAR</K>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gold/10 border border-gold/30 text-gold font-bold">
+                    {activeCount}/{maxSlots >= 99 ? '∞' : maxSlots} SLOTS ATIVOS
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted overflow-x-auto no-scrollbar pb-1 -mx-0.5 px-0.5">
+                  {FORGE_RULES && FORGE_RULES.map((r, i) => {
+                    const isCur = d >= r.min && (i === FORGE_RULES.length - 1 || d < FORGE_RULES[i + 1].min);
+                    return (
+                      <span
+                        key={r.min}
+                        className={`shrink-0 px-2 py-0.5 rounded border transition-colors ${
+                          isCur
+                            ? 'border-gold bg-gold/15 text-gold font-bold shadow-[0_0_8px_rgba(255,200,70,0.25)]'
+                            : 'border-line/60 bg-surface text-muted/80'
+                        }`}
+                      >
+                        {r.min}+d → {r.slots >= 99 ? '∞' : r.slots} {r.slots === 1 ? 'hábito' : 'hábitos'}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={openCreateModal}
+                className="btn-gold flex-none py-2 px-4 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <Plus size={14} strokeWidth={2.5} />
+                <span>CRIAR HÁBITO</span>
+              </button>
+            </div>
+          </Card>
 
       {/* 2. ALERTA DE NEGLIGÊNCIA COMPACTO */}
       {neglected.length > 0 && (
@@ -727,10 +819,7 @@ export default function ForgeView() {
             {/* CARD DE SLOT DISPONÍVEL (Elimina vácuo visual quando há slot livre) */}
             {activeCount < maxSlots && (
               <div
-                onClick={() => {
-                  const el = document.getElementById('reserva-forja-section');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
+                onClick={() => setActiveCategory('reserve')}
                 className="cursor-pointer border-2 border-dashed border-gold/30 hover:border-gold/60 bg-gold/5 hover:bg-gold/10 rounded-lg p-4 flex flex-col items-center justify-center text-center transition-all min-h-[145px] group"
               >
                 <div className="w-10 h-10 rounded-full bg-gold/15 border border-gold/35 text-gold flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-sm">
@@ -740,7 +829,7 @@ export default function ForgeView() {
                   Slot Disponível ({activeCount + 1}/{maxSlots >= 99 ? '∞' : maxSlots})
                 </b>
                 <span className="text-[11px] text-muted mt-1">
-                  Toque aqui para ativar um hábito da Reserva abaixo ↓
+                  Toque aqui para ativar um hábito da Reserva →
                 </span>
               </div>
             )}
@@ -763,13 +852,10 @@ export default function ForgeView() {
                   <span>Slots em uso: <b className="text-gold font-mono">{activeCount}/{maxSlots >= 99 ? '∞' : maxSlots}</b></span>
                   <button
                     type="button"
-                    onClick={() => {
-                      const el = document.getElementById('reserva-forja-section');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }}
+                    onClick={() => setActiveCategory('reserve')}
                     className="text-gold hover:underline text-[11px] font-semibold"
                   >
-                    Ver Reserva ↓
+                    Ver Reserva →
                   </button>
                 </div>
               </div>
@@ -777,16 +863,37 @@ export default function ForgeView() {
           </div>
         ) : (
           <Card className="text-center py-6">
-            <Empty>Nenhum hábito ativo no protocolo.<br />Selecione hábitos na Reserva abaixo para forjar seu dia.</Empty>
+            <Empty>Nenhum hábito ativo no protocolo.<br />Selecione hábitos na Reserva para forjar seu dia.</Empty>
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => setActiveCategory('reserve')}
+                className="btn-gold py-1.5 px-4 text-xs font-bold"
+              >
+                Explorar Reserva de Hábitos →
+              </button>
+            </div>
           </Card>
         )}
       </div>
+    </div>
+  )}
 
-      {/* 4. RESERVA DA FORJA COM FILTROS DE CATEGORIA & ARQUIVADOS */}
-      <div id="reserva-forja-section" className="mt-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
-          <div className="flex items-center gap-2">
-            <K className="mb-0">📦 RESERVA DA FORJA ({filteredReserve.length} DISPONÍVEIS)</K>
+      {/* 2. RESERVA DA FORJA COM FILTROS DE CATEGORIA */}
+      {activeCategory === 'reserve' && (
+        <div id="reserva-forja-section" className="grid gap-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <K className="mb-0">📦 RESERVA DA FORJA ({filteredReserve.length} DISPONÍVEIS)</K>
+            </div>
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="btn-gold py-1.5 px-3 text-xs font-bold flex items-center justify-center gap-1.5 self-start sm:self-auto"
+            >
+              <Plus size={13} strokeWidth={2.5} />
+              <span>CRIAR HÁBITO</span>
+            </button>
           </div>
 
           {/* Filtros por Categorias + Aba Arquivados com Scroll Horizontal Suave no Mobile */}
@@ -824,7 +931,6 @@ export default function ForgeView() {
               );
             })}
           </div>
-        </div>
 
         {/* Grade de 3 Colunas na Reserva */}
         {filteredReserve.length > 0 ? (
@@ -938,6 +1044,98 @@ export default function ForgeView() {
           </div>
         )}
       </div>
+    )}
+
+      {/* 3. REGRAS & SLOTS + ARQUIVADOS */}
+      {activeCategory === 'rules' && (
+        <div className="grid gap-3.5">
+          {/* Card Detalhado de Regras de Desbloqueio */}
+          <Card className="p-4 border-gold/30 bg-surface2/60">
+            <div className="flex items-center justify-between mb-3">
+              <K className="mb-0">🛡️ PATAMARES DE DESBLOQUEIO DE SLOTS</K>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gold/10 border border-gold/30 text-gold font-bold">
+                {activeCount}/{maxSlots >= 99 ? '∞' : maxSlots} SLOTS ATIVOS
+              </span>
+            </div>
+            <p className="text-xs text-muted mb-4">
+              A retenção seminal e a disciplina forjam seu caráter. Conforme seus dias limpos aumentam, novos slots no protocolo diário são liberados.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {FORGE_RULES && FORGE_RULES.map((r, i) => {
+                const isCur = d >= r.min && (i === FORGE_RULES.length - 1 || d < FORGE_RULES[i + 1].min);
+                const isUnlocked = d >= r.min;
+                return (
+                  <div
+                    key={r.min}
+                    className={`p-3 rounded-lg border flex flex-col justify-between ${
+                      isCur
+                        ? 'border-gold bg-gold/15 shadow-[0_0_12px_rgba(255,200,70,0.2)]'
+                        : isUnlocked
+                        ? 'border-line bg-surface2'
+                        : 'border-line/40 bg-surface/40 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="text-xs font-bold text-ink flex items-center gap-1.5">
+                        <span>{r.icon || '🎖️'}</span>
+                        <span>{r.name || `Nível ${i + 1}`}</span>
+                      </span>
+                      {isCur ? (
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-gold text-[#141414]">
+                          ATUAL
+                        </span>
+                      ) : isUnlocked ? (
+                        <span className="text-[9px] font-mono text-gold font-semibold">LIBERADO</span>
+                      ) : (
+                        <span className="text-[9px] font-mono text-muted">BLOQUEADO</span>
+                      )}
+                    </div>
+                    <div className="text-[11px] font-mono text-muted">
+                      <span>Mínimo: <b className="text-ink">{r.min} dias</b></span>
+                      <span className="mx-1.5">·</span>
+                      <span>Slots: <b className="text-gold">{r.slots >= 99 ? 'Ilimitados (∞)' : `${r.slots} hábitos`}</b></span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* Seção de Hábitos Arquivados */}
+          <Card className="p-4 border-line">
+            <div className="flex items-center justify-between mb-3">
+              <K className="mb-0">📦 HÁBITOS ARQUIVADOS ({archivedHabits.length})</K>
+            </div>
+            {archivedHabits.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {archivedHabits.map((h) => (
+                  <div
+                    key={h.id}
+                    className="p-2.5 rounded border border-line/60 bg-surface2/60 flex items-center justify-between gap-2"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-lg flex-none">{h.icon}</span>
+                      <span className="text-xs font-semibold text-ink truncate">{h.n}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleArchive(h.id)}
+                      className="flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border border-line bg-surface hover:border-gold hover:text-gold text-muted transition-colors font-bold flex-none"
+                    >
+                      <ArchiveRestore size={12} />
+                      <span>{LBL.unarchiveHabit[curLang]}</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-6 text-center text-xs text-muted">
+                Nenhum hábito arquivado. Hábitos que você arquivar da reserva ou do protocolo aparecerão aqui para restauração.
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
