@@ -1,287 +1,301 @@
 'use client';
 import React, { useState } from 'react';
-import { Plus, Pencil, X, CalendarDays, Ban, RotateCcw, Swords, Target } from 'lucide-react';
+import { Plus, Check, Trash2, Clock, Calendar, Flag, Folder, Layers, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
 import { useApp } from '@/lib/store';
-import { Card, K, Bar, Empty, WeekStrip, Field } from '@/components/ui';
-import { PROJ_CATS, REPS, PRI_LBL } from '@/lib/data';
-import { cx } from '@/lib/content-i18n';
-import * as L from '@/lib/logic';
+import { Card, K, Empty } from '@/components/ui';
+import { today, fdmy, dstr } from '@/lib/utils';
 import { AF } from '@/lib/audio';
-import { today, dstr, uid, fmtD, daysBetween } from '@/lib/utils';
+import * as L from '@/lib/logic';
 
-const PRI_ORDER = { alta: 0, media: 1, baixa: 2 };
-const REP_LBL_FALLBACK = {
-  pt: { unica: '', diaria: '🔁 Diária', semana: '🔁 Seg–Sex', fds: '🔁 Sáb–Dom', semanal: '🔁 Semanal', custom: '🗓️ Personalizada' },
-  en: { unica: '', diaria: '🔁 Daily', semana: '🔁 Mon–Fri', fds: '🔁 Sat–Sun', semanal: '🔁 Weekly', custom: '🗓️ Custom' },
-  es: { unica: '', diaria: '🔁 Diaria', semana: '🔁 Lun–Vie', fds: '🔁 Sáb–Dom', semanal: '🔁 Semanal', custom: '🗓️ Personalizada' },
+const I18N = {
+  title: { pt: 'OPERAÇÕES & TAREFAS', en: 'OPERATIONS & TASKS', es: 'OPERACIONES Y TAREAS' },
+  subtitle: { pt: 'Canalize sua energia em missões concretas.', en: 'Channel your energy into concrete missions.', es: 'Canaliza tu energía en misiones concretas.' },
+  newTask: { pt: 'NOVA OPERAÇÃO', en: 'NEW OPERATION', es: 'NUEVA OPERACIÓN' },
+  taskPh: { pt: 'Ex: Concluir relatório financeiro...', en: 'Ex: Complete financial report...', es: 'Ej: Completar informe financiero...' },
+  priority: { pt: 'Prioridade', en: 'Priority', es: 'Prioridad' },
+  priHigh: { pt: 'Alta (Guerra)', en: 'High (War)', es: 'Alta (Guerra)' },
+  priMed: { pt: 'Média', en: 'Medium', es: 'Media' },
+  priLow: { pt: 'Baixa', en: 'Low', es: 'Baja' },
+  time: { pt: 'Horário (Opcional)', en: 'Time (Optional)', es: 'Horario (Opcional)' },
+  repeat: { pt: 'Frequência', en: 'Frequency', es: 'Frecuencia' },
+  repOnce: { pt: 'Única', en: 'Once', es: 'Única' },
+  repDaily: { pt: 'Diária', en: 'Daily', es: 'Diaria' },
+  addBtn: { pt: '+ CRIAR OPERAÇÃO', en: '+ CREATE OPERATION', es: '+ CREAR OPERACIÓN' },
+  filterAll: { pt: 'Todas', en: 'All', es: 'Todas' },
+  filterToday: { pt: 'Para Hoje', en: 'For Today', es: 'Para Hoy' },
+  filterDone: { pt: 'Concluídas', en: 'Completed', es: 'Completadas' },
+  progress: { pt: 'Progresso do Dia', en: 'Today\'s Progress', es: 'Progreso del Día' },
+  noTasks: { pt: 'Nenhuma operação nesta categoria.', en: 'No operations in this category.', es: 'Ninguna operación en esta categoría.' },
 };
 
 export default function OpsView() {
-  const { S, update, openModal, closeModal, confirmBox, toast } = useApp();
+  const { S, update, toast } = useApp();
   const lang = (S && S.settings && S.settings.lang) || 'pt';
-  const T = (id, fb) => cx(lang, 'ops', id) || fb;
-  const [thistOpen, setThistOpen] = useState({});
+  const curLang = ['pt', 'en', 'es'].includes(lang) ? lang : 'pt';
+  const tx = I18N;
 
-  const WD = () => [
-    T('wd0', lang === 'en' ? 'Sun' : 'Dom'),
-    T('wd1', lang === 'en' ? 'Mon' : lang === 'es' ? 'Lun' : 'Seg'),
-    T('wd2', lang === 'en' ? 'Tue' : lang === 'es' ? 'Mar' : 'Ter'),
-    T('wd3', lang === 'en' ? 'Wed' : lang === 'es' ? 'Mié' : 'Qua'),
-    T('wd4', lang === 'en' ? 'Thu' : lang === 'es' ? 'Jue' : 'Qui'),
-    T('wd5', lang === 'en' ? 'Fri' : lang === 'es' ? 'Vie' : 'Sex'),
-    T('wd6', lang === 'en' ? 'Sat' : 'Sáb'),
-  ];
+  const [txt, setTxt] = useState('');
+  const [pri, setPri] = useState('media');
+  const [time, setTime] = useState('');
+  const [rep, setRep] = useState('unica');
+  const [filter, setFilter] = useState('today');
 
-  const repLbl = (t) => {
-    const r = t.rep || 'unica';
-    const wd = WD();
-    const semPrefix = T('rep_semanal_prefix', lang === 'en' ? '🔁 Weekly · ' : '🔁 Semanal · ');
-    const custPrefix = T('rep_custom_prefix', '🗓 ');
-    if (r === 'semanal') return semPrefix + wd[t.repDay == null ? 1 : Number(t.repDay)];
-    if (r === 'custom') {
-      const ds = (t.repDays || []).slice().sort((a, b) => a - b);
-      return custPrefix + (ds.length ? ds.map((i) => wd[i]).join(', ') : '—');
-    }
-    const def = (REP_LBL_FALLBACK[lang] || REP_LBL_FALLBACK.pt)[r] || '';
-    return T('rep_' + r, def);
-  };
+  const tasks = S.tasks || [];
+  const todayTasks = tasks.filter((x) => L.repDue(x, today()));
+  const completedToday = todayTasks.filter((x) => L.isDone(x, today())).length;
+  const pct = todayTasks.length ? Math.round((completedToday / todayTasks.length) * 100) : 0;
 
-  const catLbl = (c) => {
-    const i = PROJ_CATS.indexOf(c);
-    const defaults = {
-      en: ['Body', 'Mind', 'Financial', 'Career', 'Spirit', 'Other'],
-      es: ['Cuerpo', 'Mente', 'Financiero', 'Carrera', 'Espíritu', 'Otro'],
-      pt: ['Corpo', 'Mente', 'Financeiro', 'Carreira', 'Espírito', 'Outro'],
-    };
-    const fb = (defaults[lang] || defaults.pt)[i] || c;
-    return i >= 0 ? T('cat' + i, fb) : c;
+  const addTask = (e) => {
+    e.preventDefault();
+    if (!txt.trim()) return toast('Digite a descrição da operação');
+    update((s) => {
+      s.tasks = s.tasks || [];
+      s.tasks.push({
+        id: 'task_' + Date.now(),
+        txt: txt.trim(),
+        pri,
+        time: time || '',
+        rep,
+        done: false,
+        doneDates: [],
+        createdAt: today(),
+      });
+    });
+    setTxt('');
+    setTime('');
+    AF.click();
+    toast('✅ Operação registrada!');
   };
 
   const toggleTask = (id) => {
     update((s) => {
-      const t = s.tasks.find((x) => x.id == id); if (!t) return;
-      if ((t.rep || 'unica') === 'unica') t.done = !t.done;
-      else { const d = today(); t.doneDates = t.doneDates || []; const i = t.doneDates.indexOf(d); if (i >= 0) t.doneDates.splice(i, 1); else t.doneDates.push(d); }
+      const target = (s.tasks || []).find((x) => String(x.id) === String(id));
+      if (!target) return;
+      if ((target.rep || 'unica') === 'unica') {
+        target.done = !target.done;
+      } else {
+        const dd = today();
+        target.doneDates = target.doneDates || [];
+        const i = target.doneDates.indexOf(dd);
+        if (i >= 0) target.doneDates.splice(i, 1);
+        else target.doneDates.push(dd);
+      }
     });
     AF.click();
   };
 
-  /* ---- modal de tarefa (criar/editar) ---- */
-  const taskModal = (t) => {
-    const M = () => {
-      const [txt, setTxt] = useState(t ? t.txt : '');
-      const [pri, setPri] = useState(t ? t.pri : 'media');
-      const [time, setTime] = useState(t ? t.time || '' : '');
-      const [rep, setRep] = useState(t ? t.rep || 'unica' : 'unica');
-      const [repDay, setRepDay] = useState(t && t.repDay != null ? Number(t.repDay) : 1);
-      const [repDays, setRepDays] = useState(t ? (t.repDays || []) : []);
-      const [proj, setProj] = useState(t ? t.proj : -1);
-      return (
-        <div>
-          <span className="k">{t ? T('m_tEdit', '✏️ EDITAR OPERAÇÃO') : T('m_tNew', '🎯 NOVA OPERAÇÃO')}</span>
-          <Field label={T('m_desc', 'Descrição')}><input className="field" maxLength={80} value={txt} onChange={(e) => setTxt(e.target.value)} placeholder={T('m_descPh', 'Ex: 20 flexões ao acordar')} /></Field>
-          <div className="mb-3 grid grid-cols-2 gap-2">
-            <label><span className="lbl">{T('m_pri', 'Prioridade')}</span><select className="field" value={pri} onChange={(e) => setPri(e.target.value)}>{Object.keys(PRI_LBL).map((p) => <option key={p} value={p}>{T('pri_' + p, PRI_LBL[p])}</option>)}</select></label>
-            <label><span className="lbl">{T('m_time', 'Horário')}</span><input type="time" className="field" value={time} onChange={(e) => setTime(e.target.value)} /></label>
-          </div>
-          <Field label={T('m_rep', 'Repetição')}><select className="field" value={rep} onChange={(e) => setRep(e.target.value)}>{REPS.map(([v, l]) => <option key={v} value={v}>{T('rep_opt_' + v, l)}</option>)}</select></Field>
-          {rep === 'semanal' && <Field label={T('m_repDay', 'Dia da semana (repete toda semana)')}><select className="field" value={repDay} onChange={(e) => setRepDay(Number(e.target.value))}>{WD().map((w, i) => <option key={i} value={i}>{w}</option>)}</select></Field>}
-          {rep === 'custom' && (
-            <div className="mb-3"><span className="lbl">{T('m_repDays', 'Dias da semana em que repete')}</span>
-              <div className="flex flex-wrap gap-1.5">{WD().map((w, i) => <button key={i} type="button" className={`tag ${repDays.includes(i) ? 'sel' : ''}`} onClick={() => setRepDays((d) => d.includes(i) ? d.filter((x) => x !== i) : [...d, i])}>{w}</button>)}</div>
-            </div>
-          )}
-          <Field label={T('m_proj', 'Projeto vinculado')}><select className="field" value={proj} onChange={(e) => setProj(Number(e.target.value))}><option value={-1}>{T('m_noProj', 'Sem projeto')}</option>{S.projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}</select></Field>
-          <div className="grid grid-cols-2 gap-2">
-            <button className="btn-gold" onClick={() => {
-              if (!txt.trim()) { toast(T('m_errTxt', '⚠ Descreva a operação.')); return; }
-              update((s) => {
-                if (t) Object.assign(s.tasks.find((x) => x.id == t.id), { txt: txt.trim(), pri, time, rep, repDay, repDays, proj });
-                else s.tasks.push({ id: uid(), txt: txt.trim(), pri, time, rep, repDay, repDays, proj, done: false, doneDates: [] });
-              });
-              closeModal(); toast(T('m_okTask', '🎯 Operação registrada.'));
-            }}>{T('m_save', '💾 SALVAR')}</button>
-            <button className="btn-dark" onClick={closeModal}>{T('m_cancel', 'Cancelar')}</button>
-          </div>
-        </div>
-      );
-    };
-    openModal(<M />);
+  const deleteTask = (id) => {
+    update((s) => {
+      s.tasks = (s.tasks || []).filter((x) => String(x.id) !== String(id));
+    });
+    AF.click();
+    toast('Operação removida');
   };
 
-  /* ---- modal de projeto (criar/editar) ---- */
-  const projModal = (p) => {
-    const M = () => {
-      const [title, setTitle] = useState(p ? p.title : '');
-      const [cat, setCat] = useState(p ? p.cat : PROJ_CATS[0]);
-      const [start, setStart] = useState(p ? p.start || '' : today());
-      const [days, setDays] = useState(p ? (p.start && p.deadline ? daysBetween(p.start, p.deadline) + 1 : '') : '');
-      const [dead, setDead] = useState(p ? p.deadline || '' : '');
-      const [tStart, setTStart] = useState(p ? p.tStart || '' : '');
-      const [tEnd, setTEnd] = useState(p ? p.tEnd || '' : '');
-      const syncDead = (st, dy) => { if (st && dy >= 1) setDead(dstr(new Date(L.parseD(st).getTime() + (dy - 1) * 86400000))); }
-      return (
-        <div>
-          <span className="k">{p ? T('p_tEdit', '✏️ EDITAR PROJETO DE GUERRA') : T('p_tNew', '⚔️ NOVO PROJETO DE GUERRA')}</span>
-          <Field label={T('p_name', 'Nome do projeto')}><input className="field" maxLength={60} value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
-          <div className="mb-3 grid grid-cols-2 gap-2">
-            <label><span className="lbl">{T('p_cat', 'Categoria')}</span><select className="field" value={cat} onChange={(e) => setCat(e.target.value)}>{PROJ_CATS.map((c) => <option key={c} value={c}>{catLbl(c)}</option>)}</select></label>
-            <label><span className="lbl">{T('p_start', 'Data de início')}</span><input type="date" className="field" value={start} onChange={(e) => { setStart(e.target.value); if (days) syncDead(e.target.value, Number(days)); }} /></label>
-          </div>
-          <div className="mb-3 grid grid-cols-2 gap-2">
-            <label><span className="lbl">{T('p_days', 'Duração (dias)')}</span><input type="number" min={1} max={3650} className="field" placeholder={T('p_daysPh', 'Ex: 30')} value={days} onChange={(e) => { setDays(e.target.value); syncDead(start, Number(e.target.value)); }} /></label>
-            <label><span className="lbl">{T('p_end', 'Encerramento')}</span><input type="date" className="field" value={dead} onChange={(e) => { setDead(e.target.value); if (start && e.target.value) setDays(daysBetween(start, e.target.value) + 1); }} /></label>
-          </div>
-          <div className="mb-3 grid grid-cols-2 gap-2">
-            <label><span className="lbl">{T('p_ws', 'Janela diária — início')}</span><input type="time" className="field" value={tStart} onChange={(e) => setTStart(e.target.value)} /></label>
-            <label><span className="lbl">{T('p_we', 'Janela diária — fim')}</span><input type="time" className="field" value={tEnd} onChange={(e) => setTEnd(e.target.value)} /></label>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button className="btn-gold" onClick={() => {
-              if (!title.trim()) { toast(T('p_errName', '⚠ Dê um nome ao projeto.')); return; }
-              update((s) => {
-                if (p) Object.assign(s.projects.find((x) => x.id == p.id), { title: title.trim(), cat, start, deadline: dead, tStart, tEnd });
-                else s.projects.push({ id: uid(), title: title.trim(), cat, start, deadline: dead, tStart, tEnd });
-              });
-              closeModal(); toast(T('p_okProj', '⚔️ Projeto de guerra criado.'));
-            }}>{T('m_save', '💾 SALVAR')}</button>
-            <button className="btn-dark" onClick={closeModal}>{T('m_cancel', 'Cancelar')}</button>
-          </div>
-        </div>
-      );
-    };
-    openModal(<M />);
-  };
-
-  /* ---- dados do painel ---- */
-  const rank = (t) => { const due = L.repDue(t, today()), dn = L.isDone(t, today()); if (due && !dn) return 0; if (due && dn) return 1; if (!due && !dn) return 2; return 3; };
-  const tasks = S.tasks.slice().sort((a, b) => rank(a) - rank(b) || PRI_ORDER[a.pri] - PRI_ORDER[b.pri] || (a.time || '99').localeCompare(b.time || '99'));
-  const st = { done: 0, prog: 0, late: 0, cancel: 0 };
-  S.projects.forEach((p) => { st[L.projStatus(S, p)]++; });
-  const totalProj = S.projects.length, ativos = totalProj - st.cancel;
-  const dueTasks = S.tasks.filter((t) => L.repDue(t, today()));
-  const doneTasks = dueTasks.filter((t) => L.isDone(t, today())).length;
-  const pendTasks = dueTasks.length - doneTasks;
-  const taxa = dueTasks.length ? Math.round((doneTasks / dueTasks.length) * 100) : 0;
-  const segW = (n, tot) => (tot > 0 ? Math.round((n / tot) * 100) : 0) + '%';
+  /* Filtros de tarefas */
+  const displayedTasks = tasks.filter((x) => {
+    const isDone = L.isDone(x, today());
+    if (filter === 'done') return isDone;
+    if (filter === 'today') return L.repDue(x, today()) && !isDone;
+    return true;
+  });
 
   return (
-    <div>
-      <div className="mb-4 flex flex-wrap gap-3">
-        <button className="btn-gold min-w-[220px] flex-1 py-4 text-[15px]" onClick={() => projModal(null)}><Swords size={16} /> {T('btn_newProj', '+ CRIAR PROJETO')}</button>
-        <button className="btn-gold min-w-[220px] flex-1 py-4 text-[15px]" onClick={() => taskModal(null)}><Target size={16} /> {T('btn_newTask', '+ ADICIONAR OPERAÇÃO')}</button>
-      </div>
-
-      <div className="grid gap-3.5 lg:grid-cols-[7fr_5fr]">
-        <Card>
-          <K>{T('k_proj', '🏰 PROJETOS DE GUERRA ATIVOS')}</K>
-          {S.projects.length ? S.projects.map((p) => {
-            const linked = S.tasks.filter((t) => t.proj == p.id);
-            const denom = linked.filter((t) => (t.rep || 'unica') === 'unica' || L.repDue(t, today()));
-            const done = denom.filter((t) => L.isDone(t, today())).length;
-            const pct = denom.length ? Math.round((done / denom.length) * 100) : 0;
-            const dleft = p.deadline ? daysBetween(today(), p.deadline) : null;
-            const tot = L.projTotal(p), cur = L.projCurDay(p);
-            return (
-              <div key={p.id} className={`mb-3 rounded-r border p-3.5 ${p.cancelled ? 'border-line opacity-60' : 'border-line bg-surface2'}`}>
-                <div className="flex items-center gap-2">
-                  <b className="min-w-0 flex-1 truncate">{p.title}</b>
-                  <button className="text-muted hover:text-gold" title={p.cancelled ? T('t_react', 'Reativar projeto') : T('t_cancelProj', 'Cancelar projeto')} onClick={() => update((s) => { const x = s.projects.find((y) => y.id == p.id); x.cancelled = !x.cancelled; })}>{p.cancelled ? <RotateCcw size={14} /> : <Ban size={14} />}</button>
-                  <button className="text-muted hover:text-gold" title={T('t_editProj', 'Editar projeto')} onClick={() => projModal(p)}><Pencil size={14} /></button>
-                  <button className="text-muted hover:text-danger" title={T('t_del', 'Excluir')} onClick={() => confirmBox(T('c_prTitle', 'EXCLUIR PROJETO?'), '"' + p.title + T('c_prBody2', '" e seus vínculos serão removidos.'), () => update((s) => { s.projects = s.projects.filter((x) => x.id != p.id); s.tasks.forEach((t) => { if (t.proj == p.id) t.proj = -1; }); }))}><X size={14} /></button>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  <span className="chip-dim">{catLbl(p.cat)}</span>
-                  {p.start && <span className="chip-dim">🚀 {fmtD(p.start)}</span>}
-                  {p.deadline && <span className={`chip-dim ${dleft <= 3 ? 'border-danger text-danger' : ''}`}>🏁 {fmtD(p.deadline)}{dleft !== null ? (dleft < 0 ? T('chip_overdue', ' · vencido') : ' · ' + dleft + 'd') : ''}</span>}
-                  {tot > 0 && <span className="chip-dim">⏳ {tot}{T('chip_days', ' dias')}</span>}
-                  {(p.tStart || p.tEnd) && <span className="chip-dim">🕐 {p.tStart || '--:--'}–{p.tEnd || '--:--'}</span>}
-                  {p.cancelled && <span className="chip-dim border-danger text-danger">{T('chip_cancelled', '🚫 CANCELADO')}</span>}
-                </div>
-                <div className="mt-2.5"><Bar pct={pct} /></div>
-                <div className="mt-1 font-mono text-[11px] text-muted">{done}/{denom.length} {T('line_tasks', 'tarefas de hoje')} · {pct}%{tot ? T('line_day', ' · 📆 dia ') + cur + '/' + tot : ''}</div>
-                {linked.length ? (
-                  <div className="mt-2">
-                    {linked.map((t) => (
-                      <button key={t.id} className={`mb-1 flex w-full items-center gap-2 rounded-md border border-line bg-surface p-2 text-left text-[12.5px] font-semibold ${L.isDone(t, today()) ? 'opacity-60 line-through' : ''}`} onClick={() => toggleTask(t.id)}>
-                        <span className={`h-3.5 w-3.5 flex-none rounded border ${L.isDone(t, today()) ? 'border-gold bg-gold' : 'border-[#3c3c46]'}`} />{t.txt}
-                      </button>
-                    ))}
-                  </div>
-                ) : <p className="mt-1 text-[11px] text-muted">{T('proj_linkHint', 'Vincule tarefas a este projeto ➜')}</p>}
-              </div>
-            );
-          }) : <Empty>{T('empty_proj1', 'Nenhum projeto de guerra.')}<br />{T('empty_click', 'Clique em ')}<b className="text-gold">⚔️ {T('btn_newProj', '+ CRIAR PROJETO')}</b>{T('empty_suffix', ' acima.')}</Empty>}
-        </Card>
-
-        <Card>
-          <K>{T('k_tasks', '🎯 OPERAÇÕES DIÁRIAS (TAREFAS)')}</K>
-          {tasks.length ? tasks.map((t) => {
-            const dn = L.isDone(t, today()), due = L.repDue(t, today());
-            return (
-              <div key={t.id}>
-                <div className={`mb-1.5 flex items-center gap-2 rounded-r border border-line bg-surface2 p-2.5 text-[13.5px] font-semibold ${dn ? 'opacity-60' : ''} ${!due && !dn ? 'opacity-45' : ''}`}>
-                  <button className={`h-[18px] w-[18px] flex-none rounded border-2 ${dn ? 'border-gold bg-gold' : 'border-[#3c3c46]'}`} onClick={() => toggleTask(t.id)} aria-label={T('aria_done', 'concluir')} />
-                  <span className={`h-2.5 w-2.5 flex-none rounded-full ${{ alta: 'bg-danger', media: 'bg-gold', baixa: 'bg-muted' }[t.pri]}`} />
-                  <button className="min-w-0 flex-1 truncate text-left" onClick={() => toggleTask(t.id)}>{t.txt}</button>
-                  {t.rep && t.rep !== 'unica' && <span className="chip-dim flex-none px-1.5 py-0.5 text-[9px]">{repLbl(t)}</span>}
-                  {t.time && <span className="flex-none font-mono text-[11px] text-gold2">{t.time}</span>}
-                  <button className="flex-none text-muted hover:text-gold" title={T('t_hist', 'Histórico dos últimos 7 dias')} onClick={() => setThistOpen((o) => ({ ...o, [t.id]: !o[t.id] }))}><CalendarDays size={14} /></button>
-                  <button className="flex-none text-muted hover:text-gold" title={T('t_editTask', 'Editar tarefa')} onClick={() => taskModal(t)}><Pencil size={14} /></button>
-                  <button className="flex-none text-muted hover:text-danger" title={T('t_del', 'Excluir')} onClick={() => confirmBox(T('c_tkTitle', 'EXCLUIR OPERAÇÃO?'), '"' + t.txt + T('c_tkBody2', '" será removida.'), () => update((s) => { s.tasks = s.tasks.filter((x) => x.id != t.id); }))}><X size={14} /></button>
-                </div>
-                {thistOpen[t.id] && (
-                  <div className="mb-2 pl-10 pr-3">
-                    <WeekStrip
-                      cells={Array.from({ length: 7 }).map((_, xi) => {
-                        const ds = dstr(new Date(Date.now() - (6 - xi) * 86400000));
-                        const done = L.isDone(t, ds);
-                        const blocked = (t.rep || 'unica') === 'unica' && ds !== today();
-                        return { d: ds, cls: done ? 'w' : blocked ? 'opacity-25' : '', lab: done ? T('ws_done', 'FEITO') : blocked ? T('ws_single', 'única (só hoje)') : T('ws_pend', 'pendente'), onClick: blocked ? () => {} : () => { update((s) => { const tt = s.tasks.find((x) => x.id == t.id); if ((tt.rep || 'unica') === 'unica') tt.done = !tt.done; else { tt.doneDates = tt.doneDates || []; const i = tt.doneDates.indexOf(ds); if (i >= 0) tt.doneDates.splice(i, 1); else tt.doneDates.push(ds); } }); } };
-                      })}
-                      hint={T('ws_hint', 'Toque num dia para alternar ✅ FEITO / não feito.')}
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          }) : <Empty>{T('empty_task1', 'Nenhuma operação registrada.')}<br />{T('empty_click', 'Clique em ')}<b className="text-gold">🎯 {T('btn_newTask', '+ ADICIONAR OPERAÇÃO')}</b>{T('empty_suffix', ' acima.')}</Empty>}
-        </Card>
-      </div>
-
-      <Card className="mt-4">
-        <K>{T('k_panel', '📊 PAINEL TÁTICO & DESEMPENHO')}</K>
-        <div className="mb-4 grid grid-cols-2 gap-2.5 md:grid-cols-4">
-          <div className="rounded-r border border-line bg-surface2 p-3 text-center"><b className="block font-display text-2xl text-gold">{ativos}</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.12em] text-muted">{T('kpi_active', 'Projetos Ativos')}</small></div>
-          <div className="rounded-r border border-line bg-surface2 p-3 text-center"><b className="block font-display text-2xl text-gold">{st.done}</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.12em] text-muted">{T('kpi_done', 'Projetos Concluídos')}</small></div>
-          <div className="rounded-r border border-line bg-surface2 p-3 text-center"><b className="block font-display text-2xl text-gold">{taxa}%</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.12em] text-muted">{T('kpi_rate', 'Conclusão de Operações')}</small></div>
-          <div className="rounded-r border border-line bg-surface2 p-3 text-center"><b className="block font-display text-2xl text-gold">{dueTasks.length}</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.12em] text-muted">{T('kpi_today', 'Operações Hoje')}</small></div>
-        </div>
-        <div className="grid gap-3.5 md:grid-cols-2">
-          <div className="rounded-r border border-line bg-surface2 p-3.5">
-            <div className="k2 mb-2">{T('k2_status', 'Status dos Projetos')}</div>
-            {totalProj > 0 ? (
-              <>
-                <div className="flex h-6 overflow-hidden rounded-full border border-line bg-[#202026]">
-                  <i className="bg-ok" style={{ width: segW(st.done, totalProj) }} /><i className="bg-gold" style={{ width: segW(st.prog, totalProj) }} /><i className="bg-danger" style={{ width: segW(st.late, totalProj) }} /><i className="bg-muted" style={{ width: segW(st.cancel, totalProj) }} />
-                </div>
-                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] text-muted"><span>{T('lg_done', '🟢 Concluídos (')}{st.done})</span><span>{T('lg_prog', '🟡 Em Andamento (')}{st.prog})</span><span>{T('lg_late', '🔴 Atrasados (')}{st.late})</span><span>{T('lg_cancel', '⚪ Cancelados (')}{st.cancel})</span></div>
-              </>
-            ) : <Empty>{T('empty_analyze', 'Nenhum projeto para analisar.')}</Empty>}
+    <div className="grid gap-3.5">
+      {/* 1. TOPO COMPACTO */}
+      <Card className="border-gold/30 bg-surface2/60 p-3.5 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <K className="mb-0.5">🎯 {tx.title[curLang]}</K>
+            <p className="text-xs text-muted">{tx.subtitle[curLang]}</p>
           </div>
-          <div className="rounded-r border border-line bg-surface2 p-3.5">
-            <div className="k2 mb-2">{T('k2_volume', 'Volume de Operações (Hoje)')}</div>
-            {dueTasks.length > 0 ? (
-              <>
-                <div className="flex h-6 overflow-hidden rounded-full border border-line bg-[#202026]">
-                  <i className="bg-ok" style={{ width: segW(doneTasks, dueTasks.length) }} /><i className="bg-muted" style={{ width: segW(pendTasks, dueTasks.length) }} />
-                </div>
-                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] text-muted"><span>{T('lg_tdone', '✅ Concluídas (')}{doneTasks})</span><span>{T('lg_tpend', '⏳ Pendentes (')}{pendTasks})</span></div>
-              </>
-            ) : <Empty>{T('empty_due', 'Nenhuma operação devida hoje.')}</Empty>}
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <span className="text-[10px] font-mono text-muted uppercase block">{tx.progress[curLang]}</span>
+              <b className="text-sm font-mono text-gold">{completedToday}/{todayTasks.length} ({pct}%)</b>
+            </div>
+            <div className="w-10 h-10 rounded-full border-2 border-gold/30 flex items-center justify-center bg-gold/5 font-mono text-xs font-bold text-gold">
+              {pct}%
+            </div>
           </div>
         </div>
       </Card>
+
+      {/* 2. GRADE NO PC (5 Colunas: Formulário / 7 Colunas: Lista) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
+        
+        {/* COLUNA ESQUERDA: Formulário de Nova Operação */}
+        <div className="lg:col-span-5">
+          <Card className="p-3.5 sm:p-4 border-line bg-surface2/80">
+            <K className="mb-2">⚡ {tx.newTask[curLang]}</K>
+            <form onSubmit={addTask} className="flex flex-col gap-3">
+              <div>
+                <span className="lbl mb-1 block">Missão / Descrição:</span>
+                <input
+                  type="text"
+                  placeholder={tx.taskPh[curLang]}
+                  className="field w-full text-xs sm:text-sm"
+                  value={txt}
+                  onChange={(e) => setTxt(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="lbl mb-1 block">{tx.priority[curLang]}:</span>
+                  <select
+                    className="field w-full text-xs font-semibold"
+                    value={pri}
+                    onChange={(e) => setPri(e.target.value)}
+                  >
+                    <option value="alta" className="text-danger font-bold">🔴 {tx.priHigh[curLang]}</option>
+                    <option value="media" className="text-gold font-bold">🟡 {tx.priMed[curLang]}</option>
+                    <option value="baixa" className="text-muted font-bold">⚪ {tx.priLow[curLang]}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <span className="lbl mb-1 block">{tx.repeat[curLang]}:</span>
+                  <select
+                    className="field w-full text-xs font-semibold"
+                    value={rep}
+                    onChange={(e) => setRep(e.target.value)}
+                  >
+                    <option value="unica">{tx.repOnce[curLang]}</option>
+                    <option value="diaria">{tx.repDaily[curLang]}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <span className="lbl mb-1 block">{tx.time[curLang]}:</span>
+                <input
+                  type="time"
+                  className="field w-full text-xs font-mono"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn-gold w-full py-2 text-xs font-bold mt-1 shadow-sm"
+              >
+                {tx.addBtn[curLang]}
+              </button>
+            </form>
+          </Card>
+        </div>
+
+        {/* COLUNA DIREITA: Lista de Operações & Filtros */}
+        <div className="lg:col-span-7 flex flex-col gap-3">
+          <Card className="p-3.5 sm:p-4">
+            {/* Abas Rápidas de Filtro */}
+            <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-line/60">
+              <div className="flex items-center gap-1">
+                {[
+                  { id: 'today', label: tx.filterToday[curLang], count: todayTasks.filter((x) => !L.isDone(x, today())).length },
+                  { id: 'all', label: tx.filterAll[curLang], count: tasks.length },
+                  { id: 'done', label: tx.filterDone[curLang], count: tasks.filter((x) => L.isDone(x, today())).length },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setFilter(f.id)}
+                    className={`text-xs font-mono px-2.5 py-1 rounded transition-all flex items-center gap-1.5 ${
+                      filter === f.id
+                        ? 'bg-gold text-[#141414] font-bold shadow-sm'
+                        : 'bg-surface2 text-muted hover:text-ink border border-line'
+                    }`}
+                  >
+                    <span>{f.label}</span>
+                    <span className={`text-[9.5px] px-1 py-0.2 rounded ${filter === f.id ? 'bg-black/20 text-black' : 'bg-surface text-muted'}`}>
+                      {f.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Lista de Operações */}
+            {displayedTasks.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {displayedTasks.map((tItem) => {
+                  const isDone = L.isDone(tItem, today());
+                  const priColor = {
+                    alta: 'border-danger/40 bg-danger/5 text-danger',
+                    media: 'border-gold/40 bg-gold/5 text-gold',
+                    baixa: 'border-line bg-surface text-muted',
+                  }[tItem.pri] || 'border-line text-muted';
+
+                  return (
+                    <div
+                      key={tItem.id}
+                      className={`flex items-center justify-between gap-2.5 p-2.5 rounded-r border transition-all ${
+                        isDone
+                          ? 'border-line/40 bg-surface/50 opacity-60'
+                          : 'border-line bg-surface2/80 hover:border-gold/40'
+                      }`}
+                    >
+                      {/* Checkbox & Texto */}
+                      <div
+                        className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer"
+                        onClick={() => toggleTask(tItem.id)}
+                      >
+                        <button
+                          type="button"
+                          className={`w-5 h-5 rounded flex-none flex items-center justify-center border transition-colors ${
+                            isDone
+                              ? 'border-gold bg-gold text-[#141414]'
+                              : 'border-[#3c3c46] bg-surface hover:border-gold'
+                          }`}
+                        >
+                          {isDone && <Check size={13} strokeWidth={3} />}
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <span className={`text-xs sm:text-[13px] font-semibold block truncate ${isDone ? 'line-through text-muted' : 'text-ink'}`}>
+                            {tItem.txt}
+                          </span>
+                          <div className="flex items-center gap-2 mt-0.5 text-[9.5px] font-mono text-muted">
+                            <span className={`px-1.5 py-0.2 rounded border font-bold uppercase ${priColor}`}>
+                              {tItem.pri}
+                            </span>
+                            {tItem.time && (
+                              <span className="flex items-center gap-0.5 text-gold2">
+                                <Clock size={10} />
+                                {tItem.time}
+                              </span>
+                            )}
+                            {tItem.rep !== 'unica' && (
+                              <span className="text-muted">
+                                🔁 {tItem.rep}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Excluir */}
+                      <button
+                        type="button"
+                        title="Remover Operação"
+                        onClick={() => deleteTask(tItem.id)}
+                        className="text-muted/60 hover:text-danger p-1 flex-none transition-colors"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-8 text-center">
+                <Empty>{tx.noTasks[curLang]}</Empty>
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
