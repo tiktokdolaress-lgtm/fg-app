@@ -16,36 +16,65 @@ export default function ForgeView() {
 
   const ALLH = cxHabits(lang, L.allH(S));
   const d = L.progressDays(S);
-  const maxSlots = L.forgeSlots(d);
-  const activeIds = S.forge.active || [];
-  const activeCount = activeIds.length;
-  const fd = L.fDone(S, today()), ff = L.fFailed(S, today());
+  
+  /* Cálculo seguro de slots */
+  let maxSlots = 2;
+  try {
+    if (typeof L.maxSlots === 'function') {
+      maxSlots = L.maxSlots(d);
+    } else if (Array.isArray(FORGE_RULES)) {
+      const found = FORGE_RULES.slice().reverse().find((r) => d >= r.min);
+      maxSlots = found ? found.slots : 2;
+    }
+  } catch (e) {
+    maxSlots = 2;
+  }
 
-  /* Separar ativos e reserva */
+  const activeIds = (S && S.forge && Array.isArray(S.forge.active)) ? S.forge.active : [];
+  const activeCount = activeIds.length;
+  const fd = L.fDone(S, today());
+  const ff = L.fFailed(S, today());
+
+  /* Separar ativos e reserva com segurança */
   const activeHabits = activeIds.map((id) => ALLH.find((h) => h.id === id)).filter(Boolean);
   const reserveHabits = ALLH.filter((h) => !activeIds.includes(h.id));
 
-  /* Hábitos negligenciados (sem fazer há mais de 1 dia) */
+  /* Hábitos negligenciados calculado de forma nativa e segura */
   const neglected = activeHabits.filter((h) => {
-    const daysSince = L.hDaysSince(S, h.id);
-    return daysSince >= 2;
+    try {
+      const doneDates = (S && S.forge && S.forge.done) || {};
+      let daysWithout = 0;
+      for (let i = 1; i <= 7; i++) {
+        const ds = dstr(new Date(Date.now() - i * 86400000));
+        const list = doneDates[ds] || [];
+        if (!list.includes(h.id)) {
+          daysWithout++;
+        } else {
+          break;
+        }
+      }
+      return daysWithout >= 2;
+    } catch {
+      return false;
+    }
   });
 
   /* Toggle Ativar / Desativar Hábito */
   const toggleActive = (id) => {
     if (activeIds.includes(id)) {
       update((s) => {
-        s.forge.active = s.forge.active.filter((x) => x !== id);
+        s.forge.active = (s.forge.active || []).filter((x) => x !== id);
       });
       AF.click();
       toast(t('hab_rem') || 'Hábito movido para a reserva');
     } else {
-      if (activeCount >= maxSlots) {
+      if (activeCount >= maxSlots && maxSlots < 99) {
         toast(t('slot_full') || `Limite de ${maxSlots} slots atingido!`);
         AF.tone(110, 0.35, 'sine', 0.18, 0, 55);
         return;
       }
       update((s) => {
+        s.forge.active = s.forge.active || [];
         s.forge.active.push(id);
       });
       AF.click();
@@ -180,11 +209,11 @@ export default function ForgeView() {
             <div className="flex items-center gap-2 mb-1.5">
               <K className="mb-0">REGRAS DE SLOTS POR PATAMAR</K>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gold/10 border border-gold/30 text-gold font-bold">
-                {activeCount}/{maxSlots} SLOTS ATIVOS
+                {activeCount}/{maxSlots >= 99 ? '∞' : maxSlots} SLOTS ATIVOS
               </span>
             </div>
             <div className="flex flex-wrap gap-1.5 text-[10px] font-mono text-muted">
-              {FORGE_RULES.map((r, i) => {
+              {FORGE_RULES && FORGE_RULES.map((r, i) => {
                 const isCur = d >= r.min && (i === FORGE_RULES.length - 1 || d < FORGE_RULES[i + 1].min);
                 return (
                   <span
@@ -214,7 +243,7 @@ export default function ForgeView() {
         </div>
       </Card>
 
-      {/* 2. ALERTA DE NEGLIGÊNCIA COMPACTO (Apenas se houver hábitos atrasados) */}
+      {/* 2. ALERTA DE NEGLIGÊNCIA COMPACTO */}
       {neglected.length > 0 && (
         <Card className="border-danger/40 bg-danger/5 p-3.5">
           <div className="flex items-center gap-1.5 mb-2 text-danger font-bold text-xs uppercase tracking-wider">
@@ -222,23 +251,20 @@ export default function ForgeView() {
             <span>ALERTA DE NEGLIGÊNCIA — A FORJA ESFRIA</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {neglected.map((h) => {
-              const daysSince = L.hDaysSince(S, h.id);
-              return (
-                <div
-                  key={h.id}
-                  className="flex items-center justify-between gap-2 p-2 rounded border border-danger/30 bg-surface2 text-xs"
-                >
-                  <span className="flex items-center gap-1.5 truncate font-semibold">
-                    <span>{h.icon}</span>
-                    <span className="truncate">{h.n}</span>
-                  </span>
-                  <span className="flex-none font-mono text-[10.5px] font-bold text-danger">
-                    {daysSince}d sem fazer
-                  </span>
-                </div>
-              );
-            })}
+            {neglected.map((h) => (
+              <div
+                key={h.id}
+                className="flex items-center justify-between gap-2 p-2 rounded border border-danger/30 bg-surface2 text-xs"
+              >
+                <span className="flex items-center gap-1.5 truncate font-semibold">
+                  <span>{h.icon}</span>
+                  <span className="truncate">{h.n}</span>
+                </span>
+                <span className="flex-none font-mono text-[10.5px] font-bold text-danger">
+                  2+ dias sem fazer
+                </span>
+              </div>
+            ))}
           </div>
           <p className="mt-2 text-[10.5px] text-muted">
             Guerreiro que desaparece do treino vira estatística. Retome HOJE.
@@ -246,10 +272,10 @@ export default function ForgeView() {
         </Card>
       )}
 
-      {/* 3. ATIVOS NO PROTOCOLO (Grade de 2 Colunas Limpa & Proporcional) */}
+      {/* 3. ATIVOS NO PROTOCOLO */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <K className="mb-0">⚡ ATIVOS NO PROTOCOLO ({activeCount}/{maxSlots} SLOTS)</K>
+          <K className="mb-0">⚡ ATIVOS NO PROTOCOLO ({activeCount}/{maxSlots >= 99 ? '∞' : maxSlots} SLOTS)</K>
         </div>
 
         {activeHabits.length > 0 ? (
@@ -257,8 +283,7 @@ export default function ForgeView() {
             {activeHabits.map((h) => {
               const isDone = fd.includes(h.id);
               const isFail = ff.includes(h.id);
-              const tm = L.hTime(S, h.id) || '';
-              const daysSince = L.hDaysSince(S, h.id);
+              const tm = (L.hTime && L.hTime(S, h.id)) || (S.forge && S.forge.times && S.forge.times[h.id]) || '';
               const isDetailOpen = openDetail === h.id;
 
               return (
@@ -281,12 +306,12 @@ export default function ForgeView() {
                           {h.n}
                         </span>
                         <span className="text-[9.5px] uppercase font-mono text-muted">
-                          #{h.id.slice(-4)} · NO PROTOCOLO
+                          #{String(h.id).slice(-4)} · NO PROTOCOLO
                         </span>
                       </div>
                     </div>
 
-                    {/* Switch de Ativação */}
+                    {/* Botão de Status Ativo / Remover */}
                     <button
                       type="button"
                       title="Mover para a Reserva"
@@ -297,9 +322,8 @@ export default function ForgeView() {
                     </button>
                   </div>
 
-                  {/* Linha de Ação: Checkbox + Horário + Botão Falhei */}
+                  {/* Linha de Ação: Concluir + Horário + Falhar */}
                   <div className="flex items-center justify-between gap-2 pt-2 border-t border-line/50">
-                    {/* Botão Concluído Hoje */}
                     <button
                       type="button"
                       onClick={() => toggleDone(h.id)}
@@ -313,7 +337,6 @@ export default function ForgeView() {
                       <span>{isDone ? 'CONCLUÍDO' : 'CONCLUIR HOJE'}</span>
                     </button>
 
-                    {/* Campo de Horário */}
                     <div className="flex items-center gap-1 bg-surface px-2 py-1 rounded border border-line text-[11px] font-mono">
                       <Clock size={11} className="text-gold" />
                       <input
@@ -324,7 +347,6 @@ export default function ForgeView() {
                       />
                     </div>
 
-                    {/* Botão Falhei */}
                     <button
                       type="button"
                       title="Marcar como Falho"
@@ -339,14 +361,6 @@ export default function ForgeView() {
                       <span className="hidden sm:inline">FALHEI</span>
                     </button>
                   </div>
-
-                  {/* Alerta de Dias Sem Fazer (se houver) */}
-                  {daysSince >= 2 && (
-                    <div className="mt-2 text-[10px] text-danger font-bold flex items-center gap-1">
-                      <AlertTriangle size={11} />
-                      <span>{daysSince} dias sem fazer</span>
-                    </div>
-                  )}
 
                   {/* Detalhes Colapsáveis de Benefício */}
                   {h.benefit && (
@@ -377,11 +391,11 @@ export default function ForgeView() {
         )}
       </div>
 
-      {/* 4. RESERVA DA FORJA (Grade Tática em 3 Colunas no PC) */}
+      {/* 4. RESERVA DA FORJA (3 Colunas Compactas no PC) */}
       <div className="mt-2">
         <div className="flex items-center justify-between mb-2">
           <K className="mb-0">📦 RESERVA DA FORJA ({reserveHabits.length} DISPONÍVEIS)</K>
-          <span className="text-[10px] text-muted font-mono">Clique no switch para ativar no protocolo</span>
+          <span className="text-[10px] text-muted font-mono">Clique para ativar no protocolo</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -401,7 +415,6 @@ export default function ForgeView() {
                     </span>
                   </div>
 
-                  {/* Switch para Ativar */}
                   <button
                     type="button"
                     title="Ativar no Protocolo"
@@ -412,7 +425,6 @@ export default function ForgeView() {
                   </button>
                 </div>
 
-                {/* Benefício rápido */}
                 {h.benefit && (
                   <div className="mt-1.5 pt-1 border-t border-line/30">
                     <button
