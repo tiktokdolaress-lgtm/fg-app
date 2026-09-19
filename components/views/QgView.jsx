@@ -9,20 +9,80 @@ import * as L from '@/lib/logic';
 import { AF, metaSfx } from '@/lib/audio';
 import { today, dstr, fdmy, fmtD, pad, yesterday } from '@/lib/utils';
 
-/* Efeitos biológicos e psicológicos por marco de retenção */
-const BIO_EFFECTS = [
-  { min: 0, max: 3, perks: ['Quebra do ciclo automático', 'Redução do pico de cortisol', 'Recuperação inicial da dopamina'] },
-  { min: 4, max: 7, perks: ['Pico natural de testosterona (+45%)', 'Aumento de energia física', 'Fim gradual da névoa mental'] },
-  { min: 8, max: 14, perks: ['Sono profundo restaurador', 'Vontade e assertividade reforçadas', 'Olhar firme e redução da timidez'] },
-  { min: 15, max: 30, perks: ['Receptores de dopamina rebalanceados', 'Redução drástica de ansiedade social', 'Magnetismo pessoal e foco aguçado'] },
-  { min: 31, max: 60, perks: ['Controle absoluto de pensamentos invasivos', 'Aura de respeito natural', 'Vitalidade transmutada em criação'] },
-  { min: 61, max: 90, perks: ['Superação da flatline (platô)', 'Alta performance física e cognitiva', 'Autodomínio e disciplina inabaláveis'] },
-  { min: 91, max: 9999, perks: ['Transmutação biológica completa', 'Padrão inquebrável de conduta', 'Mestre absoluto da própria mente'] },
-];
+/* Dicionário Internacional dos Efeitos Biológicos e Mentais (PT / EN / ES) */
+const BIO_EFFECTS_I18N = {
+  header: {
+    pt: 'EFEITOS BIOLÓGICOS & MENTAIS ATIVOS NESTE MARCO:',
+    en: 'ACTIVE BIOLOGICAL & MENTAL EFFECTS AT THIS MILESTONE:',
+    es: 'EFECTOS BIOLÓGICOS Y MENTALES ACTIVOS EN ESTE HITO:',
+  },
+  tiers: [
+    {
+      min: 0, max: 3,
+      perks: {
+        pt: ['Quebra do ciclo automático', 'Redução do pico de cortisol', 'Recuperação inicial da dopamina'],
+        en: ['Automatic loop broken', 'Cortisol spike reduction', 'Initial dopamine recovery'],
+        es: ['Ruptura del ciclo automático', 'Reducción del pico de cortisol', 'Recuperación inicial de dopamina'],
+      }
+    },
+    {
+      min: 4, max: 7,
+      perks: {
+        pt: ['Pico natural de testosterona (+45%)', 'Aumento de energia física', 'Fim gradual da névoa mental'],
+        en: ['Natural testosterone surge (+45%)', 'Boost in physical energy', 'Gradual end of brain fog'],
+        es: ['Pico natural de testosterona (+45%)', 'Aumento de energía física', 'Fin gradual de la niebla mental'],
+      }
+    },
+    {
+      min: 8, max: 14,
+      perks: {
+        pt: ['Sono profundo restaurador', 'Vontade e assertividade reforçadas', 'Olhar firme e redução da timidez'],
+        en: ['Deep restorative sleep', 'Enhanced willpower & assertiveness', 'Steady gaze and less shyness'],
+        es: ['Sueño profundo y reparador', 'Voluntad y asertividad reforzadas', 'Mirada firme y menos timidez'],
+      }
+    },
+    {
+      min: 15, max: 30,
+      perks: {
+        pt: ['Receptores de dopamina rebalanceados', 'Redução drástica de ansiedade social', 'Magnetismo pessoal e foco aguçado'],
+        en: ['Rebalanced dopamine receptors', 'Drastic drop in social anxiety', 'Personal magnetism & sharp focus'],
+        es: ['Receptores de dopamina equilibrados', 'Reducción drástica de ansiedad social', 'Magnetismo personal y enfoque agudo'],
+      }
+    },
+    {
+      min: 31, max: 60,
+      perks: {
+        pt: ['Controle absoluto de pensamentos invasivos', 'Aura de respeito natural', 'Vitalidade transmutada em criação'],
+        en: ['Total control over invasive thoughts', 'Aura of natural respect', 'Vitality transmuted into creation'],
+        es: ['Control total sobre pensamientos intrusivos', 'Aura de respeto natural', 'Vitalidad transmutada en creación'],
+      }
+    },
+    {
+      min: 61, max: 90,
+      perks: {
+        pt: ['Superação da flatline (platô)', 'Alta performance física e cognitiva', 'Autodomínio e disciplina inabaláveis'],
+        en: ['Flatline conquered', 'High physical & cognitive performance', 'Unshakable self-mastery and discipline'],
+        es: ['Superación de la flatline (meseta)', 'Alto rendimiento físico y cognitivo', 'Autodominio y disciplina inquebrantables'],
+      }
+    },
+    {
+      min: 91, max: 9999,
+      perks: {
+        pt: ['Transmutação biológica completa', 'Padrão inquebrável de conduta', 'Mestre absoluto da própria mente'],
+        en: ['Complete biological transmutation', 'Unbreakable standard of conduct', 'Absolute master of your own mind'],
+        es: ['Transmutación biológica completa', 'Estándar inquebrantable de conducta', 'Amo absoluto de la propia mente'],
+      }
+    },
+  ]
+};
 
-function getBioPerks(days) {
-  const found = BIO_EFFECTS.find((b) => days >= b.min && days <= b.max);
-  return found ? found.perks : BIO_EFFECTS[0].perks;
+function getBioPerksI18n(days, lang) {
+  const currentLang = ['pt', 'en', 'es'].includes(lang) ? lang : 'pt';
+  const found = BIO_EFFECTS_I18N.tiers.find((b) => days >= b.min && days <= b.max) || BIO_EFFECTS_I18N.tiers[0];
+  return {
+    header: BIO_EFFECTS_I18N.header[currentLang] || BIO_EFFECTS_I18N.header.pt,
+    perks: found.perks[currentLang] || found.perks.pt,
+  };
 }
 
 export default function QgView() {
@@ -56,7 +116,7 @@ export default function QgView() {
   const openTasks = S.tasks.filter((x) => L.repDue(x, today()) && !L.isDone(x, today())).slice(0, 5);
   const goalMeta = MT(METAS.find((m) => m.d === S.goal));
   const lw = L.sosLast(S);
-  const activePerks = getBioPerks(d);
+  const bioData = getBioPerksI18n(d, lang);
 
   /* linha do tempo */
   let cells = [], wins = 0, falls = 0, part = 0;
@@ -306,16 +366,16 @@ export default function QgView() {
           {goalMeta && <div className="mt-1 text-[11px] font-bold text-gold2">{d >= goalMeta.d ? t('goal_done') + goalMeta.icon + ' ' + goalMeta.n + '!' : t('goal_next') + goalMeta.icon + ' ' + goalMeta.n + t('goal_in') + goalMeta.d + t('goal_days') + (goalMeta.d - d) + t('goal_close')}</div>}
           {tier.reward && <div className="mt-1 text-[11px] font-bold text-gold2">{t('reward_l')}{tier.reward}</div>}
 
-          {/* EFEITOS BIOLÓGICOS E MENTAIS ATIVOS NESTE MARCO */}
+          {/* EFEITOS BIOLÓGICOS E MENTAIS ATIVOS NESTE MARCO (100% TRILÍNGUE) */}
           <div className="mt-4 pt-3.5 border-t border-line/60">
             <div className="mb-2 flex items-center gap-1.5">
               <Zap size={13} className="text-gold" />
               <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold2">
-                EFEITOS BIOLÓGICOS & MENTAIS ATIVOS NESTE MARCO:
+                {bioData.header}
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-              {activePerks.map((perk, idx) => (
+              {bioData.perks.map((perk, idx) => (
                 <div key={idx} className="flex items-center gap-2 rounded-r border border-line bg-surface2 px-2.5 py-1.5 text-left text-[11.5px] font-medium text-ink">
                   <ShieldCheck size={13} className="flex-none text-gold" />
                   <span className="truncate">{perk}</span>
