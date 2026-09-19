@@ -2,7 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* 👑 TEMA 1: FORJA DOURADA (PADRÃO) */
+:root,
+[data-theme='dark'] {
   --bg: 13 13 14;
   --surface: 26 26 30;
   --surface2: 21 21 25;
@@ -12,20 +14,20 @@
 
 /* ⚔️ TEMA 2: BLACK OPS (MINIMALISTA / STEALTH) */
 [data-theme='stealth'] {
-  --bg: 5 5 7;
-  --surface: 16 16 20;
-  --surface2: 11 11 14;
+  --bg: 6 6 8;
+  --surface: 18 18 22;
+  --surface2: 12 12 15;
   --deep: 8 8 10;
-  --line: 38 38 46;
+  --line: 36 36 44;
 }
 
-/* 🪖 TEMA 3: EXÉRCITO (VERDE OLIVA TÁTICO) */
+/* 🪖 TEMA 3: EXÉRCITO (VERDE MILITAR TÁTICO) */
 [data-theme='military'] {
-  --bg: 14 18 13;
-  --surface: 24 31 22;
-  --surface2: 18 24 17;
-  --deep: 11 15 10;
-  --line: 42 54 39;
+  --bg: 15 20 14;
+  --surface: 26 34 24;
+  --surface2: 20 26 19;
+  --deep: 12 16 11;
+  --line: 44 58 41;
 }
 
 html {
@@ -34,20 +36,23 @@ html {
   overflow-x: hidden;
   overflow-x: clip;
 }
+
 body {
-  @apply bg-bg text-ink font-body min-h-dvh antialiased transition-colors duration-300;
+  @apply bg-bg text-ink font-body min-h-dvh antialiased transition-colors duration-200;
   background-image: radial-gradient(900px 500px at 85% -10%, rgba(229, 169, 60, 0.07), transparent 60%),
     radial-gradient(700px 600px at -10% 110%, rgba(229, 169, 60, 0.05), transparent 60%);
   background-attachment: fixed;
 }
 
-/* EFEITOS DE FUNDO PERSONALIZADOS POR TEMA */
-[data-theme='stealth'] body {
-  background-image: radial-gradient(900px 500px at 85% -10%, rgba(255, 255, 255, 0.05), transparent 60%),
-    radial-gradient(700px 600px at -10% 110%, rgba(180, 180, 190, 0.03), transparent 60%);
+/* FUNDO STEALTH */
+html[data-theme='stealth'] body {
+  background-image: radial-gradient(900px 500px at 85% -10%, rgba(255, 255, 255, 0.04), transparent 60%),
+    radial-gradient(700px 600px at -10% 110%, rgba(180, 180, 190, 0.02), transparent 60%);
 }
-[data-theme='military'] body {
-  background-image: radial-gradient(900px 500px at 85% -10%, rgba(134, 169, 82, 0.16), transparent 60%),
+
+/* FUNDO MILITAR */
+html[data-theme='military'] body {
+  background-image: radial-gradient(900px 500px at 85% -10%, rgba(134, 169, 82, 0.18), transparent 60%),
     radial-gradient(700px 600px at -10% 110%, rgba(95, 125, 55, 0.12), transparent 60%);
 }
 
@@ -57,6 +62,7 @@ body.cosmic {
     radial-gradient(1.5px 1.5px at 30% 30%, rgba(255, 255, 255, 0.5), transparent 60%),
     radial-gradient(1px 1px at 60% 60%, rgba(255, 255, 255, 0.4), transparent 60%);
 }
+
 ::selection {
   background: #e5a93c;
   color: #0d0d0e;
@@ -65,71 +71,71 @@ body.cosmic {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* =======================================================
-   SOBREPOSIÇÃO GLOBAL DE CORES PARA OS TEMAS SEREM FORTES
-   ======================================================= */
-
-/* 🪖 MUTAÇÕES DO TEMA EXÉRCITO MILITAR */
-[data-theme='military'] .text-gold,
-[data-theme='military'] .text-gold2,
-[data-theme='military'] .k {
+/* =========================================
+   REGRAS EXCLUSIVAS PARA O TEMA MILITAR
+   ========================================= */
+html[data-theme='military'] .text-gold,
+html[data-theme='military'] .text-gold2,
+html[data-theme='military'] .k {
   color: #8EB359 !important;
 }
-[data-theme='military'] .border-gold,
-[data-theme='military'] .border-gold\/40,
-[data-theme='military'] .border-gold\/50,
-[data-theme='military'] .border-gold\/60 {
+html[data-theme='military'] .border-gold,
+html[data-theme='military'] .border-gold\/40,
+html[data-theme='military'] .border-gold\/50,
+html[data-theme='military'] .border-gold\/60 {
   border-color: rgba(142, 179, 89, 0.65) !important;
 }
-[data-theme='military'] .bg-gold,
-[data-theme='military'] .bg-gold\/10,
-[data-theme='military'] .bg-gold\/20 {
+html[data-theme='military'] .bg-gold,
+html[data-theme='military'] .bg-gold\/10,
+html[data-theme='military'] .bg-gold\/20 {
   background-color: rgba(142, 179, 89, 0.15) !important;
 }
-[data-theme='military'] .btn-gold {
+html[data-theme='military'] .btn-gold {
   background: linear-gradient(135deg, #7E9F4E 0%, #5B7536 100%) !important;
   color: #0B0E0A !important;
   box-shadow: 0 4px 14px rgba(91, 117, 54, 0.4) !important;
 }
-[data-theme='military'] .btn-ghost {
+html[data-theme='military'] .btn-ghost {
   background-color: rgba(142, 179, 89, 0.15) !important;
   color: #8EB359 !important;
   border-color: rgba(142, 179, 89, 0.4) !important;
 }
-[data-theme='military'] .chip {
+html[data-theme='military'] .chip {
   border-color: rgba(142, 179, 89, 0.4) !important;
   background-color: rgba(142, 179, 89, 0.12) !important;
   color: #8EB359 !important;
 }
 
-/* ⚔️ MUTAÇÕES DO TEMA BLACK OPS */
-[data-theme='stealth'] .text-gold,
-[data-theme='stealth'] .text-gold2,
-[data-theme='stealth'] .k {
-  color: #E2E2E8 !important;
+/* =========================================
+   REGRAS EXCLUSIVAS PARA O TEMA STEALTH (BLACK OPS)
+   ========================================= */
+html[data-theme='stealth'] .text-gold,
+html[data-theme='stealth'] .text-gold2,
+html[data-theme='stealth'] .k {
+  color: #EDEDF2 !important;
 }
-[data-theme='stealth'] .border-gold,
-[data-theme='stealth'] .border-gold\/40,
-[data-theme='stealth'] .border-gold\/50,
-[data-theme='stealth'] .border-gold\/60 {
-  border-color: rgba(226, 226, 232, 0.45) !important;
+html[data-theme='stealth'] .border-gold,
+html[data-theme='stealth'] .border-gold\/40,
+html[data-theme='stealth'] .border-gold\/50,
+html[data-theme='stealth'] .border-gold\/60 {
+  border-color: rgba(237, 237, 242, 0.45) !important;
 }
-[data-theme='stealth'] .bg-gold,
-[data-theme='stealth'] .bg-gold\/10,
-[data-theme='stealth'] .bg-gold\/20 {
+html[data-theme='stealth'] .bg-gold,
+html[data-theme='stealth'] .bg-gold\/10,
+html[data-theme='stealth'] .bg-gold\/20 {
   background-color: rgba(255, 255, 255, 0.08) !important;
 }
-[data-theme='stealth'] .btn-gold {
+html[data-theme='stealth'] .btn-gold {
   background: linear-gradient(135deg, #EDEDF2 0%, #B5B5BE 100%) !important;
   color: #070709 !important;
   box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15) !important;
 }
-[data-theme='stealth'] .btn-ghost {
+html[data-theme='stealth'] .btn-ghost {
   background-color: rgba(255, 255, 255, 0.08) !important;
   color: #EDEDF2 !important;
   border-color: rgba(255, 255, 255, 0.25) !important;
 }
-[data-theme='stealth'] .chip {
+html[data-theme='stealth'] .chip {
   border-color: rgba(255, 255, 255, 0.25) !important;
   background-color: rgba(255, 255, 255, 0.06) !important;
   color: #EDEDF2 !important;
@@ -137,7 +143,7 @@ body.cosmic {
 
 @layer components {
   .card {
-    @apply relative rounded-r2 border border-line bg-surface p-4 sm:p-5 transition-colors duration-300;
+    @apply relative rounded-r2 border border-line bg-surface p-4 sm:p-5 transition-colors duration-200;
   }
   .k {
     @apply block mb-2.5 text-[10.5px] font-extrabold uppercase tracking-[.22em] text-gold2;
@@ -181,10 +187,10 @@ body.cosmic {
   .bar > i {
     @apply block h-full rounded-full bg-gradient-to-r from-gold to-gold2 transition-all duration-700;
   }
-  [data-theme='military'] .bar > i {
+  html[data-theme='military'] .bar > i {
     background: linear-gradient(90deg, #8EB359 0%, #5B7536 100%) !important;
   }
-  [data-theme='stealth'] .bar > i {
+  html[data-theme='stealth'] .bar > i {
     background: linear-gradient(90deg, #EDEDF2 0%, #8E8E98 100%) !important;
   }
   .empty {
@@ -205,20 +211,20 @@ body.cosmic {
   .chk.on .box {
     @apply border-gold bg-gradient-to-br from-gold to-gold2 text-[#141414];
   }
-  [data-theme='military'] .chk.on {
+  html[data-theme='military'] .chk.on {
     border-color: rgba(142, 179, 89, 0.7) !important;
     background-color: rgba(142, 179, 89, 0.16) !important;
   }
-  [data-theme='military'] .chk.on .box {
+  html[data-theme='military'] .chk.on .box {
     border-color: #8EB359 !important;
     background: linear-gradient(135deg, #8EB359, #5B7536) !important;
     color: #0B0E0A !important;
   }
-  [data-theme='stealth'] .chk.on {
+  html[data-theme='stealth'] .chk.on {
     border-color: rgba(226, 226, 232, 0.6) !important;
     background-color: rgba(255, 255, 255, 0.12) !important;
   }
-  [data-theme='stealth'] .chk.on .box {
+  html[data-theme='stealth'] .chk.on .box {
     border-color: #EDEDF2 !important;
     background: linear-gradient(135deg, #EDEDF2, #B5B5BE) !important;
     color: #070709 !important;
@@ -241,18 +247,18 @@ body.cosmic {
   .tswitch.on span {
     @apply left-[23px] bg-gold;
   }
-  [data-theme='military'] .tswitch.on {
+  html[data-theme='military'] .tswitch.on {
     border-color: rgba(142, 179, 89, 0.7) !important;
     background-color: rgba(142, 179, 89, 0.25) !important;
   }
-  [data-theme='military'] .tswitch.on span {
+  html[data-theme='military'] .tswitch.on span {
     background-color: #8EB359 !important;
   }
-  [data-theme='stealth'] .tswitch.on {
+  html[data-theme='stealth'] .tswitch.on {
     border-color: rgba(226, 226, 232, 0.6) !important;
     background-color: rgba(255, 255, 255, 0.2) !important;
   }
-  [data-theme='stealth'] .tswitch.on span {
+  html[data-theme='stealth'] .tswitch.on span {
     background-color: #EDEDF2 !important;
   }
   .tag {
@@ -267,12 +273,12 @@ body.cosmic {
   .tlc.w {
     @apply border-gold bg-gradient-to-br from-gold to-gold2 shadow-[0_0_6px_rgba(229,169,60,.5)];
   }
-  [data-theme='military'] .tlc.w {
+  html[data-theme='military'] .tlc.w {
     border-color: #8EB359 !important;
     background: linear-gradient(135deg, #8EB359, #5B7536) !important;
     box-shadow: 0 0 6px rgba(142, 179, 89, 0.5) !important;
   }
-  [data-theme='stealth'] .tlc.w {
+  html[data-theme='stealth'] .tlc.w {
     border-color: #EDEDF2 !important;
     background: linear-gradient(135deg, #EDEDF2, #B5B5BE) !important;
     box-shadow: 0 0 6px rgba(226, 226, 232, 0.4) !important;
