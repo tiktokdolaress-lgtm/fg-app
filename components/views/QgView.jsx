@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { RefreshCw, Trophy, CalendarDays, Flame, ShieldCheck, Droplets, Hand, HeartPulse, Check, X, Zap, Sparkles } from 'lucide-react';
+import { RefreshCw, Trophy, CalendarDays, Flame, ShieldCheck, Droplets, Hand, HeartPulse, Check, X, Zap, Sparkles, ShieldAlert, Target, Compass } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Bar, Chk, Empty } from '@/components/ui';
 import { METAS, NEXTF, FAIL_PEN, TRIGGERS, FAIL_LBL, TIERS, QUOTES } from '@/lib/data';
@@ -76,6 +76,45 @@ const BIO_EFFECTS_I18N = {
   ]
 };
 
+/* Textos Trilíngues do Bloco de Protocolo Tático */
+const TACTICAL_BLOCK_I18N = {
+  title: {
+    pt: 'PROTOCOLO TÁTICO & BLINDAGEM DO DIA',
+    en: 'TACTICAL PROTOCOL & DAILY SHIELDING',
+    es: 'PROTOCOLO TÁCTICO Y BLINDAJE DIARIO',
+  },
+  riskTitle: {
+    pt: 'ZONA DE RISCO ELEVADO',
+    en: 'HIGH RISK ZONE',
+    es: 'ZONA DE ALTO RIESGO',
+  },
+  riskDesc: {
+    pt: 'Noite / Cansaço (22h - 01h). Mantenha as telas fora do quarto.',
+    en: 'Night / Fatigue (10 PM - 1 AM). Keep screens away from bed.',
+    es: 'Noche / Cansancio (22h - 01h). Mantén las pantallas fuera del cuarto.',
+  },
+  goldenRuleTitle: {
+    pt: 'REGRA DE CONDUTA',
+    en: 'RULE OF CONDUCT',
+    es: 'REGLA DE CONDUCTA',
+  },
+  goldenRuleDesc: {
+    pt: 'A tentação dura 10 minutos. O arrependimento dura dias inteiros.',
+    en: 'The urge lasts 10 minutes. Regret lingers for days.',
+    es: 'La tentación dura 10 minutos. El arrepentimiento dura días enteros.',
+  },
+  energyTitle: {
+    pt: 'ENERGIA VITAL',
+    en: 'VITAL ENERGY',
+    es: 'ENERGÍA VITAL',
+  },
+  energyDesc: {
+    pt: 'Transmute o fogo interno em treino, estudo e trabalho.',
+    en: 'Transmute inner fire into training, studying, and building.',
+    es: 'Transmuta el fuego interno en entrenamiento, estudio y trabajo.',
+  },
+};
+
 function getBioPerksI18n(days, lang) {
   const currentLang = ['pt', 'en', 'es'].includes(lang) ? lang : 'pt';
   const found = BIO_EFFECTS_I18N.tiers.find((b) => days >= b.min && days <= b.max) || BIO_EFFECTS_I18N.tiers[0];
@@ -88,6 +127,7 @@ function getBioPerksI18n(days, lang) {
 export default function QgView() {
   const { S, update, t, openModal, closeModal, toast, setTab } = useApp();
   const lang = (S && S.settings && S.settings.lang) || 'pt';
+  const curLang = ['pt', 'en', 'es'].includes(lang) ? lang : 'pt';
   const [ciDate, setCiDate] = useState(today());
   const [qgRange, setQgRange] = useState(30);
 
@@ -117,6 +157,7 @@ export default function QgView() {
   const goalMeta = MT(METAS.find((m) => m.d === S.goal));
   const lw = L.sosLast(S);
   const bioData = getBioPerksI18n(d, lang);
+  const tac = TACTICAL_BLOCK_I18N;
 
   /* linha do tempo */
   let cells = [], wins = 0, falls = 0, part = 0;
@@ -313,7 +354,7 @@ export default function QgView() {
 
   return (
     <div className="grid gap-3.5">
-      {/* 1. Código do guerreiro (Barra horizontal compacta e imponente) */}
+      {/* 1. Código do Guerreiro */}
       <Card className="border-gold/40 bg-gradient-to-br from-surface to-gold/5 py-3.5 px-4 sm:px-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -331,12 +372,12 @@ export default function QgView() {
         </div>
       </Card>
 
-      {/* 2. GRADE TÁTICA PRINCIPAL NO PC (Coluna 1: Progresso / Coluna 2: Check-in & Hábitos) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
+      {/* 2. GRADE SUPERIOR EQUILIBRADA (Progresso vs Check-in & Forja) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch">
         
-        {/* COLUNA ESQUERDA (7 colunas): Hero, Métricas, Barra de Nível e Efeitos Biológicos */}
-        <div className="lg:col-span-7 flex flex-col gap-3.5">
-          <Card glow className="overflow-hidden text-center relative">
+        {/* COLUNA ESQUERDA (7 colunas): Hero, Métricas, Nível, Efeitos e NOVO PROTOCOLO TÁTICO */}
+        <div className="lg:col-span-7 flex flex-col gap-3.5 justify-between">
+          <Card glow className="overflow-hidden text-center relative flex-1 flex flex-col justify-between">
             <div className="pointer-events-none absolute left-1/2 top-[6%] h-[340px] w-[340px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,200,70,.14),transparent_65%)]" style={{ animation: 'breathe 5s ease-in-out infinite' }} />
             <K className="text-center">{tier.min >= 90 ? t('prog_aura') : t('prog')}</K>
             
@@ -365,7 +406,7 @@ export default function QgView() {
             </div>
 
             {/* Nível e Progresso */}
-            <div className="relative text-left mt-3">
+            <div className="relative text-left mt-2">
               <K>{t('tier')} — {tier.icon} {tier.name}</K>
               <Bar pct={lvlPct} />
               <div className="mt-1.5 flex justify-between text-[11px] font-extrabold tracking-[.06em] text-muted"><span>{lvlTxt}</span><span className="font-mono">{d}d</span></div>
@@ -373,7 +414,7 @@ export default function QgView() {
               {tier.reward && <div className="mt-0.5 text-[10.5px] font-bold text-gold2">{t('reward_l')}{tier.reward}</div>}
 
               {/* Efeitos biológicos ativos neste marco */}
-              <div className="mt-3.5 pt-3 border-t border-line/60">
+              <div className="mt-3 pt-2.5 border-t border-line/60">
                 <div className="mb-2 flex items-center gap-1.5">
                   <Zap size={13} className="text-gold" />
                   <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold2">
@@ -391,10 +432,60 @@ export default function QgView() {
               </div>
             </div>
           </Card>
+
+          {/* NOVO BLOCO TÁTICO: Preenche perfeitamente a base da coluna esquerda */}
+          <Card className="border-gold/20 bg-surface2/80 p-3.5">
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center gap-1.5">
+                <Compass size={14} className="text-gold" />
+                <span className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-gold2">
+                  {tac.title[curLang]}
+                </span>
+              </div>
+              <span className="text-[9.5px] font-mono font-bold text-gold/80 px-2 py-0.5 rounded bg-gold/10 border border-gold/20">
+                QG ATIVO
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-left">
+              {/* Alerta de Zona Crítica */}
+              <div className="rounded-r border border-danger/30 bg-danger/5 p-2.5">
+                <div className="flex items-center gap-1.5 text-danger font-bold text-[10.5px] uppercase tracking-wider mb-1">
+                  <ShieldAlert size={13} />
+                  <span>{tac.riskTitle[curLang]}</span>
+                </div>
+                <p className="text-[11px] text-muted leading-tight">
+                  {tac.riskDesc[curLang]}
+                </p>
+              </div>
+
+              {/* Regra de Ouro */}
+              <div className="rounded-r border border-gold/30 bg-gold/5 p-2.5">
+                <div className="flex items-center gap-1.5 text-gold font-bold text-[10.5px] uppercase tracking-wider mb-1">
+                  <Target size={13} />
+                  <span>{tac.goldenRuleTitle[curLang]}</span>
+                </div>
+                <p className="text-[11px] text-muted leading-tight">
+                  {tac.goldenRuleDesc[curLang]}
+                </p>
+              </div>
+
+              {/* Energia & Foco */}
+              <div className="rounded-r border border-ok/30 bg-ok/5 p-2.5">
+                <div className="flex items-center gap-1.5 text-ok font-bold text-[10.5px] uppercase tracking-wider mb-1">
+                  <Flame size={13} />
+                  <span>{tac.energyTitle[curLang]}</span>
+                </div>
+                <p className="text-[11px] text-muted leading-tight">
+                  {tac.energyDesc[curLang]}
+                </p>
+              </div>
+            </div>
+          </Card>
         </div>
 
         {/* COLUNA DIREITA (5 colunas): Check-in Diário de Combate + Forja Hoje */}
-        <div className="lg:col-span-5 flex flex-col gap-3.5">
+        <div className="lg:col-span-5 flex flex-col gap-3.5 justify-between">
           {/* Check-in Diário */}
           <Card>
             <K>{t('checkin')}{L.modeA(S) ? t('two_pil') : ''}</K>
@@ -421,11 +512,11 @@ export default function QgView() {
           </Card>
 
           {/* Forja Hoje (Hábitos diários) */}
-          <Card>
-            <K>🔨 {t('forgeToday')} — {doneF}{t('of_w')}{S.forge.active.length}</K>
-            {act.length ? (
-              <>
-                <div className="flex flex-col gap-1.5">
+          <Card className="flex-1 flex flex-col justify-between">
+            <div>
+              <K>🔨 {t('forgeToday')} — {doneF}{t('of_w')}{S.forge.active.length}</K>
+              {act.length ? (
+                <div className="flex flex-col gap-1.5 mt-1">
                   {act.map((id) => {
                     const h = ALLH.find((x) => x.id === id); if (!h) return null;
                     const dn = fd.includes(id), isF = ff.includes(id), tm = L.hTime(S, id);
@@ -464,59 +555,72 @@ export default function QgView() {
                     );
                   })}
                 </div>
-                <div className="bar mt-2.5"><i style={{ width: (S.forge.active.length ? (doneF / S.forge.active.length) * 100 : 0) + '%' }} /></div>
-              </>
-            ) : (
-              <><Empty>{t('ef1')}<br />{t('ef2')} <b className="text-gold">{t('forge_b')}</b>.</Empty>
-                <button className="btn-ghost btn-big mt-2" onClick={() => setTab('forge')}>{t('goforge')}</button></>
+              ) : (
+                <><Empty>{t('ef1')}<br />{t('ef2')} <b className="text-gold">{t('forge_b')}</b>.</Empty>
+                  <button className="btn-ghost btn-big mt-2" onClick={() => setTab('forge')}>{t('goforge')}</button></>
+              )}
+            </div>
+            {act.length > 0 && (
+              <div className="bar mt-3"><i style={{ width: (S.forge.active.length ? (doneF / S.forge.active.length) * 100 : 0) + '%' }} /></div>
             )}
           </Card>
         </div>
       </div>
 
-      {/* 3. OPERAÇÕES DO DIA & LINHA DO TEMPO (Lado a lado no PC) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
+      {/* 3. BASE HORIZONTAL ALINHADA: Operações do Dia & Linha do Tempo */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch">
         {/* Operações & Tarefas (5 colunas) */}
-        <div className="lg:col-span-5">
-          <Card>
-            <K>🎯 {t('tasksToday')} — {openTasks.length}{t('pend_w')}</K>
-            {openTasks.length ? (
-              <div className="flex flex-col gap-2">
-                {openTasks.map((x) => (
-                  <button key={x.id} className="flex items-center gap-2.5 rounded-r border border-line bg-surface2 p-2.5 text-left text-[13px] font-semibold" onClick={() => { update((s) => { const tt = s.tasks.find((y) => y.id == x.id); if (!tt) return; if ((tt.rep || 'unica') === 'unica') tt.done = !tt.done; else { const dd = today(); tt.doneDates = tt.doneDates || []; const i = tt.doneDates.indexOf(dd); if (i >= 0) tt.doneDates.splice(i, 1); else tt.doneDates.push(dd); } }); AF.click(); }}>
-                    <span className={`h-2.5 w-2.5 flex-none rounded-full ${{ alta: 'bg-danger', media: 'bg-gold', baixa: 'bg-muted' }[x.pri] || 'bg-muted'}`} />
-                    <span className="min-w-0 flex-1 truncate">{x.txt}</span>
-                    {x.time && <span className="font-mono text-[11px] text-gold2">{x.time}</span>}
-                    <span className="grid h-[20px] w-[20px] flex-none place-items-center rounded-md border border-[#3c3c46] text-transparent">✓</span>
-                  </button>
-                ))}
-              </div>
-            ) : <Empty>{t('eo1')}<b className="text-gold">{t('ops_b')}</b>.</Empty>}
+        <div className="lg:col-span-5 flex flex-col">
+          <Card className="flex-1 flex flex-col justify-between">
+            <div>
+              <K>🎯 {t('tasksToday')} — {openTasks.length}{t('pend_w')}</K>
+              {openTasks.length ? (
+                <div className="flex flex-col gap-2 mt-1">
+                  {openTasks.map((x) => (
+                    <button key={x.id} className="flex items-center gap-2.5 rounded-r border border-line bg-surface2 p-2.5 text-left text-[13px] font-semibold" onClick={() => { update((s) => { const tt = s.tasks.find((y) => y.id == x.id); if (!tt) return; if ((tt.rep || 'unica') === 'unica') tt.done = !tt.done; else { const dd = today(); tt.doneDates = tt.doneDates || []; const i = tt.doneDates.indexOf(dd); if (i >= 0) tt.doneDates.splice(i, 1); else tt.doneDates.push(dd); } }); AF.click(); }}>
+                      <span className={`h-2.5 w-2.5 flex-none rounded-full ${{ alta: 'bg-danger', media: 'bg-gold', baixa: 'bg-muted' }[x.pri] || 'bg-muted'}`} />
+                      <span className="min-w-0 flex-1 truncate">{x.txt}</span>
+                      {x.time && <span className="font-mono text-[11px] text-gold2">{x.time}</span>}
+                      <span className="grid h-[20px] w-[20px] flex-none place-items-center rounded-md border border-[#3c3c46] text-transparent">✓</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-4 text-center">
+                  <Empty>{t('eo1')}<b className="text-gold">{t('ops_b')}</b>.</Empty>
+                </div>
+              )}
+            </div>
+            <button className="btn-ghost w-full text-xs mt-2 py-1.5" onClick={() => setTab('tasks')}>
+              + Gerenciar Operações
+            </button>
           </Card>
         </div>
 
         {/* Linha do Tempo de Combate (7 colunas) */}
-        <div className="lg:col-span-7">
-          <Card>
-            <K>{t('tlt')}</K>
-            <div className="mb-2 flex flex-wrap gap-1.5">
-              {[7, 14, 30, 60, 90, 365].map((n) => (
-                <button key={n} className={qgRange === n ? 'chip' : 'chip-dim'} style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setQgRange(n); }}>{n}{t('daysuf')}</button>
-              ))}
+        <div className="lg:col-span-7 flex flex-col">
+          <Card className="flex-1 flex flex-col justify-between">
+            <div>
+              <K>{t('tlt')}</K>
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {[7, 14, 30, 60, 90, 365].map((n) => (
+                  <button key={n} className={qgRange === n ? 'chip' : 'chip-dim'} style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setQgRange(n); }}>{n}{t('daysuf')}</button>
+                ))}
+              </div>
+              <div className="mb-2.5 flex flex-wrap gap-1.5">
+                <span className="chip cursor-default text-[10.5px]">🏆 {wins}{t('winsw')}</span>
+                <span className="chip-dim cursor-default border-danger/50 text-danger text-[10.5px]">💥 {falls}{t('fallsw')}</span>
+                <span className="chip-dim cursor-default text-[10.5px]">◐ {part}{t('partw')}</span>
+                <span className="chip-dim cursor-default text-[10.5px]">⚡ {rate}{t('ratew')}</span>
+                <span className="chip-dim cursor-default border-ok/45 text-ok text-[10.5px]" title={lw ? t('lastw') + fdmy(lw.d) + t('atw') + lw.h : t('nosos')}>🛡️ {L.sosWins(S)}{t('sosw')}</span>
+              </div>
+              <div className="flex flex-wrap gap-[5px]">
+                {cells.map((c) => (
+                  <button key={c.ds} title={c.ds + ' · ' + c.lab + t('taped')} className={`tlc ${c.cls}`} onClick={() => dayEditor(c.ds)} />
+                ))}
+              </div>
             </div>
-            <div className="mb-2.5 flex flex-wrap gap-1.5">
-              <span className="chip cursor-default text-[10.5px]">🏆 {wins}{t('winsw')}</span>
-              <span className="chip-dim cursor-default border-danger/50 text-danger text-[10.5px]">💥 {falls}{t('fallsw')}</span>
-              <span className="chip-dim cursor-default text-[10.5px]">◐ {part}{t('partw')}</span>
-              <span className="chip-dim cursor-default text-[10.5px]">⚡ {rate}{t('ratew')}</span>
-              <span className="chip-dim cursor-default border-ok/45 text-ok text-[10.5px]" title={lw ? t('lastw') + fdmy(lw.d) + t('atw') + lw.h : t('nosos')}>🛡️ {L.sosWins(S)}{t('sosw')}</span>
-            </div>
-            <div className="flex flex-wrap gap-[5px]">
-              {cells.map((c) => (
-                <button key={c.ds} title={c.ds + ' · ' + c.lab + t('taped')} className={`tlc ${c.cls}`} onClick={() => dayEditor(c.ds)} />
-              ))}
-            </div>
-            <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted">
+            <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted pt-2 border-t border-line/40">
               <span><b className="tlc w mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_v')}</span>
               <span><b className="tlc p mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_p')}</span>
               <span><b className="tlc f mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_f')}</span>
