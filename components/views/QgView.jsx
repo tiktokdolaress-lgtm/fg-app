@@ -91,7 +91,7 @@ export default function QgView() {
   const [ciDate, setCiDate] = useState(today());
   const [qgRange, setQgRange] = useState(30);
 
-  /* i18n: patamares, metas, hábitos e mantras traduzidos */
+  /* i18n */
   const tiers = cxTiers(lang, TIERS);
   const d = L.progressDays(S);
   const tier = tiers.find((x) => x.min === L.tierNow(S).min) || L.tierNow(S);
@@ -130,7 +130,7 @@ export default function QgView() {
   }
   const rate = Math.round((wins / qgRange) * 100);
 
-  /* ===== ações ===== */
+  /* ações */
   const setCI = (k, v, dateStr) => {
     const dd = dateStr || today();
     update((s) => {
@@ -153,7 +153,6 @@ export default function QgView() {
     else AF.click();
   };
 
-  /* Ação direta para marcar como cumprido na Forja Hoje */
   const toggleHabitDone = (id, e) => {
     if (e) e.stopPropagation();
     if (!S.forge.active.includes(id)) return;
@@ -173,7 +172,6 @@ export default function QgView() {
     AF.click();
   };
 
-  /* Ação direta para marcar como FALHO na Forja Hoje */
   const toggleHabitFailed = (id, e) => {
     if (e) e.stopPropagation();
     if (!S.forge.active.includes(id)) return;
@@ -315,204 +313,219 @@ export default function QgView() {
 
   return (
     <div className="grid gap-3.5">
-      {/* Código do guerreiro */}
-      <Card className="border-gold/40 bg-gradient-to-br from-surface to-gold/5">
-        <div className="lg:flex lg:items-center lg:gap-6">
+      {/* 1. Código do guerreiro (Barra horizontal compacta e imponente) */}
+      <Card className="border-gold/40 bg-gradient-to-br from-surface to-gold/5 py-3.5 px-4 sm:px-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <K>{t('code')}</K>
-            <p className="mb-3.5 border-l-[3px] border-gold2 pl-3.5 text-[17px] font-bold italic leading-relaxed text-[#f3ead2] lg:mb-0 lg:text-[19px]">"{mantra}"</p>
+            <span className="k mb-1">⚡ {t('code')}</span>
+            <p className="border-l-[3px] border-gold2 pl-3 text-[15px] sm:text-[16px] font-bold italic leading-snug text-[#f3ead2]">
+              "{mantra}"
+            </p>
           </div>
-          <div className="lg:flex lg:w-60 lg:flex-none lg:flex-col lg:items-center lg:gap-2 lg:rounded-r lg:border lg:border-gold/20 lg:bg-surface2/60 lg:p-4">
-            <ShieldCheck size={30} strokeWidth={1.6} className="hidden text-gold lg:block" />
-            <div className="k2 hidden lg:block">{t('phrase_n')}{(S.phraseIdx % mantraPool.length) + 1}{t('phrase_of')}{mantraPool.length}</div>
-            <button className="btn-ghost" onClick={() => { AF.click(); update((s) => { s.phraseIdx = (s.phraseIdx + 1) % L.mantraPool(s, quotes).length; }); }}><RefreshCw size={14} /> {t('swap')}</button>
+          <div className="flex items-center gap-2 flex-none justify-end">
+            <span className="k2 hidden xl:inline text-[10px]">{t('phrase_n')}{(S.phraseIdx % mantraPool.length) + 1}{t('phrase_of')}{mantraPool.length}</span>
+            <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { AF.click(); update((s) => { s.phraseIdx = (s.phraseIdx + 1) % L.mantraPool(s, quotes).length; }); }}>
+              <RefreshCw size={13} /> {t('swap')}
+            </button>
           </div>
         </div>
       </Card>
 
-      {/* Hero */}
-      <Card glow className="overflow-hidden text-center">
-        <div className="pointer-events-none absolute left-1/2 top-[6%] h-[340px] w-[340px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,200,70,.14),transparent_65%)]" style={{ animation: 'breathe 5s ease-in-out infinite' }} />
-        <K className="text-center">{tier.min >= 90 ? t('prog_aura') : t('prog')}</K>
-        <div className="relative my-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <div className="col-span-2 bg-gradient-to-b from-[#FFE79A] via-gold to-gold2 bg-clip-text font-display text-[clamp(88px,15vw,150px)] leading-[.92] text-transparent drop-shadow-[0_4px_22px_rgba(255,200,70,.3)] lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:py-3">
-            {d}
-            <small className="mt-2 block font-body text-[11px] font-extrabold tracking-[.34em] text-muted" style={{ WebkitTextFillColor: '#8E8E93' }}>{L.modeA(S) ? t('daysClean') : t('days')}</small>
-          </div>
-          <div className="rounded-r border border-line bg-surface2 p-3 lg:col-start-1 lg:row-start-2">
-            <div className="relative mx-auto h-[74px] w-[74px]">
-              <svg width="74" height="74" viewBox="0 0 80 80" className="-rotate-90">
-                <circle cx="40" cy="40" r="34" fill="none" stroke="#26262c" strokeWidth="7" />
-                <circle cx="40" cy="40" r="34" fill="none" stroke="#FFC846" strokeWidth="7" strokeLinecap="round" strokeDasharray="213.6" strokeDashoffset={ring.toFixed(1)} style={{ transition: 'stroke-dashoffset .8s' }} />
-              </svg>
-              <div className="absolute inset-0 grid place-content-center">
-                <b className="font-display text-lg text-gold">{S.purity}%</b>
-                <small className="text-[7.5px] font-extrabold tracking-[.18em] text-muted">{t('purity')}</small>
+      {/* 2. GRADE TÁTICA PRINCIPAL NO PC (Coluna 1: Progresso / Coluna 2: Check-in & Hábitos) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
+        
+        {/* COLUNA ESQUERDA (7 colunas): Hero, Métricas, Barra de Nível e Efeitos Biológicos */}
+        <div className="lg:col-span-7 flex flex-col gap-3.5">
+          <Card glow className="overflow-hidden text-center relative">
+            <div className="pointer-events-none absolute left-1/2 top-[6%] h-[340px] w-[340px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,200,70,.14),transparent_65%)]" style={{ animation: 'breathe 5s ease-in-out infinite' }} />
+            <K className="text-center">{tier.min >= 90 ? t('prog_aura') : t('prog')}</K>
+            
+            <div className="relative my-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+              <div className="col-span-2 bg-gradient-to-b from-[#FFE79A] via-gold to-gold2 bg-clip-text font-display text-[clamp(76px,11vw,120px)] leading-[.92] text-transparent drop-shadow-[0_4px_22px_rgba(255,200,70,.3)] sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:py-2">
+                {d}
+                <small className="mt-1.5 block font-body text-[10.5px] font-extrabold tracking-[.28em] text-muted" style={{ WebkitTextFillColor: '#8E8E93' }}>{L.modeA(S) ? t('daysClean') : t('days')}</small>
               </div>
-            </div>
-          </div>
-          <div className="rounded-r border border-line bg-surface2 p-3 lg:col-start-1 lg:row-start-1 lg:self-center"><b className="block font-display text-2xl text-gold">{pornFree}</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hporn')}</small></div>
-          <div className="rounded-r border border-line bg-surface2 p-3 lg:col-start-3 lg:row-start-1 lg:self-center"><b className="block font-display text-2xl text-gold">{mastFree}</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hmast')}</small></div>
-          <div className="rounded-r border border-line bg-surface2 p-3 lg:col-start-2 lg:row-start-2"><b className="block font-display text-2xl text-gold">🔥 {streak}</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hstreak')}</small></div>
-          <div className="rounded-r border border-line bg-surface2 p-3 lg:col-start-3 lg:row-start-2"><b className="block font-display text-2xl text-gold">🛡️ {L.sosWins(S)}</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hsos')}</small></div>
-          {tier.min >= 365 && <div className="col-span-2 rounded-r border border-[#EDEDF2] bg-gradient-to-br from-[#EDEDF2] to-[#8F96A0] p-3 shadow-[0_0_18px_rgba(230,232,240,.35)] lg:col-span-3 lg:col-start-1 lg:row-start-3"><b className="block font-display text-2xl text-[#141414]">🐉</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.14em] text-[#33383f]">{t('titan')}</small></div>}
-        </div>
-
-        {/* Nível e Progresso */}
-        <div className="relative text-left">
-          <K>{t('tier')} — {tier.icon} {tier.name}</K>
-          <Bar pct={lvlPct} />
-          <div className="mt-2 flex justify-between text-[11.5px] font-extrabold tracking-[.06em] text-muted"><span>{lvlTxt}</span><span className="font-mono">{d}d</span></div>
-          {goalMeta && <div className="mt-1 text-[11px] font-bold text-gold2">{d >= goalMeta.d ? t('goal_done') + goalMeta.icon + ' ' + goalMeta.n + '!' : t('goal_next') + goalMeta.icon + ' ' + goalMeta.n + t('goal_in') + goalMeta.d + t('goal_days') + (goalMeta.d - d) + t('goal_close')}</div>}
-          {tier.reward && <div className="mt-1 text-[11px] font-bold text-gold2">{t('reward_l')}{tier.reward}</div>}
-
-          {/* EFEITOS BIOLÓGICOS E MENTAIS ATIVOS NESTE MARCO (100% TRILÍNGUE) */}
-          <div className="mt-4 pt-3.5 border-t border-line/60">
-            <div className="mb-2 flex items-center gap-1.5">
-              <Zap size={13} className="text-gold" />
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold2">
-                {bioData.header}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-              {bioData.perks.map((perk, idx) => (
-                <div key={idx} className="flex items-center gap-2 rounded-r border border-line bg-surface2 px-2.5 py-1.5 text-left text-[11.5px] font-medium text-ink">
-                  <ShieldCheck size={13} className="flex-none text-gold" />
-                  <span className="truncate">{perk}</span>
+              <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-1 sm:row-start-2">
+                <div className="relative mx-auto h-[66px] w-[66px]">
+                  <svg width="66" height="66" viewBox="0 0 80 80" className="-rotate-90">
+                    <circle cx="40" cy="40" r="34" fill="none" stroke="#26262c" strokeWidth="7" />
+                    <circle cx="40" cy="40" r="34" fill="none" stroke="#FFC846" strokeWidth="7" strokeLinecap="round" strokeDasharray="213.6" strokeDashoffset={ring.toFixed(1)} style={{ transition: 'stroke-dashoffset .8s' }} />
+                  </svg>
+                  <div className="absolute inset-0 grid place-content-center">
+                    <b className="font-display text-base text-gold">{S.purity}%</b>
+                    <small className="text-[7px] font-extrabold tracking-[.18em] text-muted">{t('purity')}</small>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Check-in */}
-      <Card>
-        <K>{t('checkin')}{L.modeA(S) ? t('two_pil') : ''}</K>
-        <div className="ciday-row mb-2.5 flex flex-wrap gap-1.5">
-          <button className="chip-dim flex-none justify-center" style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setCiDate(yesterday(ciDate)); }}>{t('prev_d')}</button>
-          <button className="chip justify-center" style={{ flex: '1 1 100%', order: -1 }} onClick={() => { AF.click(); setCiDate(today()); }}>{t('today_b')} ({fdmy(today())})</button>
-          <button className="chip-dim flex-none justify-center" style={{ flex: '0 0 auto', ...(ciDate >= today() ? { opacity: .35, cursor: 'not-allowed' } : {}) }} disabled={ciDate >= today()} onClick={() => { AF.click(); setCiDate(dstr(new Date(L.parseD(ciDate).getTime() + 86400000))); }}>{t('next_d')}</button>
-        </div>
-        {ciDate !== today() && <div className="chip mb-2.5 cursor-default">{t('editing_r')}{fdmy(ciDate)}</div>}
-        <div className="flex flex-col gap-2.5">
-          {L.pillars(S).map((k) => {
-            const FAILMAP = { p: 'porn', m: 'mast', r: 'ejac' };
-            const failTypes = String(cView.fail || '').split('+').filter(Boolean);
-            return (
-              <Chk key={k} on={!!cView[k]} failed={!cView[k] && failTypes.includes(FAILMAP[k])} onClick={() => setCI(k, !cView[k], ciDate)}>
-                {t(k === 'p' ? 'c1' : k === 'm' ? 'c2' : 'c3')}
-              </Chk>
-            );
-          })}
-        </div>
-        {ciDate === today()
-          ? <button className="btn-red btn-big mt-4" onClick={failFlow}>{t('fail')}</button>
-          : <p className="fnote mt-1">{t('retro')}</p>}
-      </Card>
-
-      {/* Forja hoje + operações */}
-      <div className="grid gap-3.5 lg:grid-cols-2">
-        <Card>
-          <K>🔨 {t('forgeToday')} — {doneF}{t('of_w')}{S.forge.active.length}</K>
-          {act.length ? (
-            <>
-              <div className="flex flex-col gap-2">
-                {act.map((id) => {
-                  const h = ALLH.find((x) => x.id === id); if (!h) return null;
-                  const dn = fd.includes(id), isF = ff.includes(id), tm = L.hTime(S, id);
-                  return (
-                    <div key={id} className={`flex items-center gap-2.5 rounded-r border p-2.5 text-left text-sm font-semibold transition-colors ${dn ? 'border-gold/50 bg-gold/10' : isF ? 'border-danger/50 bg-danger/10' : 'border-line bg-surface2'}`}>
-                      <span className="w-[26px] text-center text-lg">{h.icon}</span>
-                      <span className={`min-w-0 flex-1 truncate ${dn ? 'text-muted line-through' : isF ? 'text-danger line-through opacity-80' : ''}`}>{h.n}</span>
-                      {tm && <span className="font-mono text-[11px] text-gold2">⏰{tm}</span>}
-                      
-                      {/* Botões rápidos: Cumprido (✔) ou Falho (✕) */}
-                      <div className="flex items-center gap-1.5 flex-none">
-                        {/* Botão Falho */}
-                        <button
-                          type="button"
-                          title="Marcar como Falho"
-                          onClick={(e) => toggleHabitFailed(id, e)}
-                          className={`grid h-[24px] w-[24px] place-items-center rounded-md border text-[13px] font-bold transition-all ${
-                            isF 
-                              ? 'border-danger bg-danger text-white shadow-[0_0_8px_rgba(239,68,68,0.5)]' 
-                              : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-danger/60 hover:text-danger'
-                          }`}
-                        >
-                          <X size={14} strokeWidth={2.5} />
-                        </button>
-
-                        {/* Botão Cumprido */}
-                        <button
-                          type="button"
-                          title="Marcar como Cumprido"
-                          onClick={(e) => toggleHabitDone(id, e)}
-                          className={`grid h-[24px] w-[24px] place-items-center rounded-md border text-[13px] font-bold transition-all ${
-                            dn 
-                              ? 'border-gold bg-gold text-[#141414] shadow-[0_0_8px_rgba(255,200,70,0.5)]' 
-                              : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-gold/60 hover:text-gold'
-                          }`}
-                        >
-                          <Check size={14} strokeWidth={2.5} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
-              <div className="bar mt-3"><i style={{ width: (S.forge.active.length ? (doneF / S.forge.active.length) * 100 : 0) + '%' }} /></div>
-            </>
-          ) : (
-            <><Empty>{t('ef1')}<br />{t('ef2')} <b className="text-gold">{t('forge_b')}</b>.</Empty>
-              <button className="btn-ghost btn-big mt-2.5" onClick={() => setTab('forge')}>{t('goforge')}</button></>
-          )}
-        </Card>
-        <Card>
-          <K>🎯 {t('tasksToday')} — {openTasks.length}{t('pend_w')}</K>
-          {openTasks.length ? (
-            <div className="flex flex-col gap-2">
-              {openTasks.map((x) => (
-                <button key={x.id} className="flex items-center gap-2.5 rounded-r border border-line bg-surface2 p-2.5 text-left text-[13.5px] font-semibold" onClick={() => { update((s) => { const tt = s.tasks.find((y) => y.id == x.id); if (!tt) return; if ((tt.rep || 'unica') === 'unica') tt.done = !tt.done; else { const dd = today(); tt.doneDates = tt.doneDates || []; const i = tt.doneDates.indexOf(dd); if (i >= 0) tt.doneDates.splice(i, 1); else tt.doneDates.push(dd); } }); AF.click(); }}>
-                  <span className={`h-2.5 w-2.5 flex-none rounded-full ${{ alta: 'bg-danger', media: 'bg-gold', baixa: 'bg-muted' }[x.pri] || 'bg-muted'}`} />
-                  <span className="min-w-0 flex-1 truncate">{x.txt}</span>
-                  {x.time && <span className="font-mono text-[11px] text-gold2">{x.time}</span>}
-                  <span className="grid h-[21px] w-[21px] flex-none place-items-center rounded-md border-2 border-[#3c3c46] text-transparent">✓</span>
-                </button>
-              ))}
+              <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-1 sm:row-start-1 sm:self-center"><b className="block font-display text-xl sm:text-2xl text-gold">{pornFree}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hporn')}</small></div>
+              <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-3 sm:row-start-1 sm:self-center"><b className="block font-display text-xl sm:text-2xl text-gold">{mastFree}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hmast')}</small></div>
+              <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-2 sm:row-start-2"><b className="block font-display text-xl sm:text-2xl text-gold">🔥 {streak}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hstreak')}</small></div>
+              <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-3 sm:row-start-2"><b className="block font-display text-xl sm:text-2xl text-gold">🛡️ {L.sosWins(S)}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hsos')}</small></div>
+              {tier.min >= 365 && <div className="col-span-2 rounded-r border border-[#EDEDF2] bg-gradient-to-br from-[#EDEDF2] to-[#8F96A0] p-2.5 shadow-[0_0_18px_rgba(230,232,240,.35)] sm:col-span-3 sm:col-start-1 sm:row-start-3"><b className="block font-display text-2xl text-[#141414]">🐉</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-[#33383f]">{t('titan')}</small></div>}
             </div>
-          ) : <Empty>{t('eo1')}<b className="text-gold">{t('ops_b')}</b>.</Empty>}
-        </Card>
+
+            {/* Nível e Progresso */}
+            <div className="relative text-left mt-3">
+              <K>{t('tier')} — {tier.icon} {tier.name}</K>
+              <Bar pct={lvlPct} />
+              <div className="mt-1.5 flex justify-between text-[11px] font-extrabold tracking-[.06em] text-muted"><span>{lvlTxt}</span><span className="font-mono">{d}d</span></div>
+              {goalMeta && <div className="mt-1 text-[10.5px] font-bold text-gold2">{d >= goalMeta.d ? t('goal_done') + goalMeta.icon + ' ' + goalMeta.n + '!' : t('goal_next') + goalMeta.icon + ' ' + goalMeta.n + t('goal_in') + goalMeta.d + t('goal_days') + (goalMeta.d - d) + t('goal_close')}</div>}
+              {tier.reward && <div className="mt-0.5 text-[10.5px] font-bold text-gold2">{t('reward_l')}{tier.reward}</div>}
+
+              {/* Efeitos biológicos ativos neste marco */}
+              <div className="mt-3.5 pt-3 border-t border-line/60">
+                <div className="mb-2 flex items-center gap-1.5">
+                  <Zap size={13} className="text-gold" />
+                  <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold2">
+                    {bioData.header}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                  {bioData.perks.map((perk, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5 rounded-r border border-line bg-surface2 px-2.5 py-1.5 text-left text-[11px] font-medium text-ink">
+                      <ShieldCheck size={12} className="flex-none text-gold" />
+                      <span className="truncate">{perk}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* COLUNA DIREITA (5 colunas): Check-in Diário de Combate + Forja Hoje */}
+        <div className="lg:col-span-5 flex flex-col gap-3.5">
+          {/* Check-in Diário */}
+          <Card>
+            <K>{t('checkin')}{L.modeA(S) ? t('two_pil') : ''}</K>
+            <div className="ciday-row mb-2 flex flex-wrap gap-1.5">
+              <button className="chip-dim flex-none justify-center" style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setCiDate(yesterday(ciDate)); }}>{t('prev_d')}</button>
+              <button className="chip justify-center" style={{ flex: '1 1 100%', order: -1 }} onClick={() => { AF.click(); setCiDate(today()); }}>📅 {t('today_b')} ({fdmy(today())})</button>
+              <button className="chip-dim flex-none justify-center" style={{ flex: '0 0 auto', ...(ciDate >= today() ? { opacity: .35, cursor: 'not-allowed' } : {}) }} disabled={ciDate >= today()} onClick={() => { AF.click(); setCiDate(dstr(new Date(L.parseD(ciDate).getTime() + 86400000))); }}>{t('next_d')}</button>
+            </div>
+            {ciDate !== today() && <div className="chip mb-2 cursor-default">{t('editing_r')}{fdmy(ciDate)}</div>}
+            <div className="flex flex-col gap-2">
+              {L.pillars(S).map((k) => {
+                const FAILMAP = { p: 'porn', m: 'mast', r: 'ejac' };
+                const failTypes = String(cView.fail || '').split('+').filter(Boolean);
+                return (
+                  <Chk key={k} on={!!cView[k]} failed={!cView[k] && failTypes.includes(FAILMAP[k])} onClick={() => setCI(k, !cView[k], ciDate)}>
+                    {t(k === 'p' ? 'c1' : k === 'm' ? 'c2' : 'c3')}
+                  </Chk>
+                );
+              })}
+            </div>
+            {ciDate === today()
+              ? <button className="btn-red btn-big mt-3" onClick={failFlow}>{t('fail')}</button>
+              : <p className="fnote mt-1">{t('retro')}</p>}
+          </Card>
+
+          {/* Forja Hoje (Hábitos diários) */}
+          <Card>
+            <K>🔨 {t('forgeToday')} — {doneF}{t('of_w')}{S.forge.active.length}</K>
+            {act.length ? (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  {act.map((id) => {
+                    const h = ALLH.find((x) => x.id === id); if (!h) return null;
+                    const dn = fd.includes(id), isF = ff.includes(id), tm = L.hTime(S, id);
+                    return (
+                      <div key={id} className={`flex items-center gap-2 rounded-r border p-2 text-left text-xs sm:text-[13px] font-semibold transition-colors ${dn ? 'border-gold/50 bg-gold/10' : isF ? 'border-danger/50 bg-danger/10' : 'border-line bg-surface2'}`}>
+                        <span className="w-[22px] text-center text-base">{h.icon}</span>
+                        <span className={`min-w-0 flex-1 truncate ${dn ? 'text-muted line-through' : isF ? 'text-danger line-through opacity-80' : ''}`}>{h.n}</span>
+                        {tm && <span className="font-mono text-[10px] text-gold2">⏰{tm}</span>}
+                        <div className="flex items-center gap-1 flex-none">
+                          <button
+                            type="button"
+                            title="Marcar como Falho"
+                            onClick={(e) => toggleHabitFailed(id, e)}
+                            className={`grid h-[22px] w-[22px] place-items-center rounded border text-[11px] font-bold transition-all ${
+                              isF 
+                                ? 'border-danger bg-danger text-white' 
+                                : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-danger/60 hover:text-danger'
+                            }`}
+                          >
+                            <X size={12} strokeWidth={2.5} />
+                          </button>
+                          <button
+                            type="button"
+                            title="Marcar como Cumprido"
+                            onClick={(e) => toggleHabitDone(id, e)}
+                            className={`grid h-[22px] w-[22px] place-items-center rounded border text-[11px] font-bold transition-all ${
+                              dn 
+                                ? 'border-gold bg-gold text-[#141414]' 
+                                : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-gold/60 hover:text-gold'
+                            }`}
+                          >
+                            <Check size={12} strokeWidth={2.5} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="bar mt-2.5"><i style={{ width: (S.forge.active.length ? (doneF / S.forge.active.length) * 100 : 0) + '%' }} /></div>
+              </>
+            ) : (
+              <><Empty>{t('ef1')}<br />{t('ef2')} <b className="text-gold">{t('forge_b')}</b>.</Empty>
+                <button className="btn-ghost btn-big mt-2" onClick={() => setTab('forge')}>{t('goforge')}</button></>
+            )}
+          </Card>
+        </div>
       </div>
 
-      {/* Linha do tempo */}
-      <Card>
-        <K>{t('tlt')}</K>
-        <div className="mb-2.5 flex flex-wrap gap-1.5">
-          {[7, 14, 30, 60, 90, 365].map((n) => (
-            <button key={n} className={qgRange === n ? 'chip' : 'chip-dim'} style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setQgRange(n); }}>{n}{t('daysuf')}</button>
-          ))}
+      {/* 3. OPERAÇÕES DO DIA & LINHA DO TEMPO (Lado a lado no PC) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
+        {/* Operações & Tarefas (5 colunas) */}
+        <div className="lg:col-span-5">
+          <Card>
+            <K>🎯 {t('tasksToday')} — {openTasks.length}{t('pend_w')}</K>
+            {openTasks.length ? (
+              <div className="flex flex-col gap-2">
+                {openTasks.map((x) => (
+                  <button key={x.id} className="flex items-center gap-2.5 rounded-r border border-line bg-surface2 p-2.5 text-left text-[13px] font-semibold" onClick={() => { update((s) => { const tt = s.tasks.find((y) => y.id == x.id); if (!tt) return; if ((tt.rep || 'unica') === 'unica') tt.done = !tt.done; else { const dd = today(); tt.doneDates = tt.doneDates || []; const i = tt.doneDates.indexOf(dd); if (i >= 0) tt.doneDates.splice(i, 1); else tt.doneDates.push(dd); } }); AF.click(); }}>
+                    <span className={`h-2.5 w-2.5 flex-none rounded-full ${{ alta: 'bg-danger', media: 'bg-gold', baixa: 'bg-muted' }[x.pri] || 'bg-muted'}`} />
+                    <span className="min-w-0 flex-1 truncate">{x.txt}</span>
+                    {x.time && <span className="font-mono text-[11px] text-gold2">{x.time}</span>}
+                    <span className="grid h-[20px] w-[20px] flex-none place-items-center rounded-md border border-[#3c3c46] text-transparent">✓</span>
+                  </button>
+                ))}
+              </div>
+            ) : <Empty>{t('eo1')}<b className="text-gold">{t('ops_b')}</b>.</Empty>}
+          </Card>
         </div>
-        <div className="mb-3 flex flex-wrap gap-2">
-          <span className="chip cursor-default">🏆 {wins}{t('winsw')}</span>
-          <span className="chip-dim cursor-default border-danger/50 text-danger">💥 {falls}{t('fallsw')}</span>
-          <span className="chip-dim cursor-default">◐ {part}{t('partw')}</span>
-          <span className="chip-dim cursor-default">⚡ {rate}{t('ratew')}</span>
-          <span className="chip-dim cursor-default border-ok/45 text-ok" title={lw ? t('lastw') + fdmy(lw.d) + t('atw') + lw.h : t('nosos')}>🛡️ {L.sosWins(S)}{t('sosw')}</span>
+
+        {/* Linha do Tempo de Combate (7 colunas) */}
+        <div className="lg:col-span-7">
+          <Card>
+            <K>{t('tlt')}</K>
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {[7, 14, 30, 60, 90, 365].map((n) => (
+                <button key={n} className={qgRange === n ? 'chip' : 'chip-dim'} style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setQgRange(n); }}>{n}{t('daysuf')}</button>
+              ))}
+            </div>
+            <div className="mb-2.5 flex flex-wrap gap-1.5">
+              <span className="chip cursor-default text-[10.5px]">🏆 {wins}{t('winsw')}</span>
+              <span className="chip-dim cursor-default border-danger/50 text-danger text-[10.5px]">💥 {falls}{t('fallsw')}</span>
+              <span className="chip-dim cursor-default text-[10.5px]">◐ {part}{t('partw')}</span>
+              <span className="chip-dim cursor-default text-[10.5px]">⚡ {rate}{t('ratew')}</span>
+              <span className="chip-dim cursor-default border-ok/45 text-ok text-[10.5px]" title={lw ? t('lastw') + fdmy(lw.d) + t('atw') + lw.h : t('nosos')}>🛡️ {L.sosWins(S)}{t('sosw')}</span>
+            </div>
+            <div className="flex flex-wrap gap-[5px]">
+              {cells.map((c) => (
+                <button key={c.ds} title={c.ds + ' · ' + c.lab + t('taped')} className={`tlc ${c.cls}`} onClick={() => dayEditor(c.ds)} />
+              ))}
+            </div>
+            <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted">
+              <span><b className="tlc w mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_v')}</span>
+              <span><b className="tlc p mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_p')}</span>
+              <span><b className="tlc f mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_f')}</span>
+              <span><b className="mr-1 inline-block h-[13px] w-[13px] rounded bg-[#202026]" />{t('tl_n')}</span>
+              <span className="w-full">{t('tl_hint')}</span>
+            </div>
+          </Card>
         </div>
-        <div className="flex flex-wrap gap-[5px]">
-          {cells.map((c) => (
-            <button key={c.ds} title={c.ds + ' · ' + c.lab + t('taped')} className={`tlc ${c.cls}`} onClick={() => dayEditor(c.ds)} />
-          ))}
-        </div>
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10.5px] text-muted">
-          <span><b className="tlc w mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_v')}</span>
-          <span><b className="tlc p mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_p')}</span>
-          <span><b className="tlc f mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_f')}</span>
-          <span><b className="mr-1 inline-block h-[13px] w-[13px] rounded bg-[#202026]" />{t('tl_n')}</span>
-          <span className="w-full">{t('tl_hint')}</span>
-        </div>
-      </Card>
+      </div>
     </div>
   );
 }
