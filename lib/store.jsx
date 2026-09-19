@@ -27,7 +27,7 @@ function loadLocal(userId) {
 }
 
 export function AppProvider({ children }) {
-  const [S, setS] = useState(() => loadLocal(null)); // sempre tem o layout base pronto
+  const [S, setS] = useState(() => loadLocal(null));
   const [phase, setPhase] = useState('boot');       // boot | auth | lock | onboard | app
   const [tab, setTab] = useState('qg');
   const [toastMsg, setToastMsg] = useState(null);
@@ -45,10 +45,13 @@ export function AppProvider({ children }) {
     setSoundGate(() => !!(SRef.current && SRef.current.settings && SRef.current.settings.sound));
   }, []);
 
-  /* tema + cosmic + modo discreto */
+  /* tema + cosmic + modo discreto (atualiza data-theme na raiz do HTML) */
   useEffect(() => {
     if (!S || !S.settings) return;
-    document.documentElement.dataset.theme = S.settings.theme || 'dark';
+    const currentTheme = S.settings.theme || 'dark';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    document.documentElement.dataset.theme = currentTheme;
+
     document.body.classList.toggle('cosmic', tierNow(S).min >= 180);
     const disc = !!S.settings.discreet;
     setLocaleLang(S.settings.lang);
@@ -57,7 +60,7 @@ export function AppProvider({ children }) {
     if (!link) { link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
     link.href = disc ? '/manifest-discreto.webmanifest' : '/manifest.webmanifest';
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = disc ? '#6C7684' : '#0D0D0E';
+    if (meta) meta.content = disc ? '#6C7684' : currentTheme === 'military' ? '#182216' : '#0D0D0E';
   }, [S && S.settings && S.settings.theme, S && S.settings && S.settings.discreet, S && S.purity, S && S.retStart]);
 
   const persist = useCallback((next) => {
@@ -97,7 +100,7 @@ export function AppProvider({ children }) {
     );
   }, [openModal, closeModal]);
 
-  /* consulta o status de assinatura com paciência */
+  /* consulta o status de assinatura */
   const refreshSub = useCallback(async (tries = 6) => {
     const uidNow = authRef.current.userId;
     if (!uidNow || String(uidNow).indexOf('local:') === 0) { setSub('local'); return 'local'; }
@@ -113,7 +116,7 @@ export function AppProvider({ children }) {
     return st;
   }, []);
 
-  /* entra no app com sessão (nuvem ou local) e ISOLA os dados do guerreiro */
+  /* entra no app com sessão (nuvem ou local) e isola os dados */
   const enterApp = useCallback(async (sess) => {
     const email = (sess && (sess.user ? sess.user.email : sess.email)) || '';
     const userId = (sess && sess.user ? sess.user.id : null) || (sess && sess.local ? 'local:' + sess.email : 'local:' + email);
@@ -126,13 +129,11 @@ export function AppProvider({ children }) {
       refreshSub(8);
     }
 
-    // 1) Busca dados online da conta específica
     const remote = await cloud.pullProfile(userId);
     let next;
     if (remote && remote.v) {
       next = mergeS(remote);
     } else {
-      // Conta nova: NUNCA herda dados de outro usuário anterior
       const userCached = loadLocal(userId);
       next = userCached.onboarded ? userCached : DEF();
     }
@@ -140,7 +141,6 @@ export function AppProvider({ children }) {
     try { localStorage.setItem(getUserKey(userId), JSON.stringify(next)); } catch (e) {}
     setS(next);
 
-    // 2) Inscreve no realtime apenas para este usuário
     cloud.subscribeProfile(userId, (data) => {
       setS((prev) => {
         const merged = mergeS(data);
@@ -194,7 +194,7 @@ export function AppProvider({ children }) {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
 
-  /* sync de logout: limpa sessão e vai DIRETO para a tela de login (auth) */
+  /* sync de logout */
   useEffect(() => {
     if (!cloud.CLOUD) return;
     return cloud.onAuth((ev, session) => {
