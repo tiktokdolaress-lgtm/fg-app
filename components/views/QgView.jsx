@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { RefreshCw, Trophy, CalendarDays, Flame, ShieldCheck, Droplets, Hand, HeartPulse, Check, X } from 'lucide-react';
+import { RefreshCw, Trophy, CalendarDays, Flame, ShieldCheck, Droplets, Hand, HeartPulse, Check, X, Zap, Sparkles } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Bar, Chk, Empty } from '@/components/ui';
 import { METAS, NEXTF, FAIL_PEN, TRIGGERS, FAIL_LBL, TIERS, QUOTES } from '@/lib/data';
@@ -8,6 +8,22 @@ import { cx, cxHabits, cxTiers, cxQuotes } from '@/lib/content-i18n';
 import * as L from '@/lib/logic';
 import { AF, metaSfx } from '@/lib/audio';
 import { today, dstr, fdmy, fmtD, pad, yesterday } from '@/lib/utils';
+
+/* Efeitos biológicos e psicológicos por marco de retenção */
+const BIO_EFFECTS = [
+  { min: 0, max: 3, perks: ['Quebra do ciclo automático', 'Redução do pico de cortisol', 'Recuperação inicial da dopamina'] },
+  { min: 4, max: 7, perks: ['Pico natural de testosterona (+45%)', 'Aumento de energia física', 'Fim gradual da névoa mental'] },
+  { min: 8, max: 14, perks: ['Sono profundo restaurador', 'Vontade e assertividade reforçadas', 'Olhar firme e redução da timidez'] },
+  { min: 15, max: 30, perks: ['Receptores de dopamina rebalanceados', 'Redução drástica de ansiedade social', 'Magnetismo pessoal e foco aguçado'] },
+  { min: 31, max: 60, perks: ['Controle absoluto de pensamentos invasivos', 'Aura de respeito natural', 'Vitalidade transmutada em criação'] },
+  { min: 61, max: 90, perks: ['Superação da flatline (platô)', 'Alta performance física e cognitiva', 'Autodomínio e disciplina inabaláveis'] },
+  { min: 91, max: 9999, perks: ['Transmutação biológica completa', 'Padrão inquebrável de conduta', 'Mestre absoluto da própria mente'] },
+];
+
+function getBioPerks(days) {
+  const found = BIO_EFFECTS.find((b) => days >= b.min && days <= b.max);
+  return found ? found.perks : BIO_EFFECTS[0].perks;
+}
 
 export default function QgView() {
   const { S, update, t, openModal, closeModal, toast, setTab } = useApp();
@@ -40,6 +56,7 @@ export default function QgView() {
   const openTasks = S.tasks.filter((x) => L.repDue(x, today()) && !L.isDone(x, today())).slice(0, 5);
   const goalMeta = MT(METAS.find((m) => m.d === S.goal));
   const lw = L.sosLast(S);
+  const activePerks = getBioPerks(d);
 
   /* linha do tempo */
   let cells = [], wins = 0, falls = 0, part = 0;
@@ -280,12 +297,32 @@ export default function QgView() {
           <div className="rounded-r border border-line bg-surface2 p-3 lg:col-start-3 lg:row-start-2"><b className="block font-display text-2xl text-gold">🛡️ {L.sosWins(S)}</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hsos')}</small></div>
           {tier.min >= 365 && <div className="col-span-2 rounded-r border border-[#EDEDF2] bg-gradient-to-br from-[#EDEDF2] to-[#8F96A0] p-3 shadow-[0_0_18px_rgba(230,232,240,.35)] lg:col-span-3 lg:col-start-1 lg:row-start-3"><b className="block font-display text-2xl text-[#141414]">🐉</b><small className="text-[9.5px] font-extrabold uppercase tracking-[.14em] text-[#33383f]">{t('titan')}</small></div>}
         </div>
+
+        {/* Nível e Progresso */}
         <div className="relative text-left">
           <K>{t('tier')} — {tier.icon} {tier.name}</K>
           <Bar pct={lvlPct} />
           <div className="mt-2 flex justify-between text-[11.5px] font-extrabold tracking-[.06em] text-muted"><span>{lvlTxt}</span><span className="font-mono">{d}d</span></div>
           {goalMeta && <div className="mt-1 text-[11px] font-bold text-gold2">{d >= goalMeta.d ? t('goal_done') + goalMeta.icon + ' ' + goalMeta.n + '!' : t('goal_next') + goalMeta.icon + ' ' + goalMeta.n + t('goal_in') + goalMeta.d + t('goal_days') + (goalMeta.d - d) + t('goal_close')}</div>}
           {tier.reward && <div className="mt-1 text-[11px] font-bold text-gold2">{t('reward_l')}{tier.reward}</div>}
+
+          {/* EFEITOS BIOLÓGICOS E MENTAIS ATIVOS NESTE MARCO */}
+          <div className="mt-4 pt-3.5 border-t border-line/60">
+            <div className="mb-2 flex items-center gap-1.5">
+              <Zap size={13} className="text-gold" />
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold2">
+                EFEITOS BIOLÓGICOS & MENTAIS ATIVOS NESTE MARCO:
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+              {activePerks.map((perk, idx) => (
+                <div key={idx} className="flex items-center gap-2 rounded-r border border-line bg-surface2 px-2.5 py-1.5 text-left text-[11.5px] font-medium text-ink">
+                  <ShieldCheck size={13} className="flex-none text-gold" />
+                  <span className="truncate">{perk}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </Card>
 
