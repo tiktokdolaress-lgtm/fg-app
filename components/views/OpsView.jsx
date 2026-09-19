@@ -931,7 +931,7 @@ export default function OpsView() {
         /* ABA DE TAREFAS */
         <Card className="p-3.5 sm:p-4">
           <div className="flex items-center justify-between gap-2 mb-3 pb-2.5 border-b border-line/60">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 max-w-full -mx-0.5 px-0.5">
               {[
                 { id: 'today', label: tx.filterToday[curLang], count: todayTasks.filter((x) => !L.isDone(x, today())).length },
                 { id: 'all', label: tx.filterAll[curLang], count: tasks.filter((t) => !t.archived).length },
@@ -941,7 +941,7 @@ export default function OpsView() {
                   key={f.id}
                   type="button"
                   onClick={() => setFilter(f.id)}
-                  className={`text-xs font-mono px-3 py-1.5 rounded transition-all flex items-center gap-1.5 ${
+                  className={`shrink-0 text-xs font-mono px-3 py-1.5 rounded transition-all flex items-center gap-1.5 ${
                     filter === f.id
                       ? 'bg-gold text-[#141414] font-bold shadow-sm'
                       : 'bg-surface2 text-muted hover:text-ink border border-line'
@@ -1039,6 +1039,19 @@ export default function OpsView() {
                   </div>
                 );
               })}
+
+              {/* CARD DE BALANCEAMENTO: Se contagem for ímpar na aba de tarefas ativas, preenche o vácuo */}
+              {displayedTasks.length % 2 === 1 && filter !== 'done' && (
+                <div
+                  onClick={() => openTaskModal()}
+                  className="cursor-pointer border border-dashed border-gold/30 hover:border-gold/60 bg-gold/5 hover:bg-gold/10 rounded-r p-2.5 flex items-center justify-center gap-2 text-gold transition-all min-h-[46px]"
+                >
+                  <Plus size={14} strokeWidth={2.5} />
+                  <span className="text-xs font-bold font-mono uppercase tracking-wider">
+                    + Nova Operação
+                  </span>
+                </div>
+              )}
             </div>
           ) : (
             <div className="py-12 text-center">
@@ -1049,8 +1062,8 @@ export default function OpsView() {
       ) : (
         /* ABA DE PROJETOS ESTRATÉGICOS */
         <div className="flex flex-col gap-3">
-          {/* Sub-filtros de Projetos */}
-          <div className="flex items-center gap-1.5">
+          {/* Sub-filtros de Projetos com Scroll Horizontal Suave */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 max-w-full -mx-0.5 px-0.5">
             {[
               { id: 'ativos', label: 'Ativos', count: projects.filter((p) => !p.archived && p.status !== 'concluido').length },
               { id: 'concluidos', label: 'Concluídos', count: projects.filter((p) => !p.archived && p.status === 'concluido').length },
@@ -1060,7 +1073,7 @@ export default function OpsView() {
                 key={pf.id}
                 type="button"
                 onClick={() => setProjFilter(pf.id)}
-                className={`text-xs font-mono px-3 py-1.5 rounded transition-all flex items-center gap-1.5 ${
+                className={`shrink-0 text-xs font-mono px-3 py-1.5 rounded transition-all flex items-center gap-1.5 ${
                   projFilter === pf.id
                     ? 'bg-gold text-[#141414] font-bold shadow-sm'
                     : 'bg-surface2 text-muted hover:text-ink border border-line'
@@ -1076,7 +1089,8 @@ export default function OpsView() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 items-start">
             {displayedProjects.length > 0 ? (
-              displayedProjects.map((proj) => {
+              <>
+                {displayedProjects.map((proj) => {
                 const isCompleted = proj.status === 'concluido';
                 const isArchived = proj.archived;
                 const steps = proj.steps || [];
@@ -1302,7 +1316,26 @@ export default function OpsView() {
                     </div>
                   </Card>
                 );
-              })
+              })}
+
+              {/* CARD DE BALANCEAMENTO: Se contagem for ímpar na aba de projetos ativos, elimina o vácuo */}
+              {displayedProjects.length % 2 === 1 && projFilter === 'ativos' && (
+                <div
+                  onClick={() => openProjectModal()}
+                  className="cursor-pointer border-2 border-dashed border-gold/30 hover:border-gold/60 bg-gold/5 hover:bg-gold/10 rounded-lg p-6 flex flex-col items-center justify-center text-center transition-all min-h-[200px] group"
+                >
+                  <div className="w-11 h-11 rounded-full bg-gold/15 border border-gold/35 text-gold flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform shadow-sm">
+                    <Plus size={20} strokeWidth={2.5} />
+                  </div>
+                  <b className="text-xs text-gold font-bold uppercase tracking-wider block">
+                    Novo Projeto Estratégico
+                  </b>
+                  <span className="text-[11px] text-muted mt-1 max-w-[240px]">
+                    Crie uma nova frente tática com marcos e tarefas dedicadas.
+                  </span>
+                </div>
+              )}
+            </>
             ) : (
               <div className="col-span-2 py-10 text-center">
                 <Card className="py-8">

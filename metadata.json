@@ -1,0 +1,6 @@
+{
+  "name": "Forjando Guerreiros",
+  "description": "QG de retenção seminal, disciplina inabalável, forja de hábitos e evolução masculina.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -44,6 +44,21 @@ export default function JournalView() {
     })).reverse();
   }
 
+  // Indicadores táticos de consistência de auditoria
+  const hasTodayEntry = entries.some((e) => String(e.date) === today() || String(e.id) === today());
+  const moodCounts = entries.reduce((acc, e) => {
+    const m = e.mood || e.ch || 'firme';
+    acc[m] = (acc[m] || 0) + 1;
+    return acc;
+  }, {});
+  const topMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'firme';
+  const topMoodLabel = {
+    firme: tx.moodGood[curLang],
+    fogo: tx.moodGreat[curLang],
+    cansado: tx.moodTired[curLang],
+    guerra: tx.moodUrge[curLang],
+  }[topMood] || 'Firme ⚔️';
+
   const handleSave = (e) => {
     e.preventDefault();
     if (!text.trim()) return toast('Escreva sua reflexão antes de salvar');
@@ -103,7 +118,29 @@ export default function JournalView() {
         </div>
       </Card>
 
-      {/* 2. GRADE NO PC (5 Colunas: Registro / 7 Colunas: Histórico) */}
+      {/* 2. KPIS DE AUDITORIA & REGULARIDADE (Padrão Denso QG/Stats) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <div className="p-3 rounded-lg border border-line bg-surface2/80 flex flex-col justify-between">
+          <span className="text-[10px] font-mono text-muted uppercase font-bold tracking-wider">Total de Relatórios</span>
+          <b className="text-lg font-mono text-gold mt-1">{entries.length}</b>
+        </div>
+        <div className="p-3 rounded-lg border border-line bg-surface2/80 flex flex-col justify-between">
+          <span className="text-[10px] font-mono text-muted uppercase font-bold tracking-wider">Auditoria de Hoje</span>
+          <span className={`text-xs font-mono font-bold mt-1 inline-flex items-center gap-1 ${hasTodayEntry ? 'text-gold' : 'text-danger'}`}>
+            {hasTodayEntry ? '✓ Concluída' : '⚠️ Pendente'}
+          </span>
+        </div>
+        <div className="p-3 rounded-lg border border-line bg-surface2/80 flex flex-col justify-between">
+          <span className="text-[10px] font-mono text-muted uppercase font-bold tracking-wider">Vigor Predominante</span>
+          <span className="text-xs font-semibold text-ink mt-1 truncate">{topMoodLabel}</span>
+        </div>
+        <div className="p-3 rounded-lg border border-line bg-surface2/80 flex flex-col justify-between">
+          <span className="text-[10px] font-mono text-muted uppercase font-bold tracking-wider">Último Relatório</span>
+          <span className="text-xs font-mono text-gold2 mt-1 truncate">{entries.length > 0 ? fmtD(entries[0].date || today()) : 'Nenhum'}</span>
+        </div>
+      </div>
+
+      {/* 3. GRADE NO PC (5 Colunas: Registro / 7 Colunas: Histórico) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
         
         {/* COLUNA ESQUERDA: Formulário de Registro */}

@@ -489,10 +489,29 @@ export default function QgView() {
           {/* Check-in Diário */}
           <Card>
             <K>{t('checkin')}{L.modeA(S) ? t('two_pil') : ''}</K>
-            <div className="ciday-row mb-2 flex flex-wrap gap-1.5">
-              <button className="chip-dim flex-none justify-center" style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setCiDate(yesterday(ciDate)); }}>{t('prev_d')}</button>
-              <button className="chip justify-center" style={{ flex: '1 1 100%', order: -1 }} onClick={() => { AF.click(); setCiDate(today()); }}>📅 {t('today_b')} ({fdmy(today())})</button>
-              <button className="chip-dim flex-none justify-center" style={{ flex: '0 0 auto', ...(ciDate >= today() ? { opacity: .35, cursor: 'not-allowed' } : {}) }} disabled={ciDate >= today()} onClick={() => { AF.click(); setCiDate(dstr(new Date(L.parseD(ciDate).getTime() + 86400000))); }}>{t('next_d')}</button>
+            <div className="mb-2.5 flex items-center justify-between gap-1.5">
+              <button
+                type="button"
+                className="chip-dim flex-none px-2.5 py-1 text-[11px]"
+                onClick={() => { AF.click(); setCiDate(yesterday(ciDate)); }}
+              >
+                ◀ {t('prev_d')}
+              </button>
+              <button
+                type="button"
+                className="chip flex-1 justify-center py-1 text-[11.5px] font-bold"
+                onClick={() => { AF.click(); setCiDate(today()); }}
+              >
+                📅 {t('today_b')} ({fdmy(today())})
+              </button>
+              <button
+                type="button"
+                className="chip-dim flex-none px-2.5 py-1 text-[11px] disabled:opacity-30 disabled:cursor-not-allowed"
+                disabled={ciDate >= today()}
+                onClick={() => { AF.click(); setCiDate(dstr(new Date(L.parseD(ciDate).getTime() + 86400000))); }}
+              >
+                {t('next_d')} ▶
+              </button>
             </div>
             {ciDate !== today() && <div className="chip mb-2 cursor-default">{t('editing_r')}{fdmy(ciDate)}</div>}
             <div className="flex flex-col gap-2">
@@ -525,30 +544,30 @@ export default function QgView() {
                         <span className="w-[22px] text-center text-base">{h.icon}</span>
                         <span className={`min-w-0 flex-1 truncate ${dn ? 'text-muted line-through' : isF ? 'text-danger line-through opacity-80' : ''}`}>{h.n}</span>
                         {tm && <span className="font-mono text-[10px] text-gold2">⏰{tm}</span>}
-                        <div className="flex items-center gap-1 flex-none">
+                        <div className="flex items-center gap-1.5 flex-none">
                           <button
                             type="button"
                             title="Marcar como Falho"
                             onClick={(e) => toggleHabitFailed(id, e)}
-                            className={`grid h-[22px] w-[22px] place-items-center rounded border text-[11px] font-bold transition-all ${
+                            className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
                               isF 
-                                ? 'border-danger bg-danger text-white' 
+                                ? 'border-danger bg-danger text-white shadow-sm' 
                                 : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-danger/60 hover:text-danger'
                             }`}
                           >
-                            <X size={12} strokeWidth={2.5} />
+                            <X size={13} strokeWidth={2.5} />
                           </button>
                           <button
                             type="button"
                             title="Marcar como Cumprido"
                             onClick={(e) => toggleHabitDone(id, e)}
-                            className={`grid h-[22px] w-[22px] place-items-center rounded border text-[11px] font-bold transition-all ${
+                            className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
                               dn 
-                                ? 'border-gold bg-gold text-[#141414]' 
+                                ? 'border-gold bg-gold text-[#141414] shadow-sm' 
                                 : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-gold/60 hover:text-gold'
                             }`}
                           >
-                            <Check size={12} strokeWidth={2.5} />
+                            <Check size={13} strokeWidth={2.5} />
                           </button>
                         </div>
                       </div>

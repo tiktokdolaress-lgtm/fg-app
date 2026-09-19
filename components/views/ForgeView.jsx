@@ -139,6 +139,7 @@ export default function ForgeView() {
   } catch {
     maxSlots = 2;
   }
+  const nextRule = Array.isArray(FORGE_RULES) ? FORGE_RULES.find((r) => r.min > d) : null;
 
   const activeIds = (S && S.forge && Array.isArray(S.forge.active)) ? S.forge.active : [];
   const archivedIds = (S && S.forge && Array.isArray(S.forge.archived)) ? S.forge.archived : [];
@@ -482,13 +483,13 @@ export default function ForgeView() {
                 {activeCount}/{maxSlots >= 99 ? '∞' : maxSlots} SLOTS ATIVOS
               </span>
             </div>
-            <div className="flex flex-wrap gap-1.5 text-[10px] font-mono text-muted">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted overflow-x-auto no-scrollbar pb-1 -mx-0.5 px-0.5">
               {FORGE_RULES && FORGE_RULES.map((r, i) => {
                 const isCur = d >= r.min && (i === FORGE_RULES.length - 1 || d < FORGE_RULES[i + 1].min);
                 return (
                   <span
                     key={r.min}
-                    className={`px-2 py-0.5 rounded border transition-colors ${
+                    className={`shrink-0 px-2 py-0.5 rounded border transition-colors ${
                       isCur
                         ? 'border-gold bg-gold/15 text-gold font-bold shadow-[0_0_8px_rgba(255,200,70,0.25)]'
                         : 'border-line/60 bg-surface text-muted/80'
@@ -629,23 +630,23 @@ export default function ForgeView() {
                     </div>
                   </div>
 
-                  {/* Linha de Ação: Concluir + Horário + Falhar */}
+                  {/* Linha de Ação: Concluir + Horário + Falhar/Desfazer */}
                   <div className="flex items-center justify-between gap-2 pt-2 border-t border-line/50">
                     <button
                       type="button"
                       onClick={() => toggleDone(h.id)}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded border text-xs font-bold transition-all ${
+                      className={`flex-1 min-h-[38px] flex items-center justify-center gap-1.5 py-1.5 px-3 rounded border text-xs font-bold transition-all ${
                         isDone
-                          ? 'border-gold bg-gold text-[#141414] shadow-[0_0_8px_rgba(255,200,70,0.4)]'
+                          ? 'border-gold bg-gold text-[#141414] shadow-[0_0_12px_rgba(255,200,70,0.35)]'
                           : 'border-line bg-surface hover:border-gold/50 text-muted hover:text-ink'
                       }`}
                     >
-                      <Check size={13} strokeWidth={2.5} />
+                      <Check size={14} strokeWidth={2.5} />
                       <span>{isDone ? LBL.completeBtn[curLang] : LBL.toCompleteBtn[curLang]}</span>
                     </button>
 
-                    <div className="flex items-center gap-1 bg-surface px-2 py-1 rounded border border-line text-[11px] font-mono">
-                      <Clock size={11} className="text-gold" />
+                    <div className="flex items-center gap-1 bg-surface px-2 py-1.5 min-h-[38px] rounded border border-line text-[11px] font-mono">
+                      <Clock size={12} className="text-gold flex-none" />
                       <input
                         type="time"
                         value={tm}
@@ -654,19 +655,30 @@ export default function ForgeView() {
                       />
                     </div>
 
-                    <button
-                      type="button"
-                      title="Marcar como Falho"
-                      onClick={() => toggleFailed(h.id)}
-                      className={`flex-none py-1.5 px-2.5 rounded border text-[11px] font-bold transition-all flex items-center gap-1 ${
-                        isFail
-                          ? 'border-danger bg-danger text-white shadow-[0_0_8px_rgba(239,68,68,0.4)]'
-                          : 'border-line bg-surface text-danger/80 hover:border-danger hover:text-danger'
-                      }`}
-                    >
-                      <X size={12} strokeWidth={2.5} />
-                      <span className="hidden sm:inline">{LBL.failBtn[curLang]}</span>
-                    </button>
+                    {!isDone ? (
+                      <button
+                        type="button"
+                        title={LBL.failBtn[curLang]}
+                        onClick={() => toggleFailed(h.id)}
+                        className={`flex-none min-h-[38px] py-1.5 px-3 rounded border text-[11px] font-bold transition-all flex items-center gap-1 ${
+                          isFail
+                            ? 'border-danger bg-danger text-white shadow-[0_0_8px_rgba(239,68,68,0.4)]'
+                            : 'border-line bg-surface text-danger/80 hover:border-danger hover:text-danger'
+                        }`}
+                      >
+                        <X size={13} strokeWidth={2.5} />
+                        <span className="hidden sm:inline">{LBL.failBtn[curLang]}</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        title="Desfazer conclusão"
+                        onClick={() => toggleDone(h.id)}
+                        className="flex-none min-h-[38px] py-1.5 px-2.5 rounded border border-line bg-surface text-[10.5px] font-mono text-muted hover:text-gold hover:border-gold/40 transition-colors"
+                      >
+                        Desfazer
+                      </button>
+                    )}
                   </div>
 
                   {/* BOTÕES EXPANSÍVEIS TÁTICOS */}
@@ -711,6 +723,57 @@ export default function ForgeView() {
                 </Card>
               );
             })}
+
+            {/* CARD DE SLOT DISPONÍVEL (Elimina vácuo visual quando há slot livre) */}
+            {activeCount < maxSlots && (
+              <div
+                onClick={() => {
+                  const el = document.getElementById('reserva-forja-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="cursor-pointer border-2 border-dashed border-gold/30 hover:border-gold/60 bg-gold/5 hover:bg-gold/10 rounded-lg p-4 flex flex-col items-center justify-center text-center transition-all min-h-[145px] group"
+              >
+                <div className="w-10 h-10 rounded-full bg-gold/15 border border-gold/35 text-gold flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-sm">
+                  <Plus size={20} strokeWidth={2.5} />
+                </div>
+                <b className="text-xs text-gold font-bold uppercase tracking-wider block">
+                  Slot Disponível ({activeCount + 1}/{maxSlots >= 99 ? '∞' : maxSlots})
+                </b>
+                <span className="text-[11px] text-muted mt-1">
+                  Toque aqui para ativar um hábito da Reserva abaixo ↓
+                </span>
+              </div>
+            )}
+
+            {/* CARD DE PRÓXIMO PATAMAR (Elimina vácuo visual quando slots estão cheios e a contagem é ímpar) */}
+            {activeCount >= maxSlots && activeHabits.length % 2 === 1 && (
+              <div className="border border-line/70 bg-surface2/70 rounded-lg p-4 flex flex-col justify-between min-h-[145px]">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10.5px] font-mono font-bold uppercase text-gold2 tracking-wider flex items-center gap-1.5">
+                      <ShieldCheck size={13} className="text-gold" /> Próximo Desbloqueio
+                    </span>
+                    <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-surface border border-line text-muted">Slots Esgotados</span>
+                  </div>
+                  <p className="text-xs text-ink font-semibold mt-1">
+                    {nextRule ? `Mantenha a retenção até ${nextRule.min} dias para destravar ${nextRule.slots >= 99 ? 'slots ilimitados' : `${nextRule.slots} slots`} no protocolo.` : 'Você atingiu o patamar supremo de slots ilimitados!'}
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-line/60 flex items-center justify-between text-[11px] text-muted">
+                  <span>Slots em uso: <b className="text-gold font-mono">{activeCount}/{maxSlots >= 99 ? '∞' : maxSlots}</b></span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('reserva-forja-section');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="text-gold hover:underline text-[11px] font-semibold"
+                  >
+                    Ver Reserva ↓
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <Card className="text-center py-6">
@@ -720,14 +783,14 @@ export default function ForgeView() {
       </div>
 
       {/* 4. RESERVA DA FORJA COM FILTROS DE CATEGORIA & ARQUIVADOS */}
-      <div className="mt-2">
+      <div id="reserva-forja-section" className="mt-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
           <div className="flex items-center gap-2">
             <K className="mb-0">📦 RESERVA DA FORJA ({filteredReserve.length} DISPONÍVEIS)</K>
           </div>
 
-          {/* Filtros por Categorias + Aba Arquivados */}
-          <div className="flex flex-wrap gap-1">
+          {/* Filtros por Categorias + Aba Arquivados com Scroll Horizontal Suave no Mobile */}
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1 max-w-full -mx-0.5 px-0.5">
             {[
               { id: 'all', label: PIL.all[curLang] },
               { id: 'body', label: PIL.body[curLang] },
@@ -747,7 +810,7 @@ export default function ForgeView() {
                   key={p.id}
                   type="button"
                   onClick={() => setSelectedPillar(p.id)}
-                  className={`text-[10px] font-mono px-2 py-1 rounded transition-all flex items-center gap-1 ${
+                  className={`shrink-0 text-[10.5px] font-mono px-2.5 py-1 rounded transition-all flex items-center gap-1 ${
                     isSelected
                       ? 'bg-gold text-[#141414] font-bold shadow-sm'
                       : 'bg-surface2 text-muted hover:text-ink border border-line'
