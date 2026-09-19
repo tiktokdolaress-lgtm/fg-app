@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, Brain, Pencil, X, Plus, Search, Save } from 'lucide-react';
+import { BookOpen, Brain, Pencil, X, Plus, Search, Save, Clock, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Empty, Field } from '@/components/ui';
 import { NOTE_TAGS, FAIL_LBL } from '@/lib/data';
@@ -16,66 +16,98 @@ export default function JournalView() {
   const lang = (S && S.settings && S.settings.lang) || 'pt';
   const fallLbl = (x) => { const k = t('fall_' + x); return k === 'fall_' + x ? (FAIL_LBL[x] || x) : k; };
   const NT_TR = (tag) => { const i = NOTE_TAGS.indexOf(tag); return i >= 0 ? t('nt' + (i + 1)) : tag; };
+
   const [jDate, setJDate] = useState(today());
   const [noteTag, setNoteTag] = useState(NOTE_TAGS[0]);
   const [noteEditId, setNoteEditId] = useState(null);
   const [noteTxt, setNoteTxt] = useState('');
   const [q, setQ] = useState('');
 
-  /* Estado local isolado para digitação ultra-fluida e sem travas */
-  const [localEntry, setLocalEntry] = useState({ mood: '', good: '', ch: '', vent: '' });
-  const saveTimeout = useRef(null);
-  const lastLoadedDate = useRef(null);
+  /* Controladores de formulários recolhíveis (Clean UI) */
+  const [showNoteForm, setShowNoteForm] = useState(false);
+  const [showJournalForm, setShowJournalForm] = useState(false);
 
-  // Sincroniza o estado local quando muda a data selecionada
-  useEffect(() => {
-    const remote = S.journal[jDate] || { mood: '', good: '', ch: '', vent: '' };
-    setLocalEntry({
-      mood: remote.mood || '',
-      good: remote.good || '',
-      ch: remote.ch || '',
-      vent: remote.vent || '',
-    });
-    lastLoadedDate.current = jDate;
-  }, [jDate]);
-
-  /* Atualiza texto local na hora e agenda salvamento na nuvem (debounce 800ms) */
-  const handleTextChange = (field, value) => {
-    setLocalEntry((prev) => {
-      const next = { ...prev, [field]: value };
-      clearTimeout(saveTimeout.current);
-      saveTimeout.current = setTimeout(() => {
-        update((s) => {
-          s.journal[jDate] = s.journal[jDate] || { mood: '', good: '', ch: '' };
-          s.journal[jDate][field] = value;
-        });
-      }, 800);
-      return next;
-    });
-  };
-
-  /* Salva o humor com clique imediato */
-  const handleMoodSelect = (lb) => {
-    AF.click();
-    setLocalEntry((prev) => ({ ...prev, mood: lb }));
-    update((s) => {
-      s.journal[jDate] = s.journal[jDate] || { mood: '', good: '', ch: '' };
-      s.journal[jDate].mood = lb;
-    });
-  };
-
-  /* Salvar manual forçado */
-  const manualSave = () => {
-    clearTimeout(saveTimeout.current);
-    update((s) => {
-      s.journal[jDate] = s.journal[jDate] || { mood: '', good: '', ch: '' };
-      Object.assign(s.journal[jDate], localEntry);
-    });
-    AF.click();
-    toast('💾 ' + (t('savedj') || 'Diário salvo com sucesso.'));
-  };
+  /* Novo registro de entrada no diário (com horário) */
+  const [newGood, setNewGood] = useState('');
+  const [newCh, setNewCh] = useState('');
+  const [newMood, setNewMood] = useState('Forte');
 
   const currentRemote = S.journal[jDate] || {};
+
+  /* Garante compatibilidade: se já existia good/ch antigo, transforma em lista de entradas com horário */
+  const getEntries = () => {
+    const list = Array.isArray(currentRemote.entries) ? [...currentRemote.entries] : [];
+    if (!list.length && (currentRemote.good || currentRemote.ch)) {
+      list.push({
+        id: 'legacy',
+        time: 'Registro',
+        mood: currentRemote.mood || 'Forte',
+        good: currentRemote.good || '',
+        ch: currentRemote.ch || '',
+      });
+    }
+    return list;
+  };
+
+  const entries = getEntries();
+
+  /* Adiciona nova entrada no diário do dia atual */
+  const addJournalEntry = () => {
+    if (!newGood.trim() && !newCh.trim()) {
+      toast('⚠ Preencha ao menos uma vitória ou desafio.');
+      return;
+    }
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    update((s) => {
+      s.journal[jDate] = s.journal[jDate] || { mood: newMood, good: '', ch: '' };
+      s.journal[jDate].entries = s.journal[jDate].entries || (s.journal[jDate].good || s.journal[jDate].ch ? [{
+        id: 'legacy',
+        time: 'Registro',
+        mood: s.journal[jDate].mood || 'Forte',
+        good: s.journal[jDate].good || '',
+        ch: s.journal[jDate].ch || '',
+      }] : []);
+
+      s.journal[jDate].entries.push({
+        id: uid(),
+        time: timeStr,
+        mood: newMood,
+        good: newGood.trim(),
+        ch: newCh.trim(),
+      });
+
+      // Atualiza o principal para histórico
+      s.journal[jDate].mood = newMood;
+      s.journal[jDate].good = newGood.trim() || s.journal[jDate].good;
+      s.journal[jDate].ch = newCh.trim() || s.journal[jDate].ch;
+    });
+
+    setNewGood('');
+    setNewCh('');
+    setShowJournalForm(false);
+    AF.click();
+    toast('📖 Registro adicionado ao Diário!');
+  };
+
+  /* Deletar uma entrada específica do dia */
+  const deleteEntry = (entryId) => {
+    confirmBox('EXCLUIR REGISTRO?', 'Este relato será removido do seu diário.', () => {
+      update((s) => {
+        if (!s.journal[jDate]) return;
+        if (s.journal[jDate].entries) {
+          s.journal[jDate].entries = s.journal[jDate].entries.filter((e) => e.id !== entryId);
+        }
+        if (entryId === 'legacy') {
+          s.journal[jDate].good = '';
+          s.journal[jDate].ch = '';
+        }
+      });
+      toast('Registro excluído.');
+    });
+  };
+
   const hist = Object.keys(S.journal).sort().reverse().slice(0, 10);
 
   const notes = S.notes
@@ -89,34 +121,118 @@ export default function JournalView() {
       if (noteEditId != null) { const n = s.notes.find((x) => x.id === noteEditId); if (n) { n.txt = txt; n.tag = noteTag; n.ts = Date.now(); } }
       else s.notes.push({ id: uid(), txt, tag: noteTag, ts: Date.now() });
     });
-    setNoteTxt(''); setNoteEditId(null);
+    setNoteTxt(''); 
+    setNoteEditId(null);
+    setShowNoteForm(false);
     toast(noteEditId != null ? t('j_upd') : t('j_new'));
   };
 
   return (
     <div className="grid gap-3.5 lg:grid-cols-2">
       <section>
+        {/* DIÁRIO DE BORDO DO DIA */}
         <Card className="mb-3.5">
           <K>📖 {t('journal')} — {fdmy(jDate)}{jDate === today() ? ' · ' + t('hj') : ''}</K>
-          <div className="ciday-row mb-2.5 flex flex-wrap gap-1.5">
+          
+          <div className="ciday-row mb-3 flex flex-wrap gap-1.5">
             <button className="chip-dim" style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setJDate(yesterday(jDate)); }}>{t('j_prev')}</button>
             <button className="chip justify-center" style={{ flex: '1 1 100%', order: -1 }} onClick={() => { AF.click(); setJDate(today()); }}>📅 {t('hj')} ({fdmy(today())})</button>
             <button className="chip-dim" style={{ flex: '0 0 auto', ...(jDate >= today() ? { opacity: .35, cursor: 'not-allowed' } : {}) }} disabled={jDate >= today()} onClick={() => { AF.click(); setJDate(dstr(new Date(L.parseD(jDate).getTime() + 86400000))); }}>{t('j_next')}</button>
           </div>
-          {currentRemote.fall && <div className="chip-dim mb-2.5 border-danger/50 text-danger">{t('j_fall')}{((currentRemote.fallTypes || []).length ? ': ' + (currentRemote.fallTypes || []).map((x) => fallLbl(x)).join(' + ') : '')}</div>}
-          <div className="k2 mb-2">{t('j_mood')}</div>
-          <div className="mb-3 grid grid-cols-4 gap-1.5">
-            {MOODS.map(([ic, lb]) => (
-              <button key={lb} className={`rounded-r border p-2 text-center text-[11px] font-bold transition-colors ${localEntry.mood === lb ? 'border-gold/60 bg-gold/10 text-gold' : 'border-line bg-surface2 text-muted'}`} onClick={() => handleMoodSelect(lb)}>
-                <i className="block text-lg not-italic">{ic}</i>{t('mood_' + lb)}
-              </button>
-            ))}
+
+          {currentRemote.fall && (
+            <div className="chip-dim mb-3 border-danger/50 text-danger">
+              {t('j_fall')}{((currentRemote.fallTypes || []).length ? ': ' + (currentRemote.fallTypes || []).map((x) => fallLbl(x)).join(' + ') : '')}
+            </div>
+          )}
+
+          {/* Botão de abrir/fechar formulário de nova anotação */}
+          {!showJournalForm ? (
+            <button
+              className="btn-gold btn-big mb-3 flex items-center justify-center gap-2"
+              onClick={() => { setShowJournalForm(true); AF.click(); }}
+            >
+              <Plus size={16} /> REGISTRAR MOMENTO DO DIA
+            </button>
+          ) : (
+            <div className="mb-4 rounded-r border border-gold/40 bg-surface2 p-3.5 transition-all">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[12px] font-bold text-gold">NOVO REGISTRO DO DIA</span>
+                <button className="text-muted hover:text-ink" onClick={() => setShowJournalForm(false)}><X size={15} /></button>
+              </div>
+
+              <div className="k2 mb-2">{t('j_mood')}</div>
+              <div className="mb-3 grid grid-cols-4 gap-1.5">
+                {MOODS.map(([ic, lb]) => (
+                  <button
+                    key={lb}
+                    type="button"
+                    className={`rounded-r border p-2 text-center text-[11px] font-bold transition-colors ${newMood === lb ? 'border-gold/60 bg-gold/15 text-gold' : 'border-line bg-surface text-muted'}`}
+                    onClick={() => { AF.click(); setNewMood(lb); }}
+                  >
+                    <i className="block text-lg not-italic">{ic}</i>{t('mood_' + lb)}
+                  </button>
+                ))}
+              </div>
+
+              <Field label={t('j_good')}>
+                <textarea
+                  className="field"
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Ex: Treino concluído às 07h, mantive a mente blindada..."
+                  value={newGood}
+                  onChange={(e) => setNewGood(e.target.value)}
+                />
+              </Field>
+
+              <Field label={t('j_ch')}>
+                <textarea
+                  className="field"
+                  rows={2}
+                  maxLength={500}
+                  placeholder="Ex: Gatilho de cansaço após o almoço, mas superei..."
+                  value={newCh}
+                  onChange={(e) => setNewCh(e.target.value)}
+                />
+              </Field>
+
+              <div className="flex gap-2">
+                <button className="btn-gold flex-1" onClick={addJournalEntry}><Save size={15} /> SALVAR REGISTRO</button>
+                <button className="btn-dark" onClick={() => setShowJournalForm(false)}>CANCELAR</button>
+              </div>
+            </div>
+          )}
+
+          {/* LISTA DE REGISTROS DO DIA SELECIONADO */}
+          <div className="flex flex-col gap-2">
+            {entries.length ? (
+              entries.map((ent) => {
+                const mm = { Forte: '🔥', Estável: '⚖️', Ansioso: '⚡', Vulnerável: '⚠️' }[ent.mood] || '•';
+                return (
+                  <div key={ent.id} className="rounded-r border border-line bg-surface2 p-3 text-[13px] leading-relaxed">
+                    <div className="mb-1.5 flex items-center justify-between border-b border-line/60 pb-1.5">
+                      <span className="flex items-center gap-1.5 font-bold text-ink">
+                        <span>{mm}</span>
+                        <span className="text-gold">{ent.mood}</span>
+                        {ent.time && <span className="font-mono text-[11px] text-muted flex items-center gap-1"><Clock size={11} /> {ent.time}</span>}
+                      </span>
+                      <button className="text-muted hover:text-danger" title="Excluir relato" onClick={() => deleteEntry(ent.id)}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                    {ent.good && <p className="mb-1 text-[12.5px]"><b className="text-ok">✓ Vitória:</b> {ent.good}</p>}
+                    {ent.ch && <p className="text-[12.5px]"><b className="text-danger">− Desafio:</b> {ent.ch}</p>}
+                  </div>
+                );
+              })
+            ) : (
+              <Empty>Nenhum registro gravado nesta data. Clique em "Registrar Momento" acima para escrever.</Empty>
+            )}
           </div>
-          <Field label={t('j_good')}><textarea className="field" maxLength={500} value={localEntry.good} onChange={(e) => handleTextChange('good', e.target.value)} /></Field>
-          <Field label={t('j_ch')}><textarea className="field" maxLength={500} value={localEntry.ch} onChange={(e) => handleTextChange('ch', e.target.value)} /></Field>
-          {(currentRemote.fall || localEntry.vent) && <Field label={t('j_vent')}><textarea className="field" maxLength={600} value={localEntry.vent} onChange={(e) => handleTextChange('vent', e.target.value)} /></Field>}
-          <button className="btn-gold btn-big" onClick={manualSave}><Save size={15} /> {t('j_save')}</button>
         </Card>
+
+        {/* HISTÓRICO RECENTE */}
         <Card>
           <K>{t('j_hist')}</K>
           {hist.length ? hist.map((d) => {
@@ -136,21 +252,60 @@ export default function JournalView() {
         </Card>
       </section>
 
+      {/* CADERNO DE NOTAS DE CAMPO */}
       <section>
         <Card>
-          <K><Brain size={12} className="mr-1 inline" /> {t('j_notes')}</K>
-          <textarea className="field mb-2" maxLength={400} placeholder={t('j_ph')} value={noteTxt} onChange={(e) => setNoteTxt(e.target.value)} />
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            {NOTE_TAGS.map((tg, ti) => <button key={tg} className={`tag ${noteTag === tg ? 'sel' : ''}`} onClick={() => setNoteTag(tg)}>{t('nt' + (ti + 1))}</button>)}
+          <div className="mb-3 flex items-center justify-between">
+            <K className="mb-0"><Brain size={12} className="mr-1 inline" /> {t('j_notes')}</K>
+            {!showNoteForm && (
+              <button
+                className="btn-gold py-1.5 px-3 text-[12px]"
+                onClick={() => { setShowNoteForm(true); setNoteEditId(null); setNoteTxt(''); AF.click(); }}
+              >
+                <Plus size={14} /> NOVA NOTA
+              </button>
+            )}
           </div>
-          <div className="mb-3 flex items-center gap-2">
-            <button className="btn-gold flex-1" onClick={saveNote}><Plus size={15} /> {noteEditId != null ? t('j_saveedit') : t('j_add')}</button>
-            {noteEditId != null && <button className="chip-dim flex-none" onClick={() => { setNoteEditId(null); setNoteTxt(''); }}>{t('j_cancel')}</button>}
-          </div>
+
+          {/* FORMULÁRIO DE NOTA (SÓ ABRE QUANDO CLICA NO BOTÃO) */}
+          {showNoteForm && (
+            <div className="mb-3 rounded-r border border-gold/40 bg-surface2 p-3 transition-all">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[12px] font-bold text-gold">{noteEditId != null ? 'EDITAR NOTA' : 'NOVA NOTA DE CAMPO'}</span>
+                <button className="text-muted hover:text-ink" onClick={() => setShowNoteForm(false)}><X size={15} /></button>
+              </div>
+
+              <textarea
+                className="field mb-2"
+                rows={3}
+                maxLength={400}
+                placeholder={t('j_ph')}
+                value={noteTxt}
+                onChange={(e) => setNoteTxt(e.target.value)}
+              />
+
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {NOTE_TAGS.map((tg, ti) => (
+                  <button key={tg} className={`tag ${noteTag === tg ? 'sel' : ''}`} onClick={() => setNoteTag(tg)}>
+                    {t('nt' + (ti + 1))}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button className="btn-gold flex-1" onClick={saveNote}><Save size={14} /> {noteEditId != null ? t('j_saveedit') : t('j_add')}</button>
+                <button className="btn-dark flex-none" onClick={() => { setShowNoteForm(false); setNoteEditId(null); setNoteTxt(''); }}>CANCELAR</button>
+              </div>
+            </div>
+          )}
+
+          {/* BARRA DE BUSCA DE NOTAS */}
           <div className="relative mb-3">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input className="field pl-9" placeholder={t('j_search')} value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
+
+          {/* LISTA DE NOTAS */}
           {notes.length ? notes.map((n) => (
             <div key={n.id} className="mb-2 rounded-r border border-line bg-surface2 p-3">
               <p className="text-[13px] leading-relaxed">{n.txt}</p>
@@ -158,7 +313,7 @@ export default function JournalView() {
                 <span className="chip-dim px-2 py-0.5 text-[9px]">{NT_TR(n.tag)}</span>
                 <span className="font-mono text-[10px] text-muted">{new Date(n.ts).toLocaleDateString(LOCD[lang] || 'pt-BR')}</span>
                 <span className="ml-auto flex gap-1.5">
-                  <button className="text-muted hover:text-gold" title={t('j_edit_t')} onClick={() => { setNoteEditId(n.id); setNoteTxt(n.txt); setNoteTag(n.tag); }}><Pencil size={13} /></button>
+                  <button className="text-muted hover:text-gold" title={t('j_edit_t')} onClick={() => { setNoteEditId(n.id); setNoteTxt(n.txt); setNoteTag(n.tag); setShowNoteForm(true); }}><Pencil size={13} /></button>
                   <button className="text-muted hover:text-danger" title={t('j_del_t')} onClick={() => confirmBox(t('j_del_q'), '"' + String(n.txt).slice(0, 70) + '" ' + t('j_del_m'), () => { update((s) => { s.notes = s.notes.filter((x) => x.id != n.id); }); if (noteEditId == n.id) { setNoteEditId(null); setNoteTxt(''); } toast(t('j_del_ok')); })}><X size={13} /></button>
                 </span>
               </div>
