@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Plus, Flame, Clock, Check, X, ChevronDown, ChevronUp, AlertTriangle, ShieldCheck, Sparkles, CalendarDays } from 'lucide-react';
+import { Plus, Flame, Clock, Check, X, ChevronDown, ChevronUp, AlertTriangle, ShieldCheck, Sparkles, CalendarDays, Edit3, Trash2, Archive, ArchiveRestore } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Empty } from '@/components/ui';
 import { FORGE_RULES, DEFAULT_HABITS } from '@/lib/data';
@@ -16,6 +16,7 @@ const PILLARS_I18N = {
   mind: { pt: '🧠 Mente & Foco', en: '🧠 Mind & Focus', es: '🧠 Mente y Enfoque' },
   mission: { pt: '💼 Missão & Finanças', en: '💼 Mission & Wealth', es: '💼 Misión y Finanzas' },
   spirit: { pt: '⚔️ Espírito & Honra', en: '⚔️ Spirit & Honor', es: '⚔️ Espíritu y Honor' },
+  archived: { pt: '📦 Arquivados', en: '📦 Archived', es: '📦 Archivados' },
 };
 
 /* Textos Traduzidos dos Botões e Ações */
@@ -30,26 +31,26 @@ const LABELS_I18N = {
   completeBtn: { pt: 'CONCLUÍDO HOJE', en: 'DONE TODAY', es: 'COMPLETO HOY' },
   toCompleteBtn: { pt: 'CONCLUIR HOJE', en: 'MARK AS DONE', es: 'MARCAR HECHO' },
   failBtn: { pt: 'FALHEI', en: 'FAILED', es: 'FALLÉ' },
+  editHabit: { pt: 'Editar Hábito', en: 'Edit Habit', es: 'Editar Hábito' },
+  deleteHabit: { pt: 'Excluir', en: 'Delete', es: 'Eliminar' },
+  archiveHabit: { pt: 'Arquivar', en: 'Archive', es: 'Archivar' },
+  unarchiveHabit: { pt: 'Desarquivar', en: 'Unarchive', es: 'Desarchivar' },
 };
 
-/* Mapeamento de Categoria para cada ID e nome */
+/* Mapeamento de Categoria */
 function getHabitCategory(h) {
   const idStr = String(h.id);
   const nameLower = String(h.n || '').toLowerCase();
 
-  // Corpo
   if (['1', '2', '13', '14', '18', '19'].includes(idStr) || nameLower.includes('banho') || nameLower.includes('treino') || nameLower.includes('água') || nameLower.includes('sol') || nameLower.includes('pélvica') || nameLower.includes('força')) {
     return 'body';
   }
-  // Mente
   if (['3', '5', '6', '7', '8', '20'].includes(idStr) || nameLower.includes('leitura') || nameLower.includes('telas') || nameLower.includes('redes') || nameLower.includes('açúcar') || nameLower.includes('caminhada')) {
     return 'mind';
   }
-  // Missão
   if (['16', '21', '22', '23'].includes(idStr) || nameLower.includes('foco') || nameLower.includes('tarefa') || nameLower.includes('financeiro') || nameLower.includes('planejar') || nameLower.includes('trabalho')) {
     return 'mission';
   }
-  // Espírito / Honra (padrão para outros)
   return 'spirit';
 }
 
@@ -105,7 +106,6 @@ function getHabitBenefitText(h, lang) {
       : 'Regra de ouro inegociável: celular fora do quarto elimina 95% do risco de recaídas na madrugada.';
   }
 
-  // Padrão
   return lang === 'en'
     ? 'Reinforces cognitive willpower, protects your dopamine baseline, and channels energy into discipline.'
     : lang === 'es'
@@ -124,7 +124,7 @@ export default function ForgeView() {
   const [openBenefitId, setOpenBenefitId] = useState(null);
   const [openHistoryId, setOpenHistoryId] = useState(null);
 
-  /* Carrega os hábitos oficiais do seu app */
+  /* Carrega todos os hábitos do usuário */
   const ALLH = cxHabits(lang, L.allH(S));
   const d = L.progressDays(S);
 
@@ -141,11 +141,18 @@ export default function ForgeView() {
   }
 
   const activeIds = (S && S.forge && Array.isArray(S.forge.active)) ? S.forge.active : [];
+  const archivedIds = (S && S.forge && Array.isArray(S.forge.archived)) ? S.forge.archived : [];
   const activeCount = activeIds.length;
   const fd = L.fDone(S, today());
   const ff = L.fFailed(S, today());
 
-  /* Busca precisa do hábito: compara como string e como number */
+  /* Identificar se o hábito é customizado pelo usuário */
+  const isCustomHabit = (id) => {
+    const customList = (S && S.customHabits) || [];
+    return customList.some((c) => String(c.id) === String(id)) || String(id).length > 6 || String(id).startsWith('cust_');
+  };
+
+  /* Hábitos Ativos */
   const activeHabits = activeIds.map((id) => {
     return ALLH.find((h) => String(h.id) === String(id)) || {
       id,
@@ -154,16 +161,20 @@ export default function ForgeView() {
     };
   });
 
-  const reserveHabits = ALLH.filter((h) => !activeIds.some((aid) => String(aid) === String(h.id)));
+  /* Hábitos Não-Ativos (Reserva ou Arquivados) */
+  const nonActiveHabits = ALLH.filter((h) => !activeIds.some((aid) => String(aid) === String(h.id)));
+  const reserveHabits = nonActiveHabits.filter((h) => !archivedIds.some((arid) => String(arid) === String(h.id)));
+  const archivedHabits = nonActiveHabits.filter((h) => archivedIds.some((arid) => String(arid) === String(h.id)));
 
-  /* Filtrar reserva por categoria */
-  const filteredReserve = reserveHabits.filter((h) => {
-    if (selectedPillar === 'all') return true;
-    const cat = getHabitCategory(h);
-    return cat === selectedPillar;
-  });
+  /* Filtrar reserva por categoria selecionada */
+  const filteredReserve = selectedPillar === 'archived'
+    ? archivedHabits
+    : reserveHabits.filter((h) => {
+        if (selectedPillar === 'all') return true;
+        return getHabitCategory(h) === selectedPillar;
+      });
 
-  /* Hábitos negligenciados (sem fazer há mais de 1 dia) */
+  /* Hábitos negligenciados */
   const neglected = activeHabits.filter((h) => {
     try {
       const doneDates = (S && S.forge && S.forge.done) || {};
@@ -184,6 +195,7 @@ export default function ForgeView() {
     }
   });
 
+  /* Ativar / Desativar */
   const toggleActive = (id) => {
     const isAct = activeIds.some((aid) => String(aid) === String(id));
     if (isAct) {
@@ -201,10 +213,113 @@ export default function ForgeView() {
       update((s) => {
         s.forge.active = s.forge.active || [];
         s.forge.active.push(id);
+        // Se estava arquivado, desarquiva
+        s.forge.archived = (s.forge.archived || []).filter((x) => String(x) !== String(id));
       });
       AF.click();
       toast(t('hab_act') || 'Hábito ativado no protocolo');
     }
+  };
+
+  /* Arquivar / Desarquivar */
+  const toggleArchive = (id) => {
+    const isArch = archivedIds.some((arid) => String(arid) === String(id));
+    update((s) => {
+      s.forge.archived = s.forge.archived || [];
+      if (isArch) {
+        s.forge.archived = s.forge.archived.filter((x) => String(x) !== String(id));
+      } else {
+        s.forge.archived.push(id);
+        s.forge.active = (s.forge.active || []).filter((x) => String(x) !== String(id));
+      }
+    });
+    AF.click();
+    toast(isArch ? 'Hábito restaurado da Reserva' : 'Hábito arquivado');
+  };
+
+  /* Excluir Hábito Personalizado */
+  const deleteCustomHabit = (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir definitivamente este hábito criado por você?')) return;
+    update((s) => {
+      s.customHabits = (s.customHabits || []).filter((x) => String(x.id) !== String(id));
+      s.forge.active = (s.forge.active || []).filter((x) => String(x) !== String(id));
+      s.forge.archived = (s.forge.archived || []).filter((x) => String(x) !== String(id));
+      if (s.forge.times) delete s.forge.times[id];
+    });
+    AF.click();
+    toast('Hábito excluído');
+  };
+
+  /* Modal de Edição de Hábito Personalizado */
+  const openEditModal = (h) => {
+    let name = h.n || '', icon = h.icon || '⚡', time = (S.forge && S.forge.times && S.forge.times[h.id]) || '';
+    const EditH = () => {
+      return (
+        <div className="text-center">
+          <h3 className="mb-2 font-display text-2xl tracking-wide text-gold">EDITAR HÁBITO</h3>
+          <p className="mb-4 text-xs text-muted">Ajuste os dados do seu hábito customizado.</p>
+          <div className="flex flex-col gap-3 text-left">
+            <label>
+              <span className="lbl">Nome do Hábito:</span>
+              <input
+                type="text"
+                className="field"
+                defaultValue={name}
+                onChange={(e) => (name = e.target.value)}
+              />
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <label>
+                <span className="lbl">Ícone / Emoji:</span>
+                <input
+                  type="text"
+                  className="field text-center text-lg"
+                  maxLength={4}
+                  defaultValue={icon}
+                  onChange={(e) => (icon = e.target.value)}
+                />
+              </label>
+              <label>
+                <span className="lbl">Horário:</span>
+                <input
+                  type="time"
+                  className="field"
+                  defaultValue={time}
+                  onChange={(e) => (time = e.target.value)}
+                />
+              </label>
+            </div>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <button
+              className="btn-gold flex-1 py-2 font-bold text-xs"
+              onClick={() => {
+                if (!name.trim()) return toast('Digite o nome');
+                update((s) => {
+                  const target = (s.customHabits || []).find((c) => String(c.id) === String(h.id));
+                  if (target) {
+                    target.n = name.trim();
+                    target.icon = icon || '⚡';
+                  }
+                  if (time) {
+                    s.forge.times = s.forge.times || {};
+                    s.forge.times[h.id] = time;
+                  }
+                });
+                closeModal();
+                toast('✅ Hábito atualizado com sucesso!');
+              }}
+            >
+              Salvar Alterações
+            </button>
+            <button className="btn-dark py-2 px-4 text-xs font-bold" onClick={closeModal}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      );
+    };
+    openModal(<EditH />);
   };
 
   const toggleDone = (id) => {
@@ -251,7 +366,6 @@ export default function ForgeView() {
   const openCreateModal = () => {
     let name = '', icon = '⚡', time = '';
     const CreateH = () => {
-      const [, force] = useState(0);
       return (
         <div className="text-center">
           <h3 className="mb-2 font-display text-2xl tracking-wide text-gold">CRIAR NOVO HÁBITO</h3>
@@ -427,7 +541,7 @@ export default function ForgeView() {
         </Card>
       )}
 
-      {/* 3. ATIVOS NO PROTOCOLO (Com nomes e ícones restaurados) */}
+      {/* 3. ATIVOS NO PROTOCOLO (Com Edição, Exclusão e Arquivamento) */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <K className="mb-0">⚡ ATIVOS NO PROTOCOLO ({activeCount}/{maxSlots >= 99 ? '∞' : maxSlots} SLOTS)</K>
@@ -442,6 +556,7 @@ export default function ForgeView() {
               const isBenefitOpen = openBenefitId === h.id;
               const isHistoryOpen = openHistoryId === h.id;
               const benefitText = getHabitBenefitText(h, lang);
+              const isCustom = isCustomHabit(h.id);
 
               return (
                 <Card
@@ -454,28 +569,64 @@ export default function ForgeView() {
                       : 'border-line hover:border-gold/30'
                   }`}
                 >
-                  {/* Cabeçalho */}
+                  {/* Cabeçalho com ações de Editar, Excluir e Arquivar */}
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-xl flex-none">{h.icon}</span>
                       <div className="min-w-0">
-                        <span className={`text-xs sm:text-[13.5px] font-bold block truncate ${isDone ? 'text-gold' : isFail ? 'text-danger' : 'text-ink'}`}>
-                          {h.n}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs sm:text-[13.5px] font-bold block truncate ${isDone ? 'text-gold' : isFail ? 'text-danger' : 'text-ink'}`}>
+                            {h.n}
+                          </span>
+                          {/* Botões de Ação para hábitos customizados */}
+                          {isCustom && (
+                            <div className="flex items-center gap-1 flex-none">
+                              <button
+                                type="button"
+                                title={LBL.editHabit[curLang]}
+                                onClick={() => openEditModal(h)}
+                                className="text-muted hover:text-gold p-0.5"
+                              >
+                                <Edit3 size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                title={LBL.deleteHabit[curLang]}
+                                onClick={() => deleteCustomHabit(h.id)}
+                                className="text-muted hover:text-danger p-0.5"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                         <span className="text-[9.5px] uppercase font-mono text-muted">
-                          #{String(h.id).slice(-4)} · {LBL.activeInProtocol[curLang]}
+                          #{String(h.id).slice(-4)} · {isCustom ? '★ PERSONALIZADO' : LBL.activeInProtocol[curLang]}
                         </span>
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      title="Mover para a Reserva"
-                      onClick={() => toggleActive(h.id)}
-                      className="flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-gold/20 text-gold border border-gold/40 hover:bg-gold/30 transition-colors"
-                    >
-                      {LBL.activeBtn[curLang]}
-                    </button>
+                    <div className="flex items-center gap-1.5 flex-none">
+                      {/* Botão Arquivar */}
+                      <button
+                        type="button"
+                        title={LBL.archiveHabit[curLang]}
+                        onClick={() => toggleArchive(h.id)}
+                        className="text-muted/70 hover:text-gold p-1"
+                      >
+                        <Archive size={14} />
+                      </button>
+
+                      {/* Botão de Status Ativo (clique para mover à reserva) */}
+                      <button
+                        type="button"
+                        title="Mover para a Reserva"
+                        onClick={() => toggleActive(h.id)}
+                        className="flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-gold/20 text-gold border border-gold/40 hover:bg-gold/30 transition-colors"
+                      >
+                        {LBL.activeBtn[curLang]}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Linha de Ação: Concluir + Horário + Falhar */}
@@ -520,7 +671,6 @@ export default function ForgeView() {
 
                   {/* BOTÕES EXPANSÍVEIS TÁTICOS */}
                   <div className="mt-2.5 pt-2 border-t border-line/40 flex flex-col gap-1.5">
-                    {/* Botão: Histórico dos Últimos 7 Dias */}
                     <div>
                       <button
                         type="button"
@@ -536,7 +686,6 @@ export default function ForgeView() {
                       {isHistoryOpen && renderLast7Days(h.id)}
                     </div>
 
-                    {/* Botão: Benefícios & Proteção Contra Recaída */}
                     <div>
                       <button
                         type="button"
@@ -570,14 +719,14 @@ export default function ForgeView() {
         )}
       </div>
 
-      {/* 4. RESERVA DA FORJA COM FILTROS DE CATEGORIA */}
+      {/* 4. RESERVA DA FORJA COM FILTROS DE CATEGORIA & ARQUIVADOS */}
       <div className="mt-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
           <div className="flex items-center gap-2">
             <K className="mb-0">📦 RESERVA DA FORJA ({filteredReserve.length} DISPONÍVEIS)</K>
           </div>
 
-          {/* Filtros por Categorias Masculinas */}
+          {/* Filtros por Categorias + Aba Arquivados */}
           <div className="flex flex-wrap gap-1">
             {[
               { id: 'all', label: PIL.all[curLang] },
@@ -585,9 +734,12 @@ export default function ForgeView() {
               { id: 'mind', label: PIL.mind[curLang] },
               { id: 'mission', label: PIL.mission[curLang] },
               { id: 'spirit', label: PIL.spirit[curLang] },
+              { id: 'archived', label: PIL.archived[curLang] },
             ].map((p) => {
               const count = p.id === 'all'
                 ? reserveHabits.length
+                : p.id === 'archived'
+                ? archivedHabits.length
                 : reserveHabits.filter((h) => getHabitCategory(h) === p.id).length;
               const isSelected = selectedPillar === p.id;
               return (
@@ -612,57 +764,116 @@ export default function ForgeView() {
         </div>
 
         {/* Grade de 3 Colunas na Reserva */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          {filteredReserve.map((h) => {
-            const isBenefitOpen = openBenefitId === h.id;
-            const benefitText = getHabitBenefitText(h, lang);
+        {filteredReserve.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {filteredReserve.map((h) => {
+              const isBenefitOpen = openBenefitId === h.id;
+              const benefitText = getHabitBenefitText(h, lang);
+              const isCustom = isCustomHabit(h.id);
+              const isArchived = archivedIds.some((arid) => String(arid) === String(h.id));
 
-            return (
-              <div
-                key={h.id}
-                className="p-2.5 rounded-r border border-line bg-surface2/70 hover:border-gold/40 transition-colors flex flex-col justify-between"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-lg flex-none">{h.icon}</span>
-                    <span className="text-xs font-bold text-ink truncate">
-                      {h.n}
-                    </span>
+              return (
+                <div
+                  key={h.id}
+                  className={`p-2.5 rounded-r border transition-colors flex flex-col justify-between ${
+                    isArchived
+                      ? 'border-line/40 bg-surface/50 opacity-70'
+                      : 'border-line bg-surface2/70 hover:border-gold/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-lg flex-none">{h.icon}</span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-ink truncate">
+                            {h.n}
+                          </span>
+                          {/* Botão de Editar/Excluir se for customizado na reserva */}
+                          {isCustom && (
+                            <div className="flex items-center gap-1 flex-none">
+                              <button
+                                type="button"
+                                title={LBL.editHabit[curLang]}
+                                onClick={() => openEditModal(h)}
+                                className="text-muted hover:text-gold p-0.5"
+                              >
+                                <Edit3 size={11} />
+                              </button>
+                              <button
+                                type="button"
+                                title={LBL.deleteHabit[curLang]}
+                                onClick={() => deleteCustomHabit(h.id)}
+                                className="text-muted hover:text-danger p-0.5"
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {isCustom && (
+                          <span className="text-[8.5px] uppercase font-mono text-gold/80 block">
+                            ★ Personalizado
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 flex-none">
+                      {/* Botão Arquivar / Desarquivar */}
+                      <button
+                        type="button"
+                        title={isArchived ? LBL.unarchiveHabit[curLang] : LBL.archiveHabit[curLang]}
+                        onClick={() => toggleArchive(h.id)}
+                        className="text-muted/70 hover:text-gold p-1"
+                      >
+                        {isArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
+                      </button>
+
+                      {/* Botão Ativar */}
+                      {!isArchived && (
+                        <button
+                          type="button"
+                          title="Ativar no Protocolo"
+                          onClick={() => toggleActive(h.id)}
+                          className="flex-none text-[10px] font-mono px-2 py-0.5 rounded border border-line bg-surface text-muted hover:border-gold hover:text-gold transition-colors font-bold"
+                        >
+                          {LBL.activateBtn[curLang]}
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <button
-                    type="button"
-                    title="Ativar no Protocolo"
-                    onClick={() => toggleActive(h.id)}
-                    className="flex-none text-[10px] font-mono px-2 py-0.5 rounded border border-line bg-surface text-muted hover:border-gold hover:text-gold transition-colors font-bold"
-                  >
-                    {LBL.activateBtn[curLang]}
-                  </button>
+                  {/* Botão Expansível de Benefício na Reserva */}
+                  <div className="mt-1.5 pt-1 border-t border-line/30">
+                    <button
+                      type="button"
+                      onClick={() => setOpenBenefitId(isBenefitOpen ? null : h.id)}
+                      className="text-[9.5px] text-muted hover:text-gold flex items-center justify-between w-full font-mono py-0.5"
+                    >
+                      <span className="flex items-center gap-1">
+                        <ShieldCheck size={10} className="text-gold" />
+                        <span>{isBenefitOpen ? LBL.hideBenefit[curLang] : LBL.viewBenefit[curLang]}</span>
+                      </span>
+                      {isBenefitOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                    </button>
+                    {isBenefitOpen && (
+                      <div className="mt-1 text-[10px] text-muted bg-surface p-2 rounded border border-line leading-snug">
+                        {benefitText}
+                      </div>
+                    )}
+                  </div>
                 </div>
-
-                {/* Botão Expansível de Benefício na Reserva */}
-                <div className="mt-1.5 pt-1 border-t border-line/30">
-                  <button
-                    type="button"
-                    onClick={() => setOpenBenefitId(isBenefitOpen ? null : h.id)}
-                    className="text-[9.5px] text-muted hover:text-gold flex items-center justify-between w-full font-mono py-0.5"
-                  >
-                    <span className="flex items-center gap-1">
-                      <ShieldCheck size={10} className="text-gold" />
-                      <span>{isBenefitOpen ? LBL.hideBenefit[curLang] : LBL.viewBenefit[curLang]}</span>
-                    </span>
-                    {isBenefitOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                  </button>
-                  {isBenefitOpen && (
-                    <div className="mt-1 text-[10px] text-muted bg-surface p-2 rounded border border-line leading-snug">
-                      {benefitText}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-6 text-center bg-surface2/30 rounded border border-line/40">
+            <p className="text-xs text-muted">
+              {selectedPillar === 'archived' ? 'Nenhum hábito arquivado no momento.' : 'Nenhum hábito nesta categoria.'}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
