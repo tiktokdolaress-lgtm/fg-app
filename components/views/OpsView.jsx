@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Plus, Check, Trash2, Clock, Calendar, Flag, Folder, Layers, CheckCircle2, Circle, AlertCircle, Edit3, ChevronRight, Target, Flame, Archive, X, AlertTriangle } from 'lucide-react';
+import { Plus, Check, Trash2, Clock, Calendar, Flag, Folder, Layers, CheckCircle2, Circle, AlertCircle, Edit3, ChevronRight, Target, Flame, Archive, AlertTriangle, Link2, Unlink } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Empty } from '@/components/ui';
 import { today, fdmy, dstr, fmtD } from '@/lib/utils';
@@ -15,9 +15,11 @@ const I18N = {
   filterAll: { pt: 'Todas', en: 'All', es: 'Todas' },
   filterToday: { pt: 'Para Hoje', en: 'For Today', es: 'Para Hoy' },
   filterDone: { pt: 'Concluídas', en: 'Completed', es: 'Completadas' },
+  filterActive: { pt: 'Ativos', en: 'Active', es: 'Activos' },
+  filterArchived: { pt: 'Arquivados', en: 'Archived', es: 'Archivados' },
   progress: { pt: 'Progresso do Dia', en: 'Today\'s Progress', es: 'Progreso del Día' },
   noTasks: { pt: 'Nenhuma operação nesta categoria.', en: 'No operations in this category.', es: 'Ninguna operación en esta categoría.' },
-  noProjects: { pt: 'Nenhum projeto em andamento. Crie sua primeira grande missão!', en: 'No active projects. Forge your first big mission!', es: 'Sin proyectos activos. ¡Forja tu primera gran misión!' },
+  noProjects: { pt: 'Nenhum projeto nesta categoria.', en: 'No projects in this category.', es: 'Ningún proyecto en esta categoría.' },
 };
 
 export default function OpsView() {
@@ -26,12 +28,13 @@ export default function OpsView() {
   const curLang = ['pt', 'en', 'es'].includes(lang) ? lang : 'pt';
   const tx = I18N;
 
-  const [activeMainTab, setActiveMainTab] = useState('tasks'); // 'tasks' ou 'projects'
+  const [activeMainTab, setActiveMainTab] = useState('tasks');
   const [filter, setFilter] = useState('today');
+  const [projFilter, setProjFilter] = useState('ativos'); // 'ativos', 'concluidos', 'arquivados'
 
   const tasks = S.tasks || [];
   const projects = S.projects || [];
-  const todayTasks = tasks.filter((x) => L.repDue(x, today()));
+  const todayTasks = tasks.filter((x) => !x.archived && L.repDue(x, today()));
   const completedToday = todayTasks.filter((x) => L.isDone(x, today())).length;
   const pct = todayTasks.length ? Math.round((completedToday / todayTasks.length) * 100) : 0;
 
@@ -70,23 +73,20 @@ export default function OpsView() {
     openModal(<ConfirmModal />);
   };
 
-  /* MODAL: Criar / Editar Tarefa */
-  const openTaskModal = (taskToEdit = null) => {
+  /* MODAL: Criar / Editar Tarefa (Sem X duplo) */
+  const openTaskModal = (taskToEdit = null, defaultProjectId = '') => {
     let txt = taskToEdit ? taskToEdit.txt : '';
     let pri = taskToEdit ? taskToEdit.pri : 'media';
     let rep = taskToEdit ? (taskToEdit.rep || 'unica') : 'unica';
     let time = taskToEdit ? (taskToEdit.time || '') : '';
-    let projectId = taskToEdit ? (taskToEdit.projectId || '') : '';
+    let projectId = taskToEdit ? (taskToEdit.projectId || '') : defaultProjectId;
 
     const TaskModalContent = () => (
       <div className="text-left">
-        <div className="flex items-center justify-between pb-2 mb-3 border-b border-line">
+        <div className="pb-2 mb-3 border-b border-line">
           <h3 className="font-display text-xl tracking-wide text-gold">
             {taskToEdit ? 'EDITAR OPERAÇÃO' : 'CRIAR NOVA OPERAÇÃO'}
           </h3>
-          <button onClick={closeModal} className="text-muted hover:text-ink">
-            <X size={18} />
-          </button>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -126,6 +126,7 @@ export default function OpsView() {
                 <option value="diaria">Diária</option>
                 <option value="dias_uteis">Dias Úteis (Seg a Sex)</option>
                 <option value="fds">Fins de Semana (Sáb/Dom)</option>
+                <option value="semanal">Semanal (1x por semana)</option>
               </select>
             </div>
           </div>
@@ -149,7 +150,7 @@ export default function OpsView() {
                 onChange={(e) => (projectId = e.target.value)}
               >
                 <option value="">(Nenhum / Avulso)</option>
-                {projects.map((p) => (
+                {projects.filter((p) => !p.archived).map((p) => (
                   <option key={p.id} value={p.id}>{p.title}</option>
                 ))}
               </select>
@@ -204,7 +205,66 @@ export default function OpsView() {
     openModal(<TaskModalContent />);
   };
 
-  /* MODAL: Criar / Editar Projeto */
+  /* MODAL: Vincular Tarefa Existente ao Projeto */
+  const openLinkTaskModal = (proj) => {
+    const unlinkedTasks = tasks.filter((t) => !t.archived && String(t.projectId) !== String(proj.id));
+
+    const LinkModalContent = () => (
+      <div className="text-left">
+        <div className="pb-2 mb-3 border-b border-line">
+          <h3 className="font-display text-xl tracking-wide text-gold">VINCULAR TAREFA EXISTENTE</h3>
+          <p className="text-xs text-muted">Selecione uma tarefa para incluir no projeto "{proj.title}":</p>
+        </div>
+
+        {unlinkedTasks.length > 0 ? (
+          <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+            {unlinkedTasks.map((t) => (
+              <div
+                key={t.id}
+                className="flex items-center justify-between p-2 rounded bg-surface border border-line hover:border-gold/50 transition-colors"
+              >
+                <div className="min-w-0 flex-1 pr-2">
+                  <span className="text-xs font-bold text-ink block truncate">{t.txt}</span>
+                  <span className="text-[10px] font-mono text-muted uppercase">
+                    {t.rep || 'única'} • {t.pri || 'média'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    update((s) => {
+                      const tgt = (s.tasks || []).find((x) => String(x.id) === String(t.id));
+                      if (tgt) tgt.projectId = proj.id;
+                    });
+                    closeModal();
+                    AF.click();
+                    toast('Tarefa vinculada ao projeto!');
+                  }}
+                  className="btn-gold py-1 px-2.5 text-[11px] font-bold flex items-center gap-1"
+                >
+                  <Link2 size={11} />
+                  <span>Vincular</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-6 text-center text-xs text-muted">
+            Todas as suas tarefas já estão vinculadas a este projeto ou não há tarefas criadas.
+          </div>
+        )}
+
+        <div className="mt-4 text-right">
+          <button type="button" className="btn-dark py-1.5 px-4 text-xs font-bold" onClick={closeModal}>
+            Fechar
+          </button>
+        </div>
+      </div>
+    );
+    openModal(<LinkModalContent />);
+  };
+
+  /* MODAL: Criar / Editar Projeto (Sem X duplo) */
   const openProjectModal = (projToEdit = null) => {
     let pTitle = projToEdit ? projToEdit.title : '';
     let pDesc = projToEdit ? projToEdit.desc : '';
@@ -212,13 +272,10 @@ export default function OpsView() {
 
     const ProjModalContent = () => (
       <div className="text-left">
-        <div className="flex items-center justify-between pb-2 mb-3 border-b border-line">
+        <div className="pb-2 mb-3 border-b border-line">
           <h3 className="font-display text-xl tracking-wide text-gold">
             {projToEdit ? 'EDITAR PROJETO' : 'NOVO PROJETO ESTRATÉGICO'}
           </h3>
-          <button onClick={closeModal} className="text-muted hover:text-ink">
-            <X size={18} />
-          </button>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -226,7 +283,7 @@ export default function OpsView() {
             <span className="lbl mb-1 block">Título da Missão / Projeto:</span>
             <input
               type="text"
-              placeholder="Ex: Lançamento do Negócio, Treino Hipertrofia..."
+              placeholder="Ex: Lançamento do Negócio, Cuidar do Jardim..."
               className="field w-full text-xs sm:text-sm"
               defaultValue={pTitle}
               onChange={(e) => (pTitle = e.target.value)}
@@ -253,6 +310,37 @@ export default function OpsView() {
               onChange={(e) => (pDeadline = e.target.value)}
             />
           </div>
+
+          {/* Se estiver editando, oferece botões rápidos de tarefas */}
+          {projToEdit && (
+            <div className="pt-2 border-t border-line/60">
+              <span className="lbl mb-1.5 block">Ações Rápidas de Tarefas:</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeModal();
+                    setTimeout(() => openTaskModal(null, projToEdit.id), 150);
+                  }}
+                  className="btn-dark py-1.5 px-2.5 text-xs font-bold flex-1 flex items-center justify-center gap-1 border-gold/40 text-gold"
+                >
+                  <Plus size={12} />
+                  <span>+ Nova Tarefa Neste Projeto</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeModal();
+                    setTimeout(() => openLinkTaskModal(projToEdit), 150);
+                  }}
+                  className="btn-dark py-1.5 px-2.5 text-xs font-bold flex-1 flex items-center justify-center gap-1"
+                >
+                  <Link2 size={12} />
+                  <span>Vincular Tarefa Existente</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-4 flex gap-2">
@@ -277,6 +365,7 @@ export default function OpsView() {
                     desc: pDesc.trim(),
                     deadline: pDeadline || '',
                     status: 'ativo',
+                    archived: false,
                     steps: [],
                     createdAt: today(),
                   });
@@ -316,7 +405,7 @@ export default function OpsView() {
     AF.click();
   };
 
-  /* Excluir Tarefa COM CONFIRMAÇÃO */
+  /* Excluir Tarefa com Confirmação */
   const requestDeleteTask = (task) => {
     confirmAction({
       title: 'EXCLUIR OPERAÇÃO?',
@@ -333,25 +422,164 @@ export default function OpsView() {
     });
   };
 
-  /* Excluir Projeto COM CONFIRMAÇÃO */
-  const requestDeleteProject = (proj) => {
-    confirmAction({
-      title: 'EXCLUIR PROJETO ESTRATÉGICO?',
-      message: `Tem certeza que deseja excluir o projeto "${proj.title}"? As tarefas vinculadas a ele se tornarão avulsas.`,
-      danger: true,
-      confirmText: 'Sim, Excluir Projeto',
-      onConfirm: () => {
-        update((s) => {
-          s.projects = (s.projects || []).filter((p) => String(p.id) !== String(proj.id));
-          s.tasks = (s.tasks || []).map((t) => String(t.projectId) === String(proj.id) ? { ...t, projectId: null } : t);
-        });
-        AF.click();
-        toast('Projeto excluído');
-      },
-    });
+  /* ARQUIVAR PROJETO COM ESCOLHA DE TAREFAS */
+  const requestArchiveProject = (proj) => {
+    const isArch = proj.archived;
+    const linkedTasks = tasks.filter((t) => String(t.projectId) === String(proj.id));
+
+    if (isArch) {
+      // Desarquivar
+      confirmAction({
+        title: 'DESARQUIVAR PROJETO?',
+        message: `Deseja restaurar o projeto "${proj.title}" para os projetos ativos?`,
+        confirmText: 'Restaurar Projeto',
+        onConfirm: () => {
+          update((s) => {
+            const p = (s.projects || []).find((x) => String(x.id) === String(proj.id));
+            if (p) p.archived = false;
+            (s.tasks || []).forEach((t) => {
+              if (String(t.projectId) === String(proj.id)) t.archived = false;
+            });
+          });
+          AF.click();
+          toast('Projeto desarquivado!');
+        },
+      });
+      return;
+    }
+
+    // Modal especial para arquivar com escolha de tarefas
+    const ArchiveModalChoice = () => (
+      <div className="text-center p-1">
+        <div className="w-12 h-12 rounded-full border border-gold/40 bg-gold/10 flex items-center justify-center mx-auto mb-3 text-gold">
+          <Archive size={24} />
+        </div>
+        <h3 className="font-display text-xl tracking-wide text-ink mb-1.5">ARQUIVAR PROJETO?</h3>
+        <p className="text-xs text-muted leading-relaxed mb-4">
+          Você está arquivando o projeto <b>"{proj.title}"</b>. Ele possui <b>{linkedTasks.length}</b> tarefa(s) vinculada(s).
+          Como deseja proceder com essas tarefas?
+        </p>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            className="btn-gold py-2 text-xs font-bold font-mono"
+            onClick={() => {
+              update((s) => {
+                const p = (s.projects || []).find((x) => String(x.id) === String(proj.id));
+                if (p) p.archived = true;
+                (s.tasks || []).forEach((t) => {
+                  if (String(t.projectId) === String(proj.id)) t.archived = true;
+                });
+              });
+              closeModal();
+              AF.click();
+              toast('📦 Projeto e tarefas arquivados!');
+            }}
+          >
+            📦 Arquivar Projeto E Tarefas Vinculadas
+          </button>
+          <button
+            type="button"
+            className="btn-dark py-2 text-xs font-bold font-mono border-line"
+            onClick={() => {
+              update((s) => {
+                const p = (s.projects || []).find((x) => String(x.id) === String(proj.id));
+                if (p) p.archived = true;
+                (s.tasks || []).forEach((t) => {
+                  if (String(t.projectId) === String(proj.id)) t.projectId = null;
+                });
+              });
+              closeModal();
+              AF.click();
+              toast('📦 Projeto arquivado (tarefas tornaram-se avulsas)!');
+            }}
+          >
+            🔓 Arquivar Só Projeto (Manter Tarefas Ativas/Avulsas)
+          </button>
+          <button
+            type="button"
+            className="btn-dark py-1.5 px-4 text-xs font-bold text-muted hover:text-ink mt-1"
+            onClick={closeModal}
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
+    openModal(<ArchiveModalChoice />);
   };
 
-  /* Concluir Projeto COM CONFIRMAÇÃO */
+  /* EXCLUIR PROJETO COM ESCOLHA DE TAREFAS */
+  const requestDeleteProject = (proj) => {
+    const linkedTasks = tasks.filter((t) => String(t.projectId) === String(proj.id));
+
+    const DeleteModalChoice = () => (
+      <div className="text-center p-1">
+        <div className="w-12 h-12 rounded-full border border-danger/40 bg-danger/10 flex items-center justify-center mx-auto mb-3 text-danger">
+          <AlertTriangle size={24} />
+        </div>
+        <h3 className="font-display text-xl tracking-wide text-danger mb-1.5">EXCLUIR PROJETO DEFINITIVAMENTE?</h3>
+        <p className="text-xs text-muted leading-relaxed mb-4">
+          Você está prestes a apagar <b>"{proj.title}"</b>. Ele possui <b>{linkedTasks.length}</b> tarefa(s) vinculada(s).
+          O que deseja fazer com as tarefas?
+        </p>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            className="bg-danger text-white hover:bg-danger/90 py-2 rounded text-xs font-bold font-mono"
+            onClick={() => {
+              update((s) => {
+                s.projects = (s.projects || []).filter((p) => String(p.id) !== String(proj.id));
+                s.tasks = (s.tasks || []).filter((t) => String(t.projectId) !== String(proj.id));
+              });
+              closeModal();
+              AF.click();
+              toast('Projeto e tarefas excluídos!');
+            }}
+          >
+            🗑️ Excluir Projeto E Todas as Suas Tarefas
+          </button>
+          <button
+            type="button"
+            className="btn-gold py-2 text-xs font-bold font-mono"
+            onClick={() => {
+              update((s) => {
+                s.projects = (s.projects || []).filter((p) => String(p.id) !== String(proj.id));
+                (s.tasks || []).forEach((t) => {
+                  if (String(t.projectId) === String(proj.id)) t.projectId = null;
+                });
+              });
+              closeModal();
+              AF.click();
+              toast('Projeto excluído! Tarefas salvas como avulsas.');
+            }}
+          >
+            🛡️ Excluir Apenas Projeto (Preservar Tarefas como Avulsas)
+          </button>
+          <button
+            type="button"
+            className="btn-dark py-1.5 px-4 text-xs font-bold text-muted hover:text-ink mt-1"
+            onClick={closeModal}
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
+    openModal(<DeleteModalChoice />);
+  };
+
+  /* Desvincular Tarefa de Projeto */
+  const unlinkTask = (taskId) => {
+    update((s) => {
+      const t = (s.tasks || []).find((x) => String(x.id) === String(taskId));
+      if (t) t.projectId = null;
+    });
+    AF.click();
+    toast('Tarefa desvinculada do projeto');
+  };
+
+  /* Concluir / Reabrir Projeto */
   const toggleProjectStatus = (proj) => {
     const isComp = proj.status === 'concluido';
     confirmAction({
@@ -363,9 +591,7 @@ export default function OpsView() {
       onConfirm: () => {
         update((s) => {
           const p = (s.projects || []).find((x) => String(x.id) === String(proj.id));
-          if (p) {
-            p.status = isComp ? 'ativo' : 'concluido';
-          }
+          if (p) p.status = isComp ? 'ativo' : 'concluido';
         });
         AF.click();
         toast(isComp ? 'Projeto reaberto' : '🏆 Projeto Concluído com Honra!');
@@ -397,16 +623,26 @@ export default function OpsView() {
     AF.click();
   };
 
+  /* Filtros de Tarefas */
   const displayedTasks = tasks.filter((x) => {
+    if (x.archived) return false;
     const isDone = L.isDone(x, today());
     if (filter === 'done') return isDone;
     if (filter === 'today') return L.repDue(x, today()) && !isDone;
     return true;
   });
 
+  /* Filtros de Projetos */
+  const displayedProjects = projects.filter((p) => {
+    if (projFilter === 'arquivados') return p.archived;
+    if (p.archived) return false;
+    if (projFilter === 'concluidos') return p.status === 'concluido';
+    return p.status !== 'concluido';
+  });
+
   return (
     <div className="grid gap-3.5">
-      {/* 1. SELETOR DE ABAS PRINCIPAIS COM BOTÕES DE AÇÃO LIMPOS */}
+      {/* 1. SELETOR DE ABAS PRINCIPAIS */}
       <Card className="border-gold/30 bg-surface2/60 p-2.5 sm:p-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-1.5">
@@ -421,7 +657,7 @@ export default function OpsView() {
             >
               <span>{tx.tabTasks[curLang]}</span>
               <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${activeMainTab === 'tasks' ? 'bg-black/20 text-black' : 'bg-surface2 text-muted'}`}>
-                {tasks.length}
+                {tasks.filter((t) => !t.archived).length}
               </span>
             </button>
 
@@ -436,12 +672,11 @@ export default function OpsView() {
             >
               <span>{tx.tabProjects[curLang]}</span>
               <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${activeMainTab === 'projects' ? 'bg-black/20 text-black' : 'bg-surface2 text-muted'}`}>
-                {projects.length}
+                {projects.filter((p) => !p.archived).length}
               </span>
             </button>
           </div>
 
-          {/* Botão Superior Direito Adaptável: Abre o Modal de Criação */}
           <div className="flex items-center gap-3">
             {activeMainTab === 'tasks' ? (
               <>
@@ -478,17 +713,16 @@ export default function OpsView() {
         </div>
       </Card>
 
-      {/* 2. CONTEÚDO PRINCIPAL (100% LIMPO E ESPAÇOSO) */}
+      {/* 2. CONTEÚDO PRINCIPAL */}
       {activeMainTab === 'tasks' ? (
         /* ABA DE TAREFAS */
         <Card className="p-3.5 sm:p-4">
-          {/* Barra de Filtros */}
           <div className="flex items-center justify-between gap-2 mb-3 pb-2.5 border-b border-line/60">
             <div className="flex items-center gap-1.5">
               {[
                 { id: 'today', label: tx.filterToday[curLang], count: todayTasks.filter((x) => !L.isDone(x, today())).length },
-                { id: 'all', label: tx.filterAll[curLang], count: tasks.length },
-                { id: 'done', label: tx.filterDone[curLang], count: tasks.filter((x) => L.isDone(x, today())).length },
+                { id: 'all', label: tx.filterAll[curLang], count: tasks.filter((t) => !t.archived).length },
+                { id: 'done', label: tx.filterDone[curLang], count: tasks.filter((x) => !x.archived && L.isDone(x, today())).length },
               ].map((f) => (
                 <button
                   key={f.id}
@@ -507,18 +741,8 @@ export default function OpsView() {
                 </button>
               ))}
             </div>
-
-            <button
-              type="button"
-              onClick={() => openTaskModal()}
-              className="text-xs font-mono font-bold text-gold hover:underline flex items-center gap-1 sm:hidden"
-            >
-              <Plus size={12} />
-              <span>Nova</span>
-            </button>
           </div>
 
-          {/* Lista de Operações em Grade Limpa */}
           {displayedTasks.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {displayedTasks.map((tItem) => {
@@ -539,7 +763,6 @@ export default function OpsView() {
                         : 'border-line bg-surface2/80 hover:border-gold/40'
                     }`}
                   >
-                    {/* Checkbox & Informações */}
                     <div
                       className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer"
                       onClick={() => toggleTask(tItem.id)}
@@ -568,7 +791,7 @@ export default function OpsView() {
                               {tItem.time}
                             </span>
                           )}
-                          {tItem.rep !== 'unica' && (
+                          {tItem.rep && tItem.rep !== 'unica' && (
                             <span className="text-muted">
                               🔁 {tItem.rep}
                             </span>
@@ -582,7 +805,6 @@ export default function OpsView() {
                       </div>
                     </div>
 
-                    {/* Ações: Editar e Excluir */}
                     <div className="flex items-center gap-1 flex-none">
                       <button
                         type="button"
@@ -613,158 +835,263 @@ export default function OpsView() {
         </Card>
       ) : (
         /* ABA DE PROJETOS ESTRATÉGICOS */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 items-start">
-          {projects.length > 0 ? (
-            projects.map((proj) => {
-              const isCompleted = proj.status === 'concluido';
-              const steps = proj.steps || [];
-              const stepsDone = steps.filter((s) => s.done).length;
-              const projPct = steps.length ? Math.round((stepsDone / steps.length) * 100) : isCompleted ? 100 : 0;
-              const projTasks = tasks.filter((t) => String(t.projectId) === String(proj.id));
+        <div className="flex flex-col gap-3">
+          {/* Sub-filtros de Projetos */}
+          <div className="flex items-center gap-1.5">
+            {[
+              { id: 'ativos', label: 'Ativos', count: projects.filter((p) => !p.archived && p.status !== 'concluido').length },
+              { id: 'concluidos', label: 'Concluídos', count: projects.filter((p) => !p.archived && p.status === 'concluido').length },
+              { id: 'arquivados', label: 'Arquivados 📦', count: projects.filter((p) => p.archived).length },
+            ].map((pf) => (
+              <button
+                key={pf.id}
+                type="button"
+                onClick={() => setProjFilter(pf.id)}
+                className={`text-xs font-mono px-3 py-1.5 rounded transition-all flex items-center gap-1.5 ${
+                  projFilter === pf.id
+                    ? 'bg-gold text-[#141414] font-bold shadow-sm'
+                    : 'bg-surface2 text-muted hover:text-ink border border-line'
+                }`}
+              >
+                <span>{pf.label}</span>
+                <span className={`text-[9.5px] px-1.5 py-0.2 rounded ${projFilter === pf.id ? 'bg-black/20 text-black' : 'bg-surface text-muted'}`}>
+                  {pf.count}
+                </span>
+              </button>
+            ))}
+          </div>
 
-              return (
-                <Card
-                  key={proj.id}
-                  className={`p-3.5 sm:p-4 border transition-all flex flex-col justify-between ${
-                    isCompleted
-                      ? 'border-line/40 bg-surface/50 opacity-70'
-                      : 'border-line bg-surface2/80 hover:border-gold/40'
-                  }`}
-                >
-                  <div>
-                    {/* Cabeçalho do Projeto */}
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Folder className="text-gold flex-none" size={18} />
-                        <h4 className={`text-sm font-bold truncate ${isCompleted ? 'line-through text-muted' : 'text-ink'}`}>
-                          {proj.title}
-                        </h4>
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-none">
-                        <button
-                          type="button"
-                          onClick={() => toggleProjectStatus(proj)}
-                          className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold ${
-                            isCompleted
-                              ? 'border-gold bg-gold/15 text-gold'
-                              : 'border-line bg-surface text-muted hover:text-ink'
-                          }`}
-                        >
-                          {isCompleted ? '✓ CONCLUÍDO' : 'EM ANDAMENTO'}
-                        </button>
-                        <button
-                          type="button"
-                          title="Editar Projeto"
-                          onClick={() => openProjectModal(proj)}
-                          className="text-muted hover:text-gold p-1 transition-colors"
-                        >
-                          <Edit3 size={13} />
-                        </button>
-                        <button
-                          type="button"
-                          title="Excluir Projeto"
-                          onClick={() => requestDeleteProject(proj)}
-                          className="text-muted hover:text-danger p-1 transition-colors"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 items-start">
+            {displayedProjects.length > 0 ? (
+              displayedProjects.map((proj) => {
+                const isCompleted = proj.status === 'concluido';
+                const isArchived = proj.archived;
+                const steps = proj.steps || [];
+                const stepsDone = steps.filter((s) => s.done).length;
+                const projTasks = tasks.filter((t) => String(t.projectId) === String(proj.id) && !t.archived);
+                const projTasksDone = projTasks.filter((t) => L.isDone(t, today())).length;
+                const totalItems = steps.length + projTasks.length;
+                const doneItems = stepsDone + projTasksDone;
+                const projPct = totalItems ? Math.round((doneItems / totalItems) * 100) : isCompleted ? 100 : 0;
 
-                    {proj.desc && (
-                      <p className="text-xs text-muted mb-3 leading-relaxed">
-                        {proj.desc}
-                      </p>
-                    )}
-
-                    {/* Barra de Progresso do Projeto */}
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between text-[10px] font-mono text-muted mb-1">
-                        <span>PROGRESSO</span>
-                        <span className="font-bold text-gold">{projPct}%</span>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full bg-surface overflow-hidden border border-line/40">
-                        <div
-                          className="h-full bg-gold transition-all duration-300"
-                          style={{ width: `${projPct}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Etapas / Marcos do Projeto */}
-                    <div className="space-y-1.5 mb-3">
-                      <span className="text-[10px] font-mono text-muted uppercase block">
-                        ETAPAS ({stepsDone}/{steps.length})
-                      </span>
-                      {steps.map((st) => (
-                        <div
-                          key={st.id}
-                          onClick={() => toggleStep(proj.id, st.id)}
-                          className="flex items-center gap-2 p-1.5 rounded bg-surface border border-line/40 cursor-pointer text-xs"
-                        >
-                          <div className={`w-3.5 h-3.5 rounded-sm flex items-center justify-center border ${st.done ? 'bg-gold border-gold text-[#141414]' : 'border-line'}`}>
-                            {st.done && <Check size={10} strokeWidth={3} />}
-                          </div>
-                          <span className={`truncate ${st.done ? 'line-through text-muted' : 'text-ink'}`}>
-                            {st.txt}
-                          </span>
-                        </div>
-                      ))}
-
-                      {/* Input rápido de nova etapa */}
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const input = e.target.elements.stepInput;
-                          addStepToProject(proj.id, input.value);
-                          input.value = '';
-                        }}
-                        className="flex gap-1 pt-1"
-                      >
-                        <input
-                          name="stepInput"
-                          placeholder="+ Adicionar etapa..."
-                          className="field py-1 px-2 text-[11px] flex-1"
-                        />
-                        <button type="submit" className="btn-dark py-1 px-2 text-[11px] font-mono font-bold">
-                          Adicionar
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-
-                  {/* Rodapé com Data Limite & Quantidade de Tarefas Vinculadas */}
-                  <div className="pt-2 border-t border-line/40 flex items-center justify-between text-[10px] font-mono text-muted">
-                    {proj.deadline ? (
-                      <span className="flex items-center gap-1 text-gold2">
-                        <Calendar size={11} />
-                        Prazo: {fmtD(proj.deadline)}
-                      </span>
-                    ) : (
-                      <span>Sem prazo definido</span>
-                    )}
-                    <span>{projTasks.length} tarefas vinculadas</span>
-                  </div>
-                </Card>
-              );
-            })
-          ) : (
-            <div className="col-span-2 py-10 text-center">
-              <Card className="py-8">
-                <Empty>
-                  {tx.noProjects[curLang]}
-                  <br />
-                  <button
-                    type="button"
-                    onClick={() => openProjectModal()}
-                    className="btn-gold py-1.5 px-4 text-xs font-bold mt-3"
+                return (
+                  <Card
+                    key={proj.id}
+                    className={`p-3.5 sm:p-4 border transition-all flex flex-col justify-between ${
+                      isArchived
+                        ? 'border-line bg-surface/30 opacity-60'
+                        : isCompleted
+                        ? 'border-line/40 bg-surface/50 opacity-75'
+                        : 'border-line bg-surface2/80 hover:border-gold/40'
+                    }`}
                   >
-                    + CRIAR PRIMEIRO PROJETO
-                  </button>
-                </Empty>
-              </Card>
-            </div>
-          )}
+                    <div>
+                      {/* Topo do Card */}
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Folder className="text-gold flex-none" size={18} />
+                          <h4 className={`text-sm font-bold truncate ${isCompleted ? 'line-through text-muted' : 'text-ink'}`}>
+                            {proj.title}
+                          </h4>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-none">
+                          {!isArchived && (
+                            <button
+                              type="button"
+                              onClick={() => toggleProjectStatus(proj)}
+                              className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold ${
+                                isCompleted
+                                  ? 'border-gold bg-gold/15 text-gold'
+                                  : 'border-line bg-surface text-muted hover:text-ink'
+                              }`}
+                            >
+                              {isCompleted ? '✓ CONCLUÍDO' : 'EM ANDAMENTO'}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            title="Editar Projeto"
+                            onClick={() => openProjectModal(proj)}
+                            className="text-muted hover:text-gold p-1 transition-colors"
+                          >
+                            <Edit3 size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            title={isArchived ? 'Desarquivar Projeto' : 'Arquivar Projeto'}
+                            onClick={() => requestArchiveProject(proj)}
+                            className="text-muted hover:text-gold p-1 transition-colors"
+                          >
+                            <Archive size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            title="Excluir Projeto"
+                            onClick={() => requestDeleteProject(proj)}
+                            className="text-muted hover:text-danger p-1 transition-colors"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {proj.desc && (
+                        <p className="text-xs text-muted mb-3 leading-relaxed">
+                          {proj.desc}
+                        </p>
+                      )}
+
+                      {/* Barra de Progresso */}
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between text-[10px] font-mono text-muted mb-1">
+                          <span>PROGRESSO TOTAL</span>
+                          <span className="font-bold text-gold">{projPct}%</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-surface overflow-hidden border border-line/40">
+                          <div
+                            className="h-full bg-gold transition-all duration-300"
+                            style={{ width: `${projPct}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* TAREFAS VINCULADAS A ESTE PROJETO */}
+                      <div className="mb-3 p-2 rounded bg-surface/60 border border-line/40">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-mono text-muted uppercase font-bold">
+                            TAREFAS VINCULADAS ({projTasksDone}/{projTasks.length})
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => openTaskModal(null, proj.id)}
+                              className="text-[10px] font-mono text-gold hover:underline flex items-center gap-0.5"
+                            >
+                              <Plus size={10} /> Nova
+                            </button>
+                            <span className="text-muted text-[10px]">•</span>
+                            <button
+                              type="button"
+                              onClick={() => openLinkTaskModal(proj)}
+                              className="text-[10px] font-mono text-muted hover:text-ink flex items-center gap-0.5"
+                            >
+                              <Link2 size={10} /> Vincular
+                            </button>
+                          </div>
+                        </div>
+
+                        {projTasks.length > 0 ? (
+                          <div className="space-y-1">
+                            {projTasks.map((pt) => {
+                              const done = L.isDone(pt, today());
+                              return (
+                                <div
+                                  key={pt.id}
+                                  className="flex items-center justify-between gap-1.5 p-1 px-1.5 rounded bg-surface2/60 text-xs border border-line/30"
+                                >
+                                  <div
+                                    className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer"
+                                    onClick={() => toggleTask(pt.id)}
+                                  >
+                                    <div className={`w-3.5 h-3.5 rounded flex items-center justify-center border ${done ? 'bg-gold border-gold text-[#141414]' : 'border-line'}`}>
+                                      {done && <Check size={10} strokeWidth={3} />}
+                                    </div>
+                                    <span className={`truncate text-[11px] ${done ? 'line-through text-muted' : 'text-ink'}`}>
+                                      {pt.txt}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    title="Desvincular do Projeto"
+                                    onClick={() => unlinkTask(pt.id)}
+                                    className="text-muted/60 hover:text-danger p-0.5 transition-colors"
+                                  >
+                                    <Unlink size={11} />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-muted italic">Nenhuma tarefa vinculada ainda.</p>
+                        )}
+                      </div>
+
+                      {/* ETAPAS / MARCOS */}
+                      <div className="space-y-1.5 mb-3">
+                        <span className="text-[10px] font-mono text-muted uppercase block font-bold">
+                          ETAPAS ({stepsDone}/{steps.length})
+                        </span>
+                        {steps.map((st) => (
+                          <div
+                            key={st.id}
+                            onClick={() => toggleStep(proj.id, st.id)}
+                            className="flex items-center gap-2 p-1.5 rounded bg-surface border border-line/40 cursor-pointer text-xs"
+                          >
+                            <div className={`w-3.5 h-3.5 rounded-sm flex items-center justify-center border ${st.done ? 'bg-gold border-gold text-[#141414]' : 'border-line'}`}>
+                              {st.done && <Check size={10} strokeWidth={3} />}
+                            </div>
+                            <span className={`truncate text-xs ${st.done ? 'line-through text-muted' : 'text-ink'}`}>
+                              {st.txt}
+                            </span>
+                          </div>
+                        ))}
+
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            const input = e.target.elements.stepInput;
+                            addStepToProject(proj.id, input.value);
+                            input.value = '';
+                          }}
+                          className="flex gap-1 pt-1"
+                        >
+                          <input
+                            name="stepInput"
+                            placeholder="+ Adicionar etapa..."
+                            className="field py-1 px-2 text-[11px] flex-1"
+                          />
+                          <button type="submit" className="btn-dark py-1 px-2 text-[11px] font-mono font-bold">
+                            Adicionar
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-line/40 flex items-center justify-between text-[10px] font-mono text-muted">
+                      {proj.deadline ? (
+                        <span className="flex items-center gap-1 text-gold2">
+                          <Calendar size={11} />
+                          Prazo: {fmtD(proj.deadline)}
+                        </span>
+                      ) : (
+                        <span>Sem prazo definido</span>
+                      )}
+                      <span>{projTasks.length} tarefas vinculadas</span>
+                    </div>
+                  </Card>
+                );
+              })
+            ) : (
+              <div className="col-span-2 py-10 text-center">
+                <Card className="py-8">
+                  <Empty>
+                    {tx.noProjects[curLang]}
+                    <br />
+                    {projFilter === 'ativos' && (
+                      <button
+                        type="button"
+                        onClick={() => openProjectModal()}
+                        className="btn-gold py-1.5 px-4 text-xs font-bold mt-3"
+                      >
+                        + CRIAR PRIMEIRO PROJETO
+                      </button>
+                    )}
+                  </Empty>
+                </Card>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
