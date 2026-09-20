@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { RefreshCw, Trophy, CalendarDays, Flame, ShieldCheck, Droplets, Hand, HeartPulse, Check, X, Zap, Sparkles, ShieldAlert, Target, Compass, MoreVertical, LayoutDashboard } from 'lucide-react';
+import { RefreshCw, Trophy, CalendarDays, Flame, ShieldCheck, Droplets, Hand, HeartPulse, Check, X, Zap, Sparkles, ShieldAlert, Target, Compass, MoreVertical, LayoutDashboard, ChevronDown, ChevronUp } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Bar, Chk, Empty } from '@/components/ui';
 import { METAS, NEXTF, FAIL_PEN, TRIGGERS, FAIL_LBL, TIERS, QUOTES } from '@/lib/data';
@@ -137,6 +137,7 @@ export default function QgView() {
   const [qgRange, setQgRange] = useState(30);
   const [activeCategory, setActiveCategory] = useState('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showBioEffects, setShowBioEffects] = useState(false);
 
   /* i18n */
   const tiers = cxTiers(lang, TIERS);
@@ -439,60 +440,104 @@ export default function QgView() {
   );
 
   const renderProgressHero = () => (
-    <Card glow className="overflow-hidden text-center relative flex-1 flex flex-col justify-between">
+    <Card glow className="overflow-hidden text-center relative flex-1 flex flex-col justify-between py-2.5 px-3 sm:py-4 sm:px-5">
       <div className="pointer-events-none absolute left-1/2 top-[6%] h-[340px] w-[340px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,200,70,.14),transparent_65%)]" style={{ animation: 'breathe 5s ease-in-out infinite' }} />
       <K className="text-center">{tier.min >= 90 ? t('prog_aura') : t('prog')}</K>
       
-      <div className="relative my-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-        <div className="col-span-2 bg-gradient-to-b from-[#FFE79A] via-gold to-gold2 bg-clip-text font-display text-[clamp(76px,11vw,120px)] leading-[.92] text-transparent drop-shadow-[0_4px_22px_rgba(255,200,70,.3)] sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:py-2">
+      <div className="relative my-2 sm:my-3 grid grid-cols-2 gap-1.5 sm:gap-2.5 sm:grid-cols-3">
+        <div className="col-span-2 bg-gradient-to-b from-[#FFE79A] via-gold to-gold2 bg-clip-text font-display text-[clamp(64px,9vw,110px)] leading-[.92] text-transparent drop-shadow-[0_4px_22px_rgba(255,200,70,.3)] sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:py-2">
           {d}
-          <small className="mt-1.5 block font-body text-[10.5px] font-extrabold tracking-[.28em] text-muted" style={{ WebkitTextFillColor: '#8E8E93' }}>{L.modeA(S) ? t('daysClean') : t('days')}</small>
+          <small className="mt-1 block font-body text-[10px] sm:text-[10.5px] font-extrabold tracking-[.28em] text-muted" style={{ WebkitTextFillColor: '#8E8E93' }}>{L.modeA(S) ? t('daysClean') : t('days')}</small>
         </div>
-        <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-1 sm:row-start-2">
-          <div className="relative mx-auto h-[66px] w-[66px]">
-            <svg width="66" height="66" viewBox="0 0 80 80" className="-rotate-90">
+        <div className="rounded-r border border-line bg-surface2 p-2 sm:p-2.5 sm:col-start-1 sm:row-start-2">
+          <div className="relative mx-auto h-[58px] w-[58px] sm:h-[66px] sm:w-[66px]">
+            <svg width="100%" height="100%" viewBox="0 0 80 80" className="-rotate-90">
               <circle cx="40" cy="40" r="34" fill="none" stroke="#26262c" strokeWidth="7" />
               <circle cx="40" cy="40" r="34" fill="none" stroke="#FFC846" strokeWidth="7" strokeLinecap="round" strokeDasharray="213.6" strokeDashoffset={ring.toFixed(1)} style={{ transition: 'stroke-dashoffset .8s' }} />
             </svg>
             <div className="absolute inset-0 grid place-content-center">
-              <b className="font-display text-base text-gold">{S.purity}%</b>
+              <b className="font-display text-sm sm:text-base text-gold">{S.purity}%</b>
               <small className="text-[7px] font-extrabold tracking-[.18em] text-muted">{t('purity')}</small>
             </div>
           </div>
         </div>
-        <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-1 sm:row-start-1 sm:self-center"><b className="block font-display text-xl sm:text-2xl text-gold">{pornFree}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hporn')}</small></div>
-        <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-3 sm:row-start-1 sm:self-center"><b className="block font-display text-xl sm:text-2xl text-gold">{mastFree}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hmast')}</small></div>
-        <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-2 sm:row-start-2"><b className="block font-display text-xl sm:text-2xl text-gold">🔥 {streak}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hstreak')}</small></div>
-        <div className="rounded-r border border-line bg-surface2 p-2.5 sm:col-start-3 sm:row-start-2"><b className="block font-display text-xl sm:text-2xl text-gold">🛡️ {L.sosWins(S)}</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-muted">{t('hsos')}</small></div>
+        <div className="rounded-r border border-line bg-surface2 p-2 sm:p-2.5 sm:col-start-1 sm:row-start-1 sm:self-center"><b className="block font-display text-lg sm:text-2xl text-gold">{pornFree}</b><small className="text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-[.12em] text-muted">{t('hporn')}</small></div>
+        <div className="rounded-r border border-line bg-surface2 p-2 sm:p-2.5 sm:col-start-3 sm:row-start-1 sm:self-center"><b className="block font-display text-lg sm:text-2xl text-gold">{mastFree}</b><small className="text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-[.12em] text-muted">{t('hmast')}</small></div>
+        <div className="rounded-r border border-line bg-surface2 p-2 sm:p-2.5 sm:col-start-2 sm:row-start-2"><b className="block font-display text-lg sm:text-2xl text-gold">🔥 {streak}</b><small className="text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-[.12em] text-muted">{t('hstreak')}</small></div>
+        <div className="rounded-r border border-line bg-surface2 p-2 sm:p-2.5 sm:col-start-3 sm:row-start-2"><b className="block font-display text-lg sm:text-2xl text-gold">🛡️ {L.sosWins(S)}</b><small className="text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-[.12em] text-muted">{t('hsos')}</small></div>
         {tier.min >= 365 && <div className="col-span-2 rounded-r border border-[#EDEDF2] bg-gradient-to-br from-[#EDEDF2] to-[#8F96A0] p-2.5 shadow-[0_0_18px_rgba(230,232,240,.35)] sm:col-span-3 sm:col-start-1 sm:row-start-3"><b className="block font-display text-2xl text-[#141414]">🐉</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-[#33383f]">{t('titan')}</small></div>}
       </div>
+    </Card>
+  );
 
-      {/* Nível e Progresso */}
-      <div className="relative text-left mt-2">
-        <K>{t('tier')} — {tier.icon} {tier.name}</K>
-        <Bar pct={lvlPct} />
-        <div className="mt-1.5 flex justify-between text-[11px] font-extrabold tracking-[.06em] text-muted"><span>{lvlTxt}</span><span className="font-mono">{d}d</span></div>
-        {goalMeta && <div className="mt-1 text-[10.5px] font-bold text-gold2">{d >= goalMeta.d ? t('goal_done') + goalMeta.icon + ' ' + goalMeta.n + '!' : t('goal_next') + goalMeta.icon + ' ' + goalMeta.n + t('goal_in') + goalMeta.d + t('goal_days') + (goalMeta.d - d) + t('goal_close')}</div>}
-        {tier.reward && <div className="mt-0.5 text-[10.5px] font-bold text-gold2">{t('reward_l')}{tier.reward}</div>}
-
-        {/* Efeitos biológicos ativos neste marco */}
-        <div className="mt-3 pt-2.5 border-t border-line/60">
-          <div className="mb-2 flex items-center gap-1.5">
-            <Zap size={13} className="text-gold" />
-            <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold2">
-              {bioData.header}
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-            {bioData.perks.map((perk, idx) => (
-              <div key={idx} className="flex items-center gap-1.5 rounded-r border border-line bg-surface2 px-2.5 py-1.5 text-left text-[11px] font-medium text-ink">
-                <ShieldCheck size={12} className="flex-none text-gold" />
-                <span className="truncate">{perk}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+  const renderForgeLevel = (isMobile = false) => (
+    <Card className="py-3 px-3.5 sm:py-4 sm:px-5">
+      <div className="flex items-center justify-between gap-2">
+        <K className="mb-0">{t('tier')} — {tier.icon} {tier.name}</K>
+        <span className="text-[10px] font-mono text-muted">{d}d</span>
       </div>
+      <div className="my-2">
+        <Bar pct={lvlPct} />
+      </div>
+      <div className="flex justify-between text-[11px] font-extrabold tracking-[.06em] text-muted">
+        <span className="truncate">{lvlTxt}</span>
+      </div>
+      {goalMeta && (
+        <div className="mt-1 text-[10.5px] font-bold text-gold2 truncate">
+          {d >= goalMeta.d ? t('goal_done') + goalMeta.icon + ' ' + goalMeta.n + '!' : t('goal_next') + goalMeta.icon + ' ' + goalMeta.n + t('goal_in') + goalMeta.d + t('goal_days') + (goalMeta.d - d) + t('goal_close')}
+        </div>
+      )}
+      {tier.reward && <div className="mt-0.5 text-[10.5px] font-bold text-gold2 truncate">{t('reward_l')}{tier.reward}</div>}
+
+      {/* Efeitos biológicos ativos neste marco */}
+      {bioData && bioData.perks && bioData.perks.length > 0 && (
+        <div className="mt-2.5 pt-2 border-t border-line/60">
+          {isMobile ? (
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowBioEffects((v) => !v)}
+                className="w-full flex items-center justify-between text-left py-1 text-gold hover:text-gold2 transition-colors cursor-pointer"
+              >
+                <span className="text-[10.5px] font-extrabold uppercase tracking-[0.14em] flex items-center gap-1.5">
+                  <Zap size={12} className="text-gold flex-none" />
+                  <span>{bioData.header} ({bioData.perks.length})</span>
+                </span>
+                <span className="text-muted text-xs flex items-center gap-0.5">
+                  {showBioEffects ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </span>
+              </button>
+              {showBioEffects && (
+                <div className="flex flex-col gap-1.5 mt-2">
+                  {bioData.perks.map((perk, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5 rounded-r border border-line bg-surface2 px-2.5 py-1.5 text-left text-[11px] font-medium text-ink">
+                      <ShieldCheck size={12} className="flex-none text-gold" />
+                      <span className="truncate">{perk}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <div className="mb-2 flex items-center gap-1.5">
+                <Zap size={13} className="text-gold flex-none" />
+                <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold2">
+                  {bioData.header}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                {bioData.perks.map((perk, idx) => (
+                  <div key={idx} className="flex items-center gap-1.5 rounded-r border border-line bg-surface2 px-2.5 py-1.5 text-left text-[11px] font-medium text-ink">
+                    <ShieldCheck size={12} className="flex-none text-gold" />
+                    <span className="truncate">{perk}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </Card>
   );
 
@@ -817,28 +862,40 @@ export default function QgView() {
       {/* RENDERIZAÇÃO CONDICIONAL POR CATEGORIA */}
       {/* 1. PROGRESSO & COMBATE UNIFICADOS (Progresso, Nível, Efeitos Biológicos, Check-in Diário, Hábitos de Hoje, Tarefas, Protocolo Tático) */}
       {activeCategory === 'overview' && (
-        <div className="grid gap-3.5">
+        <div className="grid gap-3.5 pb-20 lg:pb-6">
           {renderMantra()}
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
-            {/* Coluna Esquerda: Progresso, Nível e Protocolo Tático */}
+          {/* NO MOBILE: ORDEM TÁTICA DE COMBATE IMEDIATO (Zero Fricção)
+              1. Progresso Hero compacto
+              2. REGISTRO DIÁRIO DE COMBATE (Imediato no campo de visão!)
+              3. A FORJA HOJE (Hábitos do dia)
+              4. NÍVEL DA FORJA (Com efeitos biológicos colapsáveis sanfona)
+              5. OPERAÇÕES DO DIA (Tarefas)
+              6. PROTOCOLO TÁTICO & BLINDAGEM DO DIA
+          */}
+          <div className="lg:hidden flex flex-col gap-3">
+            {renderProgressHero()}
+            {renderDailyCheckin()}
+            {renderForgeToday()}
+            {renderForgeLevel(true)}
+            {renderTasksToday()}
+            {renderTacticalProtocol()}
+          </div>
+
+          {/* NO DESKTOP: GRID EM DUAS COLUNAS PERFEITAMENTE BALANCEADO */}
+          <div className="hidden lg:grid lg:grid-cols-12 gap-3.5 items-start">
+            {/* Coluna Esquerda Desktop: Progresso, Nível completo e Protocolo Tático */}
             <div className="lg:col-span-7 flex flex-col gap-3.5">
               {renderProgressHero()}
-              <div className="hidden lg:block">
-                {renderTacticalProtocol()}
-              </div>
+              {renderForgeLevel(false)}
+              {renderTacticalProtocol()}
             </div>
 
-            {/* Coluna Direita: Registro Diário de Combate, Hábitos da Forja e Operações */}
+            {/* Coluna Direita Desktop: Registro Diário de Combate, Hábitos da Forja e Operações */}
             <div className="lg:col-span-5 flex flex-col gap-3.5">
               {renderDailyCheckin()}
               {renderForgeToday()}
               {renderTasksToday()}
-            </div>
-
-            {/* Protocolo Tático visível no final no Mobile */}
-            <div className="lg:hidden">
-              {renderTacticalProtocol()}
             </div>
           </div>
         </div>
