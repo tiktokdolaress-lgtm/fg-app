@@ -10,8 +10,7 @@ import { AF, metaSfx } from '@/lib/audio';
 import { today, dstr, fdmy, fmtD, pad, yesterday } from '@/lib/utils';
 
 const QG_CATEGORIES = [
-  { id: 'overview', label: 'Progresso & Status', icon: Compass },
-  { id: 'combat', label: 'Combate & Rotina', icon: ShieldCheck },
+  { id: 'overview', label: 'Progresso & Combate', icon: ShieldCheck },
   { id: 'timeline', label: 'Linha do Tempo', icon: CalendarDays },
 ];
 
@@ -362,12 +361,20 @@ export default function QgView() {
 
   const getCategoryLabel = (id) => {
     const map = {
-      overview: { pt: 'Progresso & Status', en: 'Progress & Status', es: 'Progreso y Estado' },
-      combat: { pt: 'Combate & Rotina', en: 'Combat & Routine', es: 'Combate y Rutina' },
+      overview: { pt: 'Progresso & Combate', en: 'Progress & Combat', es: 'Progreso y Combate' },
       timeline: { pt: 'Linha do Tempo', en: 'Timeline', es: 'Línea de Tiempo' },
-      all: { pt: 'Visão Completa', en: 'Full View', es: 'Vista Completa' },
     };
     return map[id]?.[curLang] || map[id]?.pt || id;
+  };
+
+  const getCategoryBadge = (catId) => {
+    if (catId === 'overview') {
+      return S.forge.active.length ? `${d}d · ${doneF}/${S.forge.active.length}` : `${d}d`;
+    }
+    if (catId === 'timeline') {
+      return `${rate}%`;
+    }
+    return null;
   };
 
   /* Blocos Modulares de Renderização */
@@ -689,7 +696,7 @@ export default function QgView() {
                 {QG_CATEGORIES.map((cat) => {
                   const Icon = cat.icon;
                   const isSelected = activeCategory === cat.id;
-                  const badge = cat.id === 'overview' ? `${d}d` : cat.id === 'combat' ? `${doneF}/${S.forge.active.length}` : cat.id === 'timeline' ? `${rate}%` : null;
+                  const badge = getCategoryBadge(cat.id);
                   return (
                     <button
                       key={cat.id}
@@ -728,7 +735,7 @@ export default function QgView() {
             {QG_CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const isSelected = activeCategory === cat.id;
-              const badge = cat.id === 'overview' ? `${d}d` : cat.id === 'combat' ? `${doneF}/${S.forge.active.length}` : cat.id === 'timeline' ? `${rate}%` : null;
+              const badge = getCategoryBadge(cat.id);
               return (
                 <button
                   key={cat.id}
@@ -760,58 +767,39 @@ export default function QgView() {
       </div>
 
       {/* RENDERIZAÇÃO CONDICIONAL POR CATEGORIA */}
-      {/* 1. VISÃO GERAL (Progresso, Nível, Pureza, Mantra, Protocolo Tático) */}
+      {/* 1. PROGRESSO & COMBATE UNIFICADOS (Progresso, Nível, Efeitos Biológicos, Check-in Diário, Hábitos de Hoje, Tarefas, Protocolo Tático) */}
       {activeCategory === 'overview' && (
         <div className="grid gap-3.5">
           {renderMantra()}
-          {renderProgressHero()}
-          {renderTacticalProtocol()}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
+            {/* Coluna Esquerda: Progresso, Nível e Protocolo Tático */}
+            <div className="lg:col-span-7 flex flex-col gap-3.5">
+              {renderProgressHero()}
+              <div className="hidden lg:block">
+                {renderTacticalProtocol()}
+              </div>
+            </div>
+
+            {/* Coluna Direita: Registro Diário de Combate, Hábitos da Forja e Operações */}
+            <div className="lg:col-span-5 flex flex-col gap-3.5">
+              {renderDailyCheckin()}
+              {renderForgeToday()}
+              {renderTasksToday()}
+            </div>
+
+            {/* Protocolo Tático visível no final no Mobile */}
+            <div className="lg:hidden">
+              {renderTacticalProtocol()}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* 2. COMBATE & ROTINA (Check-in Diário, Forja Hoje, Operações & Tarefas, Protocolo Tático) */}
-      {activeCategory === 'combat' && (
-        <div className="grid gap-3.5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {renderDailyCheckin()}
-            {renderForgeToday()}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {renderTasksToday()}
-            {renderTacticalProtocol()}
-          </div>
-        </div>
-      )}
-
-      {/* 3. LINHA DO TEMPO (Histórico de Vitórias, Quedas, SOS, Navegação de Dias) */}
+      {/* 2. LINHA DO TEMPO (Histórico de Vitórias, Quedas, SOS, Navegação de Dias) */}
       {activeCategory === 'timeline' && (
         <div className="grid gap-3.5">
           {renderTimeline()}
-        </div>
-      )}
-
-      {/* 4. VISÃO COMPLETA (Grid tradicional para quem prefere tudo aberto de uma vez no Desktop) */}
-      {activeCategory === 'all' && (
-        <div className="grid gap-3.5">
-          {renderMantra()}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch">
-            <div className="lg:col-span-7 flex flex-col gap-3.5 justify-between">
-              {renderProgressHero()}
-              {renderTacticalProtocol()}
-            </div>
-            <div className="lg:col-span-5 flex flex-col gap-3.5 justify-between">
-              {renderDailyCheckin()}
-              {renderForgeToday()}
-            </div>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch">
-            <div className="lg:col-span-5 flex flex-col">
-              {renderTasksToday()}
-            </div>
-            <div className="lg:col-span-7 flex flex-col">
-              {renderTimeline()}
-            </div>
-          </div>
         </div>
       )}
     </div>
