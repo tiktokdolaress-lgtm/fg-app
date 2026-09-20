@@ -138,6 +138,7 @@ export default function QgView() {
   const [activeCategory, setActiveCategory] = useState('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBioEffects, setShowBioEffects] = useState(false);
+  const [showTacticsAccordion, setShowTacticsAccordion] = useState(false);
 
   /* i18n */
   const tiers = cxTiers(lang, TIERS);
@@ -755,6 +756,284 @@ export default function QgView() {
     </Card>
   );
 
+  /* OPÇÃO A: Mobile One-Screen de Alta Densidade (Tudo na 1ª Dobra sem rolagem) */
+  const renderMobileOneScreen = () => (
+    <div className="flex flex-col gap-3">
+      {/* 1. FRASE INSPIRADORA COMPACTA (1 única linha tática minimalista, clicável) */}
+      <div
+        onClick={nextMantra}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') nextMantra(); }}
+        className="group flex items-center justify-between gap-2 rounded-lg border border-gold/30 bg-surface/90 px-3 py-2 cursor-pointer select-none transition-all active:scale-[0.99]"
+      >
+        <div className="min-w-0 flex-1 flex items-center gap-2">
+          <span className="text-xs text-gold flex-none">⚡</span>
+          <p className="truncate text-xs font-semibold italic text-[#f3ead2] group-hover:text-gold transition-colors">
+            "{mantra}"
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 flex-none pl-1">
+          <span className="text-[10px] text-muted font-mono">
+            {(S.phraseIdx % mantraPool.length) + 1}/{mantraPool.length}
+          </span>
+          <RefreshCw size={11} className="text-muted/60 group-hover:text-gold transition-colors" />
+        </div>
+      </div>
+
+      {/* 2. O CENTRO DE COMANDO & REGISTRO DIÁRIO (Tudo na 1ª Dobra sem rolagem!) */}
+      <Card glow className="p-3.5 overflow-hidden relative">
+        <div className="pointer-events-none absolute left-1/2 top-[-25%] h-[240px] w-[240px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,200,70,.12),transparent_70%)]" />
+        
+        {/* Topo do Card: Dias + Nível + Badges rápidos */}
+        <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-line/60">
+          <div className="flex items-baseline gap-2">
+            <span className="bg-gradient-to-b from-[#FFE79A] via-gold to-gold2 bg-clip-text font-display text-[46px] leading-none text-transparent drop-shadow-[0_2px_12px_rgba(255,200,70,.25)]">
+              {d}
+            </span>
+            <div className="flex flex-col">
+              <span className="font-display text-[11px] uppercase tracking-wider text-gold font-bold">
+                {L.modeA(S) ? t('daysClean') : t('days')}
+              </span>
+              <span className="text-[10.5px] text-muted font-medium truncate max-w-[120px]">
+                {tier.icon} {tier.name}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <div className="flex flex-col items-center justify-center rounded border border-line bg-surface2 px-2 py-1 min-w-[50px]">
+              <span className="font-display text-xs text-gold font-bold">{S.purity}%</span>
+              <span className="text-[7.5px] uppercase tracking-wider text-muted font-extrabold">{t('purity')}</span>
+            </div>
+            <div className="flex flex-col items-center justify-center rounded border border-line bg-surface2 px-2 py-1 min-w-[50px]">
+              <span className="font-display text-xs text-gold font-bold">🔥 {streak}</span>
+              <span className="text-[7.5px] uppercase tracking-wider text-muted font-extrabold">{t('hstreak')}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Micro Barra de Nível e Meta */}
+        <div className="pt-2 pb-2.5 border-b border-line/40">
+          <div className="flex items-center justify-between text-[10px] text-muted font-medium mb-1">
+            <span className="truncate">{lvlTxt}</span>
+            {tier.reward && <span className="text-gold2 truncate ml-2">🎁 {tier.reward}</span>}
+          </div>
+          <Bar pct={lvlPct} />
+        </div>
+
+        {/* Ação Imediata: OS 3 CHECKS DO DIA */}
+        <div className="pt-2.5">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-1.5">
+              <span className="k text-[10.5px] text-gold font-extrabold uppercase tracking-wider mb-0">
+                {t('checkin')}
+              </span>
+              <span className="text-[10px] font-mono text-muted">
+                ({ciDate === today() ? fdmy(today()) : fdmy(ciDate)})
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                className="text-[10.5px] text-muted hover:text-gold px-2 py-0.5 rounded border border-line/60 bg-surface2"
+                onClick={() => { AF.click(); setCiDate(yesterday(ciDate)); }}
+                title={t('prev_d')}
+              >
+                ◀ {curLang === 'en' ? 'Prev' : curLang === 'es' ? 'Ant.' : 'Ontem'}
+              </button>
+              {ciDate !== today() && (
+                <button
+                  type="button"
+                  className="text-[10.5px] text-gold px-2 py-0.5 rounded border border-gold/40 bg-gold/10 font-bold"
+                  onClick={() => { AF.click(); setCiDate(today()); }}
+                >
+                  {curLang === 'en' ? 'Today' : curLang === 'es' ? 'Hoy' : 'Hoje'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Os 3 Checkboxes Grandes Touch-Friendly */}
+          <div className="flex flex-col gap-2">
+            {L.pillars(S).map((k) => {
+              const FAILMAP = { p: 'porn', m: 'mast', r: 'ejac' };
+              const failTypes = String(cView.fail || '').split('+').filter(Boolean);
+              return (
+                <Chk key={k} on={!!cView[k]} failed={!cView[k] && failTypes.includes(FAILMAP[k])} onClick={() => setCI(k, !cView[k], ciDate)}>
+                  {t(k === 'p' ? 'c1' : k === 'm' ? 'c2' : 'c3')}
+                </Chk>
+              );
+            })}
+          </div>
+
+          {/* Botão de Falha */}
+          {ciDate === today() ? (
+            <button
+              type="button"
+              className="mt-2.5 w-full py-2 rounded border border-danger/40 bg-danger/10 text-danger hover:bg-danger hover:text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              onClick={failFlow}
+            >
+              <span>🔴 {t('fail')}</span>
+            </button>
+          ) : (
+            <p className="fnote mt-1.5 text-center">{t('retro')}</p>
+          )}
+        </div>
+      </Card>
+
+      {/* 3. A FORJA HOJE - HÁBITOS DO DIA (1 toque de scroll com o polegar) */}
+      <Card className="p-3.5">
+        <div className="flex items-center justify-between mb-2">
+          <K className="mb-0">🔨 {t('forgeToday')} — {doneF}{t('of_w')}{S.forge.active.length}</K>
+          <button
+            type="button"
+            onClick={() => { AF.click(); setTab('forge'); }}
+            className="text-[10.5px] text-gold hover:text-gold2 font-medium"
+          >
+            {curLang === 'en' ? 'Edit habits →' : curLang === 'es' ? 'Editar hábitos →' : 'Editar hábitos →'}
+          </button>
+        </div>
+
+        {act.length ? (
+          <div className="flex flex-col gap-1.5 mt-1">
+            {act.map((id) => {
+              const h = ALLH.find((x) => x.id === id); if (!h) return null;
+              const dn = fd.includes(id), isF = ff.includes(id), tm = L.hTime(S, id);
+              return (
+                <div key={id} className={`flex items-center gap-2 rounded-r border p-2 text-left text-xs font-semibold transition-colors ${dn ? 'border-gold/50 bg-gold/10' : isF ? 'border-danger/50 bg-danger/10' : 'border-line bg-surface2'}`}>
+                  <span className="w-[20px] text-center text-sm">{h.icon}</span>
+                  <span className={`min-w-0 flex-1 truncate ${dn ? 'text-muted line-through' : isF ? 'text-danger line-through opacity-80' : ''}`}>{h.n}</span>
+                  {tm && <span className="font-mono text-[10px] text-gold2">⏰{tm}</span>}
+                  <div className="flex items-center gap-1.5 flex-none">
+                    <button
+                      type="button"
+                      title="Marcar como Falho"
+                      onClick={(e) => toggleHabitFailed(id, e)}
+                      className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
+                        isF 
+                          ? 'border-danger bg-danger text-white shadow-sm' 
+                          : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-danger/60 hover:text-danger'
+                      }`}
+                    >
+                      <X size={13} strokeWidth={2.5} />
+                    </button>
+                    <button
+                      type="button"
+                      title="Marcar como Cumprido"
+                      onClick={(e) => toggleHabitDone(id, e)}
+                      className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
+                        dn 
+                          ? 'border-gold bg-gold text-[#141414] shadow-sm' 
+                          : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-gold/60 hover:text-gold'
+                      }`}
+                    >
+                      <Check size={13} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-2 text-center">
+            <Empty>{t('ef1')}<br />{t('ef2')} <b className="text-gold">{t('forge_b')}</b>.</Empty>
+            <button className="btn-ghost btn-big mt-2 text-xs" onClick={() => setTab('forge')}>{t('goforge')}</button>
+          </div>
+        )}
+
+        {act.length > 0 && (
+          <div className="bar mt-2.5"><i style={{ width: (S.forge.active.length ? (doneF / S.forge.active.length) * 100 : 0) + '%' }} /></div>
+        )}
+      </Card>
+
+      {/* 4. ATALHO COMPACTO PARA OPERAÇÕES DO DIA (Se houver pendentes) */}
+      {pendingTasksCount > 0 && (
+        <button
+          type="button"
+          onClick={() => { AF.click(); setTab('ops'); }}
+          className="flex items-center justify-between rounded-lg border border-gold/30 bg-gold/5 px-3 py-2 text-xs font-bold text-gold hover:bg-gold/10 transition-all cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <Target size={14} className="text-gold" />
+            <span>🎯 {pendingTasksCount} {curLang === 'en' ? 'daily tasks pending' : curLang === 'es' ? 'operaciones pendientes' : 'operações pendentes hoje'}</span>
+          </div>
+          <span className="text-[11px] font-semibold text-gold2">
+            {curLang === 'en' ? 'Open Missions →' : curLang === 'es' ? 'Ver Misiones →' : 'Ver Missões →'}
+          </span>
+        </button>
+      )}
+
+      {/* 5. PROTOCOLO TÁTICO & EFEITOS BIOLÓGICOS (Sanfona Discreta / Acordeão) */}
+      <Card className="p-3">
+        <button
+          type="button"
+          onClick={() => setShowTacticsAccordion((v) => !v)}
+          className="w-full flex items-center justify-between text-left text-xs font-bold text-muted hover:text-gold transition-colors cursor-pointer"
+        >
+          <span className="flex items-center gap-2">
+            <ShieldCheck size={14} className="text-gold flex-none" />
+            <span className="uppercase tracking-wider text-[10.5px]">
+              {curLang === 'en' ? 'Tactical Protocol & Bio Perks' : curLang === 'es' ? 'Protocolo Táctico y Efectos' : 'Protocolo Tático & Efeitos do Marco'}
+            </span>
+          </span>
+          <span className="flex items-center gap-1 text-[10.5px] text-muted">
+            {showTacticsAccordion ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </span>
+        </button>
+
+        {showTacticsAccordion && (
+          <div className="mt-3 pt-3 border-t border-line/60 flex flex-col gap-3">
+            {/* Efeitos biológicos */}
+            {bioData && bioData.perks && bioData.perks.length > 0 && (
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-gold2 flex items-center gap-1.5 mb-1.5">
+                  <Zap size={11} className="text-gold" />
+                  {bioData.header}
+                </span>
+                <div className="flex flex-col gap-1.5">
+                  {bioData.perks.map((perk, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5 rounded border border-line bg-surface2 px-2.5 py-1 text-left text-[11px] font-medium text-ink">
+                      <ShieldCheck size={11} className="flex-none text-gold" />
+                      <span className="truncate">{perk}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* As 3 regras táticas */}
+            <div className="flex flex-col gap-2">
+              <div className="rounded border border-danger/30 bg-danger/5 p-2">
+                <div className="flex items-center gap-1.5 text-danger font-bold text-[10px] uppercase tracking-wider mb-0.5">
+                  <ShieldAlert size={12} />
+                  <span>{tac.riskTitle[curLang]}</span>
+                </div>
+                <p className="text-[10.5px] text-muted leading-tight">{tac.riskDesc[curLang]}</p>
+              </div>
+
+              <div className="rounded border border-gold/30 bg-gold/5 p-2">
+                <div className="flex items-center gap-1.5 text-gold font-bold text-[10px] uppercase tracking-wider mb-0.5">
+                  <Target size={12} />
+                  <span>{tac.goldenRuleTitle[curLang]}</span>
+                </div>
+                <p className="text-[10.5px] text-muted leading-tight">{tac.goldenRuleDesc[curLang]}</p>
+              </div>
+
+              <div className="rounded border border-ok/30 bg-ok/5 p-2">
+                <div className="flex items-center gap-1.5 text-ok font-bold text-[10px] uppercase tracking-wider mb-0.5">
+                  <Flame size={12} />
+                  <span>{tac.energyTitle[curLang]}</span>
+                </div>
+                <p className="text-[10.5px] text-muted leading-tight">{tac.energyDesc[curLang]}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+
   return (
     <div className="grid gap-3.5 w-full max-w-full overflow-x-hidden">
       {/* SELETOR DE CATEGORIAS RESPONSIVO (Desktop: Abas / Mobile: 3 Pontinhos) */}
@@ -863,27 +1142,17 @@ export default function QgView() {
       {/* 1. PROGRESSO & COMBATE UNIFICADOS (Progresso, Nível, Efeitos Biológicos, Check-in Diário, Hábitos de Hoje, Tarefas, Protocolo Tático) */}
       {activeCategory === 'overview' && (
         <div className="grid gap-3.5 pb-20 lg:pb-6">
-          {renderMantra()}
-
-          {/* NO MOBILE: ORDEM TÁTICA DE COMBATE IMEDIATO (Zero Fricção)
-              1. Progresso Hero compacto
-              2. REGISTRO DIÁRIO DE COMBATE (Imediato no campo de visão!)
-              3. A FORJA HOJE (Hábitos do dia)
-              4. NÍVEL DA FORJA (Com efeitos biológicos colapsáveis sanfona)
-              5. OPERAÇÕES DO DIA (Tarefas)
-              6. PROTOCOLO TÁTICO & BLINDAGEM DO DIA
-          */}
-          <div className="lg:hidden flex flex-col gap-3">
-            {renderProgressHero()}
-            {renderDailyCheckin()}
-            {renderForgeToday()}
-            {renderForgeLevel(true)}
-            {renderTasksToday()}
-            {renderTacticalProtocol()}
+          {/* NO MOBILE: OPÇÃO A (Tudo na 1ª Dobra, Zero Fricção, Painel de Combate Imediato) */}
+          <div className="lg:hidden">
+            {renderMobileOneScreen()}
           </div>
 
           {/* NO DESKTOP: GRID EM DUAS COLUNAS PERFEITAMENTE BALANCEADO */}
           <div className="hidden lg:grid lg:grid-cols-12 gap-3.5 items-start">
+            <div className="lg:col-span-12">
+              {renderMantra()}
+            </div>
+
             {/* Coluna Esquerda Desktop: Progresso, Nível completo e Protocolo Tático */}
             <div className="lg:col-span-7 flex flex-col gap-3.5">
               {renderProgressHero()}
