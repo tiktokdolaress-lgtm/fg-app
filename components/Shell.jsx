@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Castle, Hammer, Target, BookOpen, ChartNoAxesColumn, Skull, Settings, Siren, ShieldCheck } from 'lucide-react';
+import { Castle, Hammer, Target, BookOpen, ChartNoAxesColumn, Skull, Settings, Siren, ShieldCheck, ChevronDown, X } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { TABS, LIFE_STATUS } from '@/lib/data';
 import { cx } from '@/lib/content-i18n';
@@ -21,11 +21,13 @@ const VIEWS = { qg: QgView, forge: ForgeView, ops: OpsView, journal: JournalView
 
 export default function Shell() {
   const { S, tab, setTab, t, openModal, update } = useApp();
+  const [menuOpen, setMenuOpen] = React.useState(false);
   const lang = (S && S.settings && S.settings.lang) || 'pt';
   const lifeLbl = (() => { const m = lifeMode(S); const LS = cx(lang, 'life', m) || LIFE_STATUS[m] || LIFE_STATUS.single; return LS.label; })();
   const go = (id) => { AF.click(); setTab(id); window.scrollTo({ top: 0 }); }
   const openSOS = () => { update((d) => { d.sos = (d.sos || 0) + 1; }); openModal(<SosModal />, 'full'); };
   const View = VIEWS[tab] || QgView;
+  const TabIcon = ICONS[tab] || Castle;
 
   /* PWA: registra o service worker + agenda lembretes locais (hábitos ⏰ e check-in 20h) */
   React.useEffect(() => {
@@ -62,37 +64,112 @@ export default function Shell() {
         </div>
       </aside>
 
-      <main className="max-w-full px-4 pb-[120px] lg:px-8 lg:pb-16">
+      <main className="max-w-full px-4 pb-16 lg:px-8 lg:pb-16">
         {/* topbar */}
-        <header className="sticky top-0 z-30 -mx-4 mb-4 flex flex-wrap items-center gap-2.5 border-b border-gold/20 bg-[rgba(13,13,14,.88)] px-5 py-3 backdrop-blur-md lg:-mx-8 lg:mb-6 lg:px-8">
-          <h1 className="min-w-[120px] flex-1 truncate font-display text-2xl tracking-[.06em]">{t(tab)}</h1>
-          <span className="chip flex-none">{lifeLbl}</span>
-          <button className="flex-none rounded-r border border-line bg-surface2 p-2 text-muted hover:text-gold" onClick={() => go('settings')} aria-label={t('adj')}><Settings size={18} /></button>
+        <header className="sticky top-0 z-30 -mx-4 mb-4 flex items-center justify-between gap-2.5 border-b border-gold/20 bg-[rgba(13,13,14,.92)] px-4 py-2.5 backdrop-blur-md lg:-mx-8 lg:mb-6 lg:px-8">
+          {/* Botão no canto superior com a SETINHA para alternar as abas no mobile */}
+          <div className="relative flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              className="flex items-center gap-2 rounded-lg border border-gold/40 bg-surface2/90 px-3 py-1.5 text-left transition-all active:scale-[0.98] hover:border-gold lg:pointer-events-none lg:border-transparent lg:bg-transparent lg:p-0"
+              aria-expanded={menuOpen}
+              aria-label="Abrir menu de abas"
+            >
+              <TabIcon size={19} className="text-gold flex-none" />
+              <div className="flex items-center gap-1.5">
+                <h1 className="truncate font-display text-xl sm:text-2xl tracking-[.06em] text-ink leading-tight">
+                  {t(tab)}
+                </h1>
+                <span className="grid h-6 w-6 place-items-center rounded bg-gold/15 text-gold lg:hidden">
+                  <ChevronDown
+                    size={15}
+                    className={`transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`}
+                  />
+                </span>
+              </div>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="chip flex-none text-[11px] font-bold">{lifeLbl}</span>
+            <button
+              className="flex-none rounded-r border border-line bg-surface2 p-2 text-muted hover:text-gold transition-colors"
+              onClick={() => go('settings')}
+              aria-label={t('adj')}
+            >
+              <Settings size={18} />
+            </button>
+          </div>
+
+          {/* DROPDOWN FLUTUANTE DE ABAS (MOBILE) */}
+          {menuOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm lg:hidden"
+                onClick={() => setMenuOpen(false)}
+              />
+              <div className="absolute left-3 right-3 top-[calc(100%+8px)] z-50 rounded-xl border border-gold/40 bg-[rgba(18,18,22,0.98)] p-2.5 shadow-[0_16px_50px_rgba(0,0,0,0.9)] backdrop-blur-2xl lg:hidden">
+                <div className="flex items-center justify-between border-b border-line/60 px-2 py-1.5 mb-1.5 text-[10px] uppercase font-extrabold tracking-widest text-muted">
+                  <span>MENU DE ABAS</span>
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen(false)}
+                    className="p-1 text-muted hover:text-gold"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-1">
+                  {TABS.map(([id]) => {
+                    const Ic = ICONS[id];
+                    if (!Ic) return null;
+                    const lb = t(id).toLowerCase().replace(/(^|\s)\w/g, (c) => c.toUpperCase());
+                    const active = tab === id;
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => {
+                          go(id);
+                          setMenuOpen(false);
+                        }}
+                        className={`flex items-center justify-between rounded-lg px-3.5 py-2.5 text-xs font-bold transition-all ${
+                          active
+                            ? 'border border-gold/50 bg-gold/15 text-gold shadow-sm'
+                            : 'border border-transparent text-muted hover:bg-surface2 hover:text-ink'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Ic size={18} className={active ? 'text-gold' : 'opacity-60'} />
+                          <span className="text-sm font-semibold">{lb}</span>
+                        </div>
+                        {active && (
+                          <span className="rounded bg-gold/20 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-gold">
+                            Ativo
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
         </header>
         <View key={tab} />
       </main>
 
-      {/* fab S.O.S */}
-      <button id="fab" onClick={openSOS} className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] right-4 z-40 grid h-16 w-16 place-items-center rounded-full border-none bg-[radial-gradient(circle_at_32%_26%,#FF6A5E,#D52020_72%)] text-white shadow-[0_10px_30px_rgba(213,32,32,.5)] transition-transform hover:scale-105 lg:bottom-8 lg:right-8" aria-label="S.O.S">
-        <span className="absolute -inset-[7px] rounded-full border-2 border-danger/55" style={{ animation: 'pulseRing 1.6s ease-out infinite' }} />
-        <Siren size={24} />
-        <span className="absolute -bottom-0.5 font-display text-[10px] tracking-widest">S.O.S</span>
+      {/* fab S.O.S (Reposicionado para mobile sem a barra inferior) */}
+      <button
+        id="fab"
+        onClick={openSOS}
+        className="fixed bottom-5 right-4 z-40 grid h-14 w-14 sm:h-16 sm:w-16 place-items-center rounded-full border-none bg-[radial-gradient(circle_at_32%_26%,#FF6A5E,#D52020_72%)] text-white shadow-[0_10px_30px_rgba(213,32,32,.5)] transition-transform hover:scale-105 lg:bottom-8 lg:right-8"
+        aria-label="S.O.S"
+      >
+        <span className="absolute -inset-[6px] rounded-full border-2 border-danger/55" style={{ animation: 'pulseRing 1.6s ease-out infinite' }} />
+        <Siren size={22} />
+        <span className="absolute -bottom-0.5 font-display text-[9px] tracking-widest">S.O.S</span>
       </button>
-
-      {/* bottom nav mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-7 border-t border-gold/20 bg-[rgba(18,18,21,.97)] px-1 pt-2 backdrop-blur-md lg:hidden" style={{ paddingBottom: 'calc(8px + env(safe-area-inset-bottom))' }}>
-        {TABS.map(([id, emo]) => {
-          const Ic = ICONS[id];
-          if (!Ic) return null;
-          return (
-            <button key={id} onClick={() => go(id)} className={`relative flex flex-col items-center gap-[3px] rounded-[10px] px-0.5 py-1.5 text-[9.5px] font-extrabold tracking-[.08em] transition-colors ${tab === id ? 'text-gold' : 'text-muted'}`}>
-              {tab === id && <span className="absolute -top-2 h-[3px] w-[18px] rounded-full bg-gold shadow-[0_0_8px_#FFC846]" />}
-              <Ic size={19} className={tab === id ? '-translate-y-[2px] scale-110' : 'opacity-60'} />
-              {t('nav_' + id)}
-            </button>
-          );
-        })}
-      </nav>
     </div>
   );
 }

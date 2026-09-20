@@ -759,21 +759,21 @@ export default function QgView() {
   /* OPÇÃO A: Mobile One-Screen de Alta Densidade (Tudo na 1ª Dobra sem rolagem) */
   const renderMobileOneScreen = () => (
     <div className="flex flex-col gap-3">
-      {/* 1. FRASE INSPIRADORA COMPACTA (1 única linha tática minimalista, clicável) */}
+      {/* 1. FRASE INSPIRADORA COMPACTA (Sem corte de texto, clicável) */}
       <div
         onClick={nextMantra}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') nextMantra(); }}
-        className="group flex items-center justify-between gap-2 rounded-lg border border-gold/30 bg-surface/90 px-3 py-2 cursor-pointer select-none transition-all active:scale-[0.99]"
+        className="group flex items-start justify-between gap-2.5 rounded-lg border border-gold/30 bg-surface/90 px-3.5 py-2.5 cursor-pointer select-none transition-all active:scale-[0.99]"
       >
-        <div className="min-w-0 flex-1 flex items-center gap-2">
-          <span className="text-xs text-gold flex-none">⚡</span>
-          <p className="truncate text-xs font-semibold italic text-[#f3ead2] group-hover:text-gold transition-colors">
+        <div className="min-w-0 flex-1 flex items-start gap-2">
+          <span className="text-xs text-gold flex-none mt-0.5">⚡</span>
+          <p className="text-xs font-semibold italic text-[#f3ead2] group-hover:text-gold transition-colors leading-relaxed">
             "{mantra}"
           </p>
         </div>
-        <div className="flex items-center gap-1.5 flex-none pl-1">
+        <div className="flex items-center gap-1.5 flex-none pl-1 pt-0.5">
           <span className="text-[10px] text-muted font-mono">
             {(S.phraseIdx % mantraPool.length) + 1}/{mantraPool.length}
           </span>
@@ -781,35 +781,67 @@ export default function QgView() {
         </div>
       </div>
 
-      {/* 2. O CENTRO DE COMANDO & REGISTRO DIÁRIO (Tudo na 1ª Dobra sem rolagem!) */}
+      {/* 2. O CENTRO DE COMANDO & REGISTRO DIÁRIO */}
       <Card glow className="p-3.5 overflow-hidden relative">
         <div className="pointer-events-none absolute left-1/2 top-[-25%] h-[240px] w-[240px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,200,70,.12),transparent_70%)]" />
         
-        {/* Topo do Card: Dias + Nível + Badges rápidos */}
-        <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-line/60">
-          <div className="flex items-baseline gap-2">
-            <span className="bg-gradient-to-b from-[#FFE79A] via-gold to-gold2 bg-clip-text font-display text-[46px] leading-none text-transparent drop-shadow-[0_2px_12px_rgba(255,200,70,.25)]">
+        {/* Topo do Card: Patamar, Pureza e Sequência */}
+        <div className="flex items-center justify-between gap-2 pb-2 border-b border-line/60">
+          <div className="flex items-center gap-1.5">
+            <span className="text-base">{tier.icon}</span>
+            <span className="font-display text-xs uppercase tracking-wider text-gold font-bold">
+              {tier.name}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="rounded border border-line bg-surface2 px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold">
+              {S.purity}% {t('purity')}
+            </span>
+            <span className="rounded border border-line bg-surface2 px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold">
+              🔥 {streak} {t('hstreak')}
+            </span>
+          </div>
+        </div>
+
+        {/* OS 3 CONTADORES PRINCIPAIS: RETENÇÃO, SEM PORNÔ E SEM MASTURBAÇÃO */}
+        <div className="grid grid-cols-3 gap-2 py-2.5 border-b border-line/50 text-center">
+          {/* 1. Dias em Retenção */}
+          <div className="flex flex-col items-center justify-center rounded-lg border border-gold/40 bg-gold/10 py-2 px-1 shadow-[0_2px_8px_rgba(255,200,70,0.08)]">
+            <span className="bg-gradient-to-b from-[#FFE79A] via-gold to-gold2 bg-clip-text font-display text-2xl sm:text-3xl font-bold leading-none text-transparent drop-shadow-sm">
               {d}
             </span>
-            <div className="flex flex-col">
-              <span className="font-display text-[11px] uppercase tracking-wider text-gold font-bold">
-                {L.modeA(S) ? t('daysClean') : t('days')}
-              </span>
-              <span className="text-[10.5px] text-muted font-medium truncate max-w-[120px]">
-                {tier.icon} {tier.name}
-              </span>
-            </div>
+            <span className="mt-1 text-[8.5px] font-extrabold uppercase tracking-wide text-gold">
+              {L.modeA(S) ? t('daysClean') : (curLang === 'en' ? 'Retention' : curLang === 'es' ? 'Retención' : 'Retenção')}
+            </span>
+            <span className="text-[8px] text-muted font-mono">
+              {d === 1 ? (curLang === 'en' ? '1 day' : '1 dia') : (curLang === 'en' ? `${d} days` : `${d} dias`)}
+            </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <div className="flex flex-col items-center justify-center rounded border border-line bg-surface2 px-2 py-1 min-w-[50px]">
-              <span className="font-display text-xs text-gold font-bold">{S.purity}%</span>
-              <span className="text-[7.5px] uppercase tracking-wider text-muted font-extrabold">{t('purity')}</span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded border border-line bg-surface2 px-2 py-1 min-w-[50px]">
-              <span className="font-display text-xs text-gold font-bold">🔥 {streak}</span>
-              <span className="text-[7.5px] uppercase tracking-wider text-muted font-extrabold">{t('hstreak')}</span>
-            </div>
+          {/* 2. Sem Pornografia */}
+          <div className="flex flex-col items-center justify-center rounded-lg border border-line bg-surface2 py-2 px-1 shadow-sm">
+            <span className="font-display text-2xl sm:text-3xl font-bold leading-none text-[#F3EAD2]">
+              {pornFree}
+            </span>
+            <span className="mt-1 text-[8.5px] font-extrabold uppercase tracking-wide text-muted">
+              {t('hporn')}
+            </span>
+            <span className="text-[8px] text-muted font-mono">
+              {pornFree === 1 ? (curLang === 'en' ? '1 day' : '1 dia') : (curLang === 'en' ? `${pornFree} days` : `${pornFree} dias`)}
+            </span>
+          </div>
+
+          {/* 3. Sem Masturbação */}
+          <div className="flex flex-col items-center justify-center rounded-lg border border-line bg-surface2 py-2 px-1 shadow-sm">
+            <span className="font-display text-2xl sm:text-3xl font-bold leading-none text-[#F3EAD2]">
+              {mastFree}
+            </span>
+            <span className="mt-1 text-[8.5px] font-extrabold uppercase tracking-wide text-muted">
+              {t('hmast')}
+            </span>
+            <span className="text-[8px] text-muted font-mono">
+              {mastFree === 1 ? (curLang === 'en' ? '1 day' : '1 dia') : (curLang === 'en' ? `${mastFree} days` : `${mastFree} dias`)}
+            </span>
           </div>
         </div>
 
