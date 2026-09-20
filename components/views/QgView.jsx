@@ -377,20 +377,61 @@ export default function QgView() {
     return null;
   };
 
+  const totalTasksToday = S.tasks.filter((x) => L.repDue(x, today()));
+  const pendingTasksCount = totalTasksToday.filter((x) => !L.isDone(x, today())).length;
+
+  const nextMantra = () => {
+    AF.click();
+    update((s) => {
+      s.phraseIdx = (s.phraseIdx + 1) % L.mantraPool(s, quotes).length;
+    });
+  };
+
   /* Blocos Modulares de Renderização */
   const renderMantra = () => (
-    <Card className="border-gold/40 bg-gradient-to-br from-surface to-gold/5 py-3.5 px-4 sm:px-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <span className="k mb-1">⚡ {t('code')}</span>
-          <p className="border-l-[3px] border-gold2 pl-3 text-[15px] sm:text-[16px] font-bold italic leading-snug text-[#f3ead2]">
+    <Card className="border-gold/40 bg-gradient-to-br from-surface to-gold/5 py-2.5 px-3.5 sm:px-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+        {/* Frase Clicável com feedback visual de transição e contador */}
+        <div
+          onClick={nextMantra}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') nextMantra(); }}
+          title={curLang === 'en' ? 'Click to show next phrase' : curLang === 'es' ? 'Haz clic para la siguiente frase' : 'Clique para ver a próxima frase'}
+          className="group min-w-0 flex-1 cursor-pointer select-none transition-all active:scale-[0.99]"
+        >
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="k text-[10px] text-gold flex items-center gap-1">
+              ⚡ {t('code')}
+            </span>
+            <span className="text-[10px] text-muted/70 font-mono group-hover:text-gold transition-colors">
+              ({(S.phraseIdx % mantraPool.length) + 1}/{mantraPool.length} · {curLang === 'en' ? 'click phrase to rotate' : curLang === 'es' ? 'clic en la frase para cambiar' : 'clique na frase para alternar'})
+            </span>
+          </div>
+          <p className="border-l-[3px] border-gold2 pl-3 text-[14px] sm:text-[15.5px] font-bold italic leading-snug text-[#f3ead2] group-hover:text-gold transition-colors">
             "{mantra}"
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-none justify-end">
-          <span className="k2 hidden xl:inline text-[10px]">{t('phrase_n')}{(S.phraseIdx % mantraPool.length) + 1}{t('phrase_of')}{mantraPool.length}</span>
-          <button className="btn-ghost py-1.5 px-3 text-xs" onClick={() => { AF.click(); update((s) => { s.phraseIdx = (s.phraseIdx + 1) % L.mantraPool(s, quotes).length; }); }}>
-            <RefreshCw size={13} /> {t('swap')}
+
+        {/* Botão Tarefas do Dia no lugar do botão anterior (abre Projetos & Tarefas ao clicar) */}
+        <div className="flex items-center gap-2 flex-none justify-end pt-1 sm:pt-0">
+          <button
+            type="button"
+            onClick={() => { AF.click(); setTab('ops'); }}
+            className="btn-gold py-1.5 px-3 sm:px-4 text-xs font-extrabold flex items-center gap-2 rounded-r shadow-[0_2px_10px_rgba(255,200,70,0.15)] hover:shadow-[0_2px_15px_rgba(255,200,70,0.3)] transition-all active:scale-95 whitespace-nowrap"
+            title={curLang === 'en' ? 'Open Daily Tasks' : curLang === 'es' ? 'Abrir Tareas del Día' : 'Abrir Tarefas do Dia'}
+          >
+            <Target size={14} className="text-deep flex-none" />
+            <span>{curLang === 'en' ? 'Daily Tasks' : curLang === 'es' ? 'Tareas del Día' : 'Tarefas do Dia'}</span>
+            {pendingTasksCount > 0 ? (
+              <span className="rounded-full bg-deep text-gold px-1.5 py-0.2 text-[10px] font-black leading-none">
+                {pendingTasksCount}
+              </span>
+            ) : (
+              <span className="rounded-full bg-deep/20 text-deep px-1.5 py-0.2 text-[10px] font-black leading-none">
+                ✓
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -504,33 +545,40 @@ export default function QgView() {
   );
 
   const renderDailyCheckin = () => (
-    <Card>
+    <Card className="w-full max-w-full overflow-hidden">
       <K>{t('checkin')}{L.modeA(S) ? t('two_pil') : ''}</K>
-      <div className="mb-2.5 flex items-center justify-between gap-1.5">
+      <div className="mb-2.5 flex items-center justify-between gap-2 overflow-hidden w-full">
         <button
           type="button"
-          className="chip-dim flex-none px-2.5 py-1 text-[11px]"
+          className="chip-dim flex-none px-2.5 py-1 text-[11px] whitespace-nowrap"
           onClick={() => { AF.click(); setCiDate(yesterday(ciDate)); }}
+          title={t('prev_d')}
         >
           ◀ {t('prev_d')}
         </button>
         <button
           type="button"
-          className="chip flex-1 justify-center py-1 text-[11.5px] font-bold"
+          className={`chip flex-1 justify-center py-1 text-[11px] sm:text-[11.5px] font-bold truncate ${
+            ciDate === today() ? 'border-gold/40 text-gold' : 'border-line text-muted hover:text-gold'
+          }`}
           onClick={() => { AF.click(); setCiDate(today()); }}
+          title={ciDate === today() ? 'Registro de Hoje' : 'Clique para voltar ao registro de hoje'}
         >
-          📅 {t('today_b')} ({fdmy(today())})
-        </button>
-        <button
-          type="button"
-          className="chip-dim flex-none px-2.5 py-1 text-[11px] disabled:opacity-30 disabled:cursor-not-allowed"
-          disabled={ciDate >= today()}
-          onClick={() => { AF.click(); setCiDate(dstr(new Date(L.parseD(ciDate).getTime() + 86400000))); }}
-        >
-          {t('next_d')} ▶
+          📅 {ciDate === today() ? `${t('today_b')} (${fdmy(today())})` : `${t('today_b')} · Voltar para Hoje`}
         </button>
       </div>
-      {ciDate !== today() && <div className="chip mb-2 cursor-default">{t('editing_r')}{fdmy(ciDate)}</div>}
+      {ciDate !== today() && (
+        <div className="chip mb-2 cursor-default flex items-center justify-between text-gold border-gold/40 text-[11px]">
+          <span>{t('editing_r')}{fdmy(ciDate)}</span>
+          <button
+            type="button"
+            className="text-[10px] underline ml-2 text-ink hover:text-gold"
+            onClick={() => { AF.click(); setCiDate(today()); }}
+          >
+            {curLang === 'en' ? 'Back to today' : curLang === 'es' ? 'Volver a hoy' : 'Voltar para hoje'}
+          </button>
+        </div>
+      )}
       <div className="flex flex-col gap-2">
         {L.pillars(S).map((k) => {
           const FAILMAP = { p: 'porn', m: 'mast', r: 'ejac' };
@@ -624,7 +672,7 @@ export default function QgView() {
           </div>
         )}
       </div>
-      <button className="btn-ghost w-full text-xs mt-2 py-1.5" onClick={() => setTab('tasks')}>
+      <button className="btn-ghost w-full text-xs mt-2 py-1.5" onClick={() => { AF.click(); setTab('ops'); }}>
         + Gerenciar Operações
       </button>
     </Card>
@@ -663,7 +711,7 @@ export default function QgView() {
   );
 
   return (
-    <div className="grid gap-3.5">
+    <div className="grid gap-3.5 w-full max-w-full overflow-x-hidden">
       {/* SELETOR DE CATEGORIAS RESPONSIVO (Desktop: Abas / Mobile: 3 Pontinhos) */}
       <div className="flex items-center justify-between gap-2 border-b border-line pb-3">
         {/* Mobile: Categoria Ativa + 3 Pontinhos */}
