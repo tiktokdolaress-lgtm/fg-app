@@ -14,9 +14,10 @@ import {
   Check,
   BarChart2,
   Flame,
+  CalendarDays,
 } from 'lucide-react';
 import { useApp } from '@/lib/store';
-import { Card, K, Empty } from '@/components/ui';
+import { Card, K, Empty, Chk } from '@/components/ui';
 import * as L from '@/lib/logic';
 import { cx, cxHabits } from '@/lib/content-i18n';
 import { today, dstr, fdmy } from '@/lib/utils';
@@ -37,12 +38,13 @@ const TRIGGER_LABELS = {
 
 const STATS_CATEGORIES = [
   { id: 'general', key: 'cat_general', label: 'Geral & Consistência', icon: BarChart2 },
+  { id: 'timeline', key: 'cat_timeline', label: 'Linha do Tempo', icon: CalendarDays },
   { id: 'risk', key: 'cat_risk', label: 'Risco & S.O.S', icon: ShieldAlert },
   { id: 'hall', key: 'cat_hall', label: 'Salão da Fama & Honra', icon: Trophy },
 ];
 
 export default function StatsView() {
-  const { S } = useApp();
+  const { S, update, openModal, closeModal, toast } = useApp();
   const lang = (S && S.settings && S.settings.lang) || 'pt';
   const T = (id, fb) => cx(lang, 'stats', id) || fb;
 
@@ -50,6 +52,7 @@ export default function StatsView() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hmOff, setHmOff] = useState(0);
   const [hall, setHall] = useState(null);
+  const [timelineRange, setTimelineRange] = useState(30);
 
   useEffect(() => {
     fetch('/api/hall')
@@ -137,6 +140,73 @@ export default function StatsView() {
       }))
       .sort((a, b) => b.count - a.count);
   }, [auditFalls]);
+
+  /* Linha do Tempo Analítica */
+  const timelineData = useMemo(() => {
+    let cells = [], wins = 0, falls = 0, part = 0;
+    for (let i = timelineRange - 1; i >= 0; i--) {
+      const ds = dstr(new Date(Date.now() - i * 86400000));
+      const cc = (S.checkins || {})[ds];
+      let cls = '', lab = 'Sem registro';
+      if (cc && cc.fail) { cls = 'f'; falls++; lab = 'Queda'; }
+      else if (cc && cc.ok) { cls = 'w'; wins++; lab = 'Vitória'; }
+      else if (cc && (cc.p || cc.m || cc.r)) { cls = 'p'; part++; lab = 'Parcial'; }
+      cells.push({ ds, cls, lab });
+    }
+    const rate = Math.round((wins / timelineRange) * 100);
+    return { cells, wins, falls, part, rate };
+  }, [S.checkins, timelineRange]);
+
+  const dayEditor = (ds) => {
+    const req = L.pillars(S);
+    const setCI = (k, v, dateStr) => {
+      const dd = dateStr || today();
+      update((s) => {
+        s.checkins[dd] = s.checkins[dd] || { p: false, m: false, r: false };
+        s.checkins[dd][k] = v;
+        const c = s.checkins[dd], pils = L.pillars(s);
+        const all = pils.every((r) => c[r]);
+        if (all && !c.ok) {
+          c.ok = true;
+          if (dd === today()) {
+            s.purity = Math.min(100, s.purity + 2);
+            s.best = Math.max(s.best, L.progressDays(s));
+          }
+        }
+        if (!all) delete c.ok;
+      });
+      AF.click();
+    };
+
+    const DayModal = () => {
+      const cur = L.ci(S, ds);
+      const state = cur.fail ? 'Queda' : cur.ok ? 'Vitória' : (cur.p || cur.m || cur.r) ? 'Parcial' : 'Sem registro';
+      return (
+        <div className="text-center">
+          <span className="k block text-gold text-base mb-1">Registro de {fdmy(ds)}{ds === today() ? ' · Hoje' : ''}</span>
+          <p className="fnote mb-3 text-left">Estado atual: <b className="text-gold">{state}</b> · Ajuste os pilares deste dia abaixo:</p>
+          {req.map((k) => {
+            const FAILMAP = { p: 'porn', m: 'mast', r: 'ejac' };
+            const fTypes = String(cur.fail || '').split('+').filter(Boolean);
+            const label = k === 'p' ? 'Zero Pornografia' : k === 'm' ? 'Autodomínio Inabalável' : 'Retenção Seminal Mantida';
+            return (
+              <Chk key={k} className="mb-2" on={!!cur[k]} failed={!cur[k] && fTypes.includes(FAILMAP[k])} onClick={() => setCI(k, !cur[k], ds)}>
+                {label}
+              </Chk>
+            );
+          })}
+          <div className="my-3 grid grid-cols-2 gap-2">
+            <button className="btn-gold" onClick={() => { req.forEach((k, i) => setTimeout(() => setCI(k, true, ds), i * 10)); toast('Marcado como vitória total'); }}>Marcar Vitória</button>
+            <button className="btn-dark" onClick={() => { update((s) => { delete (s.checkins[ds] || {}).ok; delete s.checkins[ds]?.fail; }); AF.click(); toast('Marcado como parcial'); }}>Marcar Parcial</button>
+            <button className="btn-red" onClick={() => { update((s) => { s.checkins[ds] = s.checkins[ds] || { p: false, m: false, r: false }; delete s.checkins[ds].ok; s.checkins[ds].fail = 'porn'; }); AF.tone(110, 0.35, 'sine', 0.18, 0, 55); toast('Marcado como queda'); }}>Registrar Queda</button>
+            <button className="btn-dark" onClick={() => { update((s) => { delete s.checkins[ds]; }); toast('Registro limpo'); }}>Limpar Dia</button>
+          </div>
+          <button className="btn-dark btn-big w-full mt-2" onClick={closeModal}>Fechar</button>
+        </div>
+      );
+    };
+    openModal(<DayModal />);
+  };
 
   const shareImage = () => {
     const c = document.createElement('canvas');
@@ -511,6 +581,96 @@ export default function StatsView() {
           </p>
         </Card>
       </div>
+    </div>
+  )}
+
+  {/* CATEGORIA: LINHA DO TEMPO (HISTÓRICO INTERATIVO DE DIAS, VITÓRIAS & SOS) */}
+  {activeCategory === 'timeline' && (
+    <div className="flex flex-col gap-4 animate-in fade-in duration-150">
+      <Card className="flex-1 flex flex-col justify-between p-4 sm:p-5">
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <K className="mb-0 flex items-center gap-2">
+              <CalendarDays size={16} className="text-gold" />
+              <span>LINHA DO TEMPO & DIAS DE COMBATE</span>
+            </K>
+            <span className="text-xs font-mono font-bold text-gold px-2.5 py-0.5 rounded bg-gold/10 border border-gold/30">
+              Taxa: {timelineData.rate}%
+            </span>
+          </div>
+
+          {/* Seletor de Intervalo de Dias */}
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {[7, 14, 30, 60, 90, 365].map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={`px-3 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                  timelineRange === n
+                    ? 'border-gold bg-gold text-[#141414] shadow-sm'
+                    : 'border-line bg-surface text-muted hover:text-ink hover:border-gold/40'
+                }`}
+                onClick={() => {
+                  AF.click();
+                  setTimelineRange(n);
+                }}
+              >
+                {n} dias
+              </button>
+            ))}
+          </div>
+
+          {/* Badges de Desempenho Tático */}
+          <div className="mb-3.5 flex flex-wrap gap-1.5">
+            <span className="chip cursor-default text-[11px] font-bold text-gold border-gold/40">
+              🏆 {timelineData.wins} Vitórias
+            </span>
+            <span className="chip-dim cursor-default border-danger/50 text-danger text-[11px] font-bold">
+              💥 {timelineData.falls} Quedas
+            </span>
+            <span className="chip-dim cursor-default text-[11px]">
+              ◐ {timelineData.part} Parciais
+            </span>
+            <span className="chip-dim cursor-default text-[11px] text-[#EDE5D5]">
+              ⚡ {timelineData.rate}% Consistência
+            </span>
+            <span className="chip-dim cursor-default border-ok/45 text-ok text-[11px] font-bold">
+              🛡️ {L.sosWins(S)} S.O.S Vencidos
+            </span>
+          </div>
+
+          {/* Grid de Células de Dias */}
+          <div className="flex flex-wrap gap-[5px] p-2.5 rounded-xl bg-[#121217] border border-line/60">
+            {timelineData.cells.map((c) => (
+              <button
+                key={c.ds}
+                title={`${c.ds} · ${c.lab} (Clique para editar este dia)`}
+                className={`tlc ${c.cls} cursor-pointer hover:scale-125 transition-transform`}
+                onClick={() => dayEditor(c.ds)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Legenda de Cores */}
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-muted pt-3 border-t border-line/50">
+          <span className="flex items-center gap-1.5">
+            <b className="tlc w inline-block" style={{ animation: 'none' }} /> Vitória (3/3 pilares)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <b className="tlc p inline-block" style={{ animation: 'none' }} /> Parcial
+          </span>
+          <span className="flex items-center gap-1.5">
+            <b className="tlc f inline-block" style={{ animation: 'none' }} /> Queda
+          </span>
+          <span className="flex items-center gap-1.5">
+            <b className="inline-block h-[13px] w-[13px] rounded bg-[#202026] border border-line/40" /> Sem registro
+          </span>
+          <span className="w-full text-[10px] text-gold/80 mt-1">
+            💡 Toque em qualquer dia para inspecionar, corrigir pilares ou registrar histórico retroativo.
+          </span>
+        </div>
+      </Card>
     </div>
   )}
 

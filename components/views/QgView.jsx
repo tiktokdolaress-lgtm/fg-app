@@ -9,11 +9,6 @@ import * as L from '@/lib/logic';
 import { AF, metaSfx } from '@/lib/audio';
 import { today, dstr, fdmy, fmtD, pad, yesterday } from '@/lib/utils';
 
-const QG_CATEGORIES = [
-  { id: 'overview', label: 'Progresso & Combate', icon: ShieldCheck },
-  { id: 'timeline', label: 'Linha do Tempo', icon: CalendarDays },
-];
-
 /* Dicionário Internacional dos Efeitos Biológicos e Mentais (PT / EN / ES) */
 const BIO_EFFECTS_I18N = {
   header: {
@@ -177,9 +172,6 @@ export default function QgView() {
   const lang = (S && S.settings && S.settings.lang) || 'pt';
   const curLang = ['pt', 'en', 'es'].includes(lang) ? lang : 'pt';
   const [ciDate, setCiDate] = useState(today());
-  const [qgRange, setQgRange] = useState(30);
-  const [activeCategory, setActiveCategory] = useState('overview');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBioEffects, setShowBioEffects] = useState(false);
   const [showTacticsAccordion, setShowTacticsAccordion] = useState(false);
 
@@ -198,6 +190,8 @@ export default function QgView() {
   const fd = L.fDone(S, today()), ff = L.fFailed(S, today());
   const act = S.forge.active.slice().sort((a, b) => (L.hTime(S, a) || '99:99').localeCompare(L.hTime(S, b) || '99:99'));
   const doneF = S.forge.active.filter((id) => fd.includes(id)).length;
+  const pendingHabits = S.forge.active.filter((id) => !fd.includes(id) && !ff.includes(id)).length;
+  const totalHabits = S.forge.active.length;
   const streak = L.currentStreak(S);
   const lvlPct = nt ? Math.min(100, ((d - tier.min) / (nt.min - tier.min)) * 100) : 100;
   const lvlTxt = nt ? <>{t('lvl_a')}<b className="text-gold">{nt.min - d}{t('dayw')}</b>{t('lvl_b')}{nt.icon} {nt.name}</> : t('lvl_max');
@@ -211,18 +205,6 @@ export default function QgView() {
   const bioData = getBioPerksI18n(d, lang);
   const tac = TACTICAL_BLOCK_I18N;
   const liveTime = useLiveTimer(S.retStart || S.created || today(), d);
-
-  /* linha do tempo */
-  let cells = [], wins = 0, falls = 0, part = 0;
-  for (let i = qgRange - 1; i >= 0; i--) {
-    const ds = dstr(new Date(Date.now() - i * 86400000));
-    const cc = S.checkins[ds]; let cls = '', lab = t('st_n');
-    if (cc && cc.fail) { cls = 'f'; falls++; lab = t('st_f'); }
-    else if (cc && cc.ok) { cls = 'w'; wins++; lab = t('st_v'); }
-    else if (cc && (cc.p || cc.m || cc.r)) { cls = 'p'; part++; lab = t('st_p'); }
-    cells.push({ ds, cls, lab });
-  }
-  const rate = Math.round((wins / qgRange) * 100);
 
   /* ações */
   const setCI = (k, v, dateStr) => {
@@ -409,24 +391,6 @@ export default function QgView() {
 
   const ring = 213.6 * (1 - S.purity / 100);
 
-  const getCategoryLabel = (id) => {
-    const map = {
-      overview: { pt: 'Combate', en: 'Combat', es: 'Combate' },
-      timeline: { pt: 'Linha do Tempo', en: 'Timeline', es: 'Línea de Tiempo' },
-    };
-    return map[id]?.[curLang] || map[id]?.pt || id;
-  };
-
-  const getCategoryBadge = (catId) => {
-    if (catId === 'overview') {
-      return S.forge.active.length ? `${doneF}/${S.forge.active.length}` : `${d}d`;
-    }
-    if (catId === 'timeline') {
-      return `${rate}%`;
-    }
-    return null;
-  };
-
   const totalTasksToday = S.tasks.filter((x) => L.repDue(x, today()));
   const pendingTasksCount = totalTasksToday.filter((x) => !L.isDone(x, today())).length;
 
@@ -463,7 +427,7 @@ export default function QgView() {
           </p>
         </div>
 
-        {/* Botão Tarefas do Dia no lugar do botão anterior (abre Projetos & Tarefas ao clicar) */}
+        {/* Botão Tarefas do Dia no lugar do botão anterior */}
         <div className="flex items-center gap-2 flex-none justify-end pt-1 sm:pt-0">
           <button
             type="button"
@@ -488,32 +452,28 @@ export default function QgView() {
     </Card>
   );
 
-  /* 2. O CORAÇÃO DA FORJA: MOSTRADOR CIRCULAR DE AÇO E FOGO (Hero Combat Dial / Anel da Forja) */
-  const renderCombatDial = (isDesktop = false) => {
-    const dialCircumference = 515.22;
-    const dialOffset = dialCircumference * (1 - Math.min(100, Math.max(0, lvlPct)) / 100);
-
+  /* 2. OS 3 MONÓLITOS DA FORJA (3 Torres 3D Animadas / Pilares do Guerreiro Lado a Lado) */
+  const renderPillars3DTowers = (isDesktop = false) => {
     return (
-      <div className={`rounded-2xl border border-[#4A3B22] bg-gradient-to-b from-[#1C1A24] via-[#121217] to-[#0A0A0D] ${isDesktop ? 'p-4 sm:p-5' : 'p-3.5 sm:p-4'} shadow-[0_8px_32px_rgba(0,0,0,0.85)] relative overflow-hidden text-center w-full max-w-full`}>
-        {/* Brilho radial de brasa incandescente */}
-        <div className={`pointer-events-none absolute left-1/2 top-[8%] ${isDesktop ? 'h-[300px] w-[300px]' : 'h-[240px] w-[240px]'} -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,100,20,0.18)_0%,rgba(200,60,10,0.04)_55%,transparent_75%)]`} />
+      <div className={`rounded-2xl border border-[#4A3B22] bg-gradient-to-b from-[#1C1A24] via-[#121217] to-[#0A0A0D] ${isDesktop ? 'p-4 sm:p-5' : 'p-3 sm:p-3.5'} shadow-[0_8px_32px_rgba(0,0,0,0.85)] relative overflow-hidden text-center w-full max-w-full`}>
+        {/* Brilho radial de brasa incandescente no fundo */}
+        <div className={`pointer-events-none absolute left-1/2 top-[5%] ${isDesktop ? 'h-[320px] w-[320px]' : 'h-[220px] w-[220px]'} -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,100,20,0.14)_0%,rgba(200,60,10,0.03)_55%,transparent_75%)]`} />
 
-        {/* Topo do Hero: Patente de Guerra, Pureza, Sequência e SOS */}
+        {/* Topo: Patente de Guerra, Pureza e Sequência */}
         <div className="flex items-center justify-between gap-1.5 pb-2.5 border-b border-line/60 relative z-10 min-w-0">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
             <span className={`${isDesktop ? 'text-xl' : 'text-base'} drop-shadow-sm flex-none`}>{tier.icon}</span>
             <div className="flex flex-col min-w-0 text-left">
               <span className={`font-display ${isDesktop ? 'text-sm sm:text-base' : 'text-xs'} uppercase tracking-wider text-gold font-black truncate`}>
                 {tier.name}
               </span>
-              {isDesktop && (
-                <span className="text-[10px] text-muted font-mono truncate">
-                  {tier.min >= 90 ? t('prog_aura') : `${d} ${t('days')} ${t('of_w')} 90d`}
-                </span>
-              )}
+              <span className="text-[9.5px] sm:text-[10px] text-muted font-mono truncate">
+                {tier.min >= 90 ? t('prog_aura') : `${d}d ${t('of_w')} 90d`}
+              </span>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-none">
+
+          <div className="flex items-center gap-1 sm:gap-2 flex-none">
             <span className="rounded-md border border-gold/30 bg-gold/10 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-mono text-gold font-bold whitespace-nowrap">
               💎 {S.purity}%
             </span>
@@ -521,110 +481,145 @@ export default function QgView() {
               🔥 {streak} {streak === 1 ? 'DIA' : 'DIAS'}
             </span>
             {isDesktop && (
-              <span className="rounded-md border border-ok/30 bg-ok/10 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-mono text-ok font-bold whitespace-nowrap" title={lw ? t('lastw') + fdmy(lw.d) + t('atw') + lw.h : t('nosos')}>
+              <span className="rounded-md border border-ok/30 bg-ok/10 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-mono text-ok font-bold whitespace-nowrap">
                 🛡️ {L.sosWins(S)} SOS
               </span>
             )}
           </div>
         </div>
 
-        {/* O Mostrador Circular da Forja */}
-        <div className={`relative mx-auto ${isDesktop ? 'h-[210px] w-[210px] sm:h-[230px] sm:w-[230px] my-2 sm:my-3' : 'h-[176px] w-[176px] sm:h-[190px] sm:w-[190px] my-1 sm:my-2'}`}>
-          <svg width="100%" height="100%" viewBox="0 0 200 200" className="-rotate-90">
-            <defs>
-              <linearGradient id={isDesktop ? "forgeFireGradDesk" : "forgeFireGrad"} x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FF3B00" />
-                <stop offset="50%" stopColor="#FF9500" />
-                <stop offset="100%" stopColor="#FFC846" />
-              </linearGradient>
-              <filter id={isDesktop ? "forgeGlowDesk" : "forgeGlow"} x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="3.5" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-            </defs>
-            <circle cx="100" cy="100" r="82" fill="none" stroke="#22222C" strokeWidth="8" strokeDasharray="4 6" opacity="0.3" />
-            <circle cx="100" cy="100" r="82" fill="none" stroke="#181822" strokeWidth="9" />
-            <circle
-              cx="100"
-              cy="100"
-              r="82"
-              fill="none"
-              stroke={isDesktop ? "url(#forgeFireGradDesk)" : "url(#forgeFireGrad)"}
-              strokeWidth="9"
-              strokeLinecap="round"
-              strokeDasharray="515.22"
-              strokeDashoffset={dialOffset.toFixed(1)}
-              filter={isDesktop ? "url(#forgeGlowDesk)" : "url(#forgeGlow)"}
-              style={{ transition: 'stroke-dashoffset 0.8s ease-out' }}
-            />
-          </svg>
-
-          {/* Conteúdo Central do Mostrador */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1.5 select-none">
-            <div className="flex items-center gap-1 text-gold/80 mb-0.5">
-              <span className={isDesktop ? "text-sm sm:text-base" : "text-xs sm:text-sm"}>⚔️</span>
+        {/* AS 3 TORRES 3D / PILARES LADO A LADO */}
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5 my-2.5 sm:my-3.5 items-end relative z-10">
+          {/* TORRE 1: ZERO PORNÔ (Visão Limpa & Blindagem Mental) */}
+          <div className="flex flex-col items-center">
+            {/* Ícone flutuante com anel sutil */}
+            <div className="mb-1 flex items-center justify-center h-6 w-6 rounded-full bg-[#181824] border border-[#3A3848] text-xs shadow-inner">
+              👁️
             </div>
-
-            <span className={`font-display ${isDesktop ? 'text-5xl sm:text-6xl' : 'text-4xl sm:text-5xl'} font-black leading-none bg-gradient-to-b from-[#FFF5D6] via-[#FFCA40] to-[#B87A18] bg-clip-text text-transparent drop-shadow-[0_4px_18px_rgba(255,180,50,0.35)] tracking-tight`}>
-              {d}
+            <span className="text-[9px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-[#C9C2B0] truncate max-w-full mb-1">
+              {curLang === 'en' ? 'Porn-Free' : curLang === 'es' ? 'Sin Porno' : 'Sem Pornô'}
             </span>
 
-            <span className={`mt-1 ${isDesktop ? 'text-[9.5px] sm:text-[10.5px]' : 'text-[8.5px] sm:text-[9px]'} font-extrabold uppercase tracking-[0.2em] text-[#C9C2B0] px-1 truncate max-w-full`}>
-              {L.modeA(S) ? t('daysClean') : (curLang === 'en' ? 'RAW RETENTION' : curLang === 'es' ? 'RETENCIÓN PURA' : 'RETENÇÃO BRUTA')}
-            </span>
+            {/* Estrutura 3D do Monólito */}
+            <div className="w-full h-[142px] sm:h-[162px] rounded-xl border border-[#3A3848] bg-gradient-to-b from-[#211F2D] via-[#14131C] to-[#0A0A0E] shadow-[0_8px_20px_rgba(0,0,0,0.6)] p-1.5 sm:p-2 flex flex-col justify-between relative overflow-hidden group">
+              {/* Reactor Core Fluido Vertical */}
+              <div className="absolute inset-y-1.5 left-1/2 -translate-x-1/2 w-2 rounded-full bg-[#0B0A0F] border border-[#2B2838] overflow-hidden">
+                <div
+                  className="w-full rounded-full bg-gradient-to-t from-sky-600 via-amber-500 to-gold animate-pulse transition-all duration-700"
+                  style={{ height: `${Math.min(100, Math.max(16, (pornFree / 90) * 100))}%` }}
+                />
+              </div>
 
-            {/* Cronômetro ao vivo segundo a segundo */}
-            <div className={`mt-1 sm:mt-1.5 flex items-center gap-1.5 rounded-full border border-gold/40 bg-black/80 ${isDesktop ? 'px-3 py-0.5' : 'px-2 sm:px-2.5 py-0.5'} shadow-inner max-w-full`}>
-              <Clock size={isDesktop ? 11 : 9} className="text-gold animate-pulse flex-none" />
-              <span className={`font-mono ${isDesktop ? 'text-[10px] sm:text-[11px]' : 'text-[9px] sm:text-[9.5px]'} font-bold text-gold tracking-wider truncate`}>
-                {pad(liveTime.days)}d · {pad(liveTime.hours)}h · {pad(liveTime.minutes)}m · {pad(liveTime.seconds)}s
-              </span>
-            </div>
-          </div>
-        </div>
+              {/* Topo chanfrado reflexivo */}
+              <div className="h-1.5 w-full rounded bg-gradient-to-r from-transparent via-[#4B475D] to-transparent opacity-60" />
 
-        {/* Pilares Secundários Integrados e Compactos */}
-        <div className={`grid ${isDesktop ? 'grid-cols-3' : 'grid-cols-2'} gap-2 my-2.5 min-w-0`}>
-          <div className="flex items-center justify-between px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#14141A] border border-line/70 min-w-0">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-xs sm:text-sm flex-none">👁️</span>
-              <span className="text-[10px] sm:text-[11px] font-bold text-muted truncate">
-                {curLang === 'en' ? 'Porn-Free' : curLang === 'es' ? 'Sin Porno' : 'Sem Pornô'}
-              </span>
-            </div>
-            <span className="font-mono text-xs sm:text-sm font-black text-gold pl-1 flex-none">
-              {pornFree}d
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#14141A] border border-line/70 min-w-0">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-xs sm:text-sm flex-none">⚡</span>
-              <span className="text-[10px] sm:text-[11px] font-bold text-muted truncate">
-                {curLang === 'en' ? 'Self-Mastery' : curLang === 'es' ? 'Autodominio' : 'Autodomínio'}
-              </span>
-            </div>
-            <span className="font-mono text-xs sm:text-sm font-black text-gold pl-1 flex-none">
-              {mastFree}d
-            </span>
-          </div>
-
-          {isDesktop && (
-            <div className="flex items-center justify-between px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#14141A] border border-line/70 min-w-0">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-xs sm:text-sm flex-none">🛡️</span>
-                <span className="text-[10px] sm:text-[11px] font-bold text-muted truncate">
-                  {curLang === 'en' ? 'SOS Shield' : curLang === 'es' ? 'Escudos SOS' : 'Escudos S.O.S'}
+              {/* Número e Métrica Central */}
+              <div className="relative z-10 my-auto py-1">
+                <span className="font-display text-2xl sm:text-3xl font-black text-[#EDE5D5] drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] block leading-none">
+                  {pornFree}<small className="text-xs font-mono text-gold font-bold ml-0.5">d</small>
+                </span>
+                <span className="text-[8px] sm:text-[9px] font-mono text-muted uppercase font-bold tracking-wider block mt-1">
+                  Mente Pura
                 </span>
               </div>
-              <span className="font-mono text-xs sm:text-sm font-black text-gold pl-1 flex-none">
-                {L.sosWins(S)}
-              </span>
+
+              {/* Base militar chanfrada */}
+              <div className="relative z-10 w-full py-0.5 rounded bg-[#15141D] border border-line/60 text-[8px] sm:text-[9px] font-black uppercase text-gold/80 tracking-widest truncate">
+                INTACTO
+              </div>
             </div>
-          )}
+          </div>
+
+          {/* TORRE 2: RETENÇÃO VITAL (Torre Master Central - Mais Alta e Incandescente) */}
+          <div className="flex flex-col items-center transform -translate-y-1">
+            {/* Brasas e Ícone Flutuante com aura de fogo */}
+            <div className="mb-1 flex items-center justify-center h-7 w-7 rounded-full bg-gradient-to-b from-[#3D2C10] to-[#1F1708] border border-gold text-sm shadow-[0_0_12px_rgba(255,180,50,0.5)] animate-pulse">
+              ⚔️
+            </div>
+            <span className="text-[9.5px] sm:text-[11px] font-black uppercase tracking-wider text-gold truncate max-w-full mb-1">
+              {curLang === 'en' ? 'Retention' : curLang === 'es' ? 'Retención' : 'Retenção'}
+            </span>
+
+            {/* Estrutura 3D do Monólito Central de Ouro e Fogo */}
+            <div className="w-full h-[162px] sm:h-[184px] rounded-xl border-2 border-gold/70 bg-gradient-to-b from-[#2E2210] via-[#1A140A] to-[#0A0804] shadow-[0_10px_28px_rgba(255,180,50,0.25)] p-1.5 sm:p-2 flex flex-col justify-between relative overflow-hidden">
+              {/* Reactor Core Central de Fogo Vivo */}
+              <div className="absolute inset-y-2 left-1/2 -translate-x-1/2 w-2.5 rounded-full bg-[#0D0A05] border border-[#4D3915] overflow-hidden">
+                <div
+                  className="w-full rounded-full bg-gradient-to-t from-[#B87A18] via-[#FF9500] to-[#FFE79A] animate-pulse transition-all duration-700 shadow-[0_0_10px_rgba(255,180,50,0.6)]"
+                  style={{ height: `${Math.min(100, Math.max(20, (d / 90) * 100))}%` }}
+                />
+              </div>
+
+              {/* Topo de Ouro Chanfrado */}
+              <div className="h-2 w-full rounded bg-gradient-to-r from-[#5A4315] via-[#A88028] to-[#5A4315] shadow-sm" />
+
+              {/* Número Gigante da Retenção */}
+              <div className="relative z-10 my-auto py-1">
+                <span className="font-display text-4xl sm:text-5xl font-black bg-gradient-to-b from-[#FFF7DE] via-[#FFCA40] to-[#B87A18] bg-clip-text text-transparent drop-shadow-[0_4px_16px_rgba(255,180,50,0.4)] block leading-none tracking-tight">
+                  {d}
+                </span>
+                <span className="text-[8.5px] sm:text-[9.5px] font-extrabold uppercase tracking-widest text-[#E8D9BA] block mt-1">
+                  Dias Limpos
+                </span>
+
+                {/* Cronômetro Live Compacto */}
+                <div className="mt-1.5 flex items-center justify-center gap-1 rounded-full bg-black/75 border border-gold/40 px-1.5 py-0.5 shadow-inner">
+                  <Clock size={9} className="text-gold animate-pulse flex-none" />
+                  <span className="font-mono text-[8px] sm:text-[9px] font-bold text-gold tracking-tighter">
+                    {pad(liveTime.hours)}h:{pad(liveTime.minutes)}m:{pad(liveTime.seconds)}s
+                  </span>
+                </div>
+              </div>
+
+              {/* Base Master de Ouro */}
+              <div className="relative z-10 w-full py-0.5 rounded bg-gradient-to-r from-[#2B1F0B] via-[#483410] to-[#2B1F0B] border border-gold/60 text-[8.5px] sm:text-[9.5px] font-black uppercase text-gold tracking-widest truncate shadow-sm">
+                FOGO VITAL
+              </div>
+            </div>
+          </div>
+
+          {/* TORRE 3: AUTODOMÍNIO (Soberania & Vontade de Ferro) */}
+          <div className="flex flex-col items-center">
+            {/* Ícone flutuante */}
+            <div className="mb-1 flex items-center justify-center h-6 w-6 rounded-full bg-[#181824] border border-[#3A3848] text-xs shadow-inner">
+              ⚡
+            </div>
+            <span className="text-[9px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-[#C9C2B0] truncate max-w-full mb-1">
+              {curLang === 'en' ? 'Self-Mastery' : curLang === 'es' ? 'Autodominio' : 'Autodomínio'}
+            </span>
+
+            {/* Estrutura 3D do Monólito */}
+            <div className="w-full h-[142px] sm:h-[162px] rounded-xl border border-[#3A3848] bg-gradient-to-b from-[#211F2D] via-[#14131C] to-[#0A0A0E] shadow-[0_8px_20px_rgba(0,0,0,0.6)] p-1.5 sm:p-2 flex flex-col justify-between relative overflow-hidden group">
+              {/* Reactor Core Fluido Vertical */}
+              <div className="absolute inset-y-1.5 left-1/2 -translate-x-1/2 w-2 rounded-full bg-[#0B0A0F] border border-[#2B2838] overflow-hidden">
+                <div
+                  className="w-full rounded-full bg-gradient-to-t from-amber-700 via-amber-500 to-gold animate-pulse transition-all duration-700"
+                  style={{ height: `${Math.min(100, Math.max(16, (mastFree / 90) * 100))}%` }}
+                />
+              </div>
+
+              {/* Topo chanfrado reflexivo */}
+              <div className="h-1.5 w-full rounded bg-gradient-to-r from-transparent via-[#4B475D] to-transparent opacity-60" />
+
+              {/* Número e Métrica Central */}
+              <div className="relative z-10 my-auto py-1">
+                <span className="font-display text-2xl sm:text-3xl font-black text-[#EDE5D5] drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] block leading-none">
+                  {mastFree}<small className="text-xs font-mono text-gold font-bold ml-0.5">d</small>
+                </span>
+                <span className="text-[8px] sm:text-[9px] font-mono text-muted uppercase font-bold tracking-wider block mt-1">
+                  Soberano
+                </span>
+              </div>
+
+              {/* Base militar chanfrada */}
+              <div className="relative z-10 w-full py-0.5 rounded bg-[#15141D] border border-line/60 text-[8px] sm:text-[9px] font-black uppercase text-gold/80 tracking-widest truncate">
+                SOBERANIA
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Rodapé do Mostrador: Próximo Patamar & Barra de Brasas */}
+        {/* Rodapé: Próximo Patamar & Barra de Brasas */}
         <div className="pt-2.5 border-t border-line/40 relative z-10">
           <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-muted font-medium mb-1.5 min-w-0">
             <span className="truncate flex-1 text-left font-semibold text-[#EDE5D5]">{lvlTxt}</span>
@@ -893,43 +888,8 @@ export default function QgView() {
     </Card>
   );
 
-  const renderTimeline = () => (
-    <Card className="flex-1 flex flex-col justify-between">
-      <div>
-        <K>{t('tlt')}</K>
-        <div className="mb-2 flex flex-wrap gap-1.5">
-          {[7, 14, 30, 60, 90, 365].map((n) => (
-            <button key={n} className={qgRange === n ? 'chip' : 'chip-dim'} style={{ flex: '0 0 auto' }} onClick={() => { AF.click(); setQgRange(n); }}>{n}{t('daysuf')}</button>
-          ))}
-        </div>
-        <div className="mb-2.5 flex flex-wrap gap-1.5">
-          <span className="chip cursor-default text-[10.5px]">🏆 {wins}{t('winsw')}</span>
-          <span className="chip-dim cursor-default border-danger/50 text-danger text-[10.5px]">💥 {falls}{t('fallsw')}</span>
-          <span className="chip-dim cursor-default text-[10.5px]">◐ {part}{t('partw')}</span>
-          <span className="chip-dim cursor-default text-[10.5px]">⚡ {rate}{t('ratew')}</span>
-          <span className="chip-dim cursor-default border-ok/45 text-ok text-[10.5px]" title={lw ? t('lastw') + fdmy(lw.d) + t('atw') + lw.h : t('nosos')}>🛡️ {L.sosWins(S)}{t('sosw')}</span>
-        </div>
-        <div className="flex flex-wrap gap-[5px]">
-          {cells.map((c) => (
-            <button key={c.ds} title={c.ds + ' · ' + c.lab + t('taped')} className={`tlc ${c.cls}`} onClick={() => dayEditor(c.ds)} />
-          ))}
-        </div>
-      </div>
-      <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted pt-2 border-t border-line/40">
-        <span><b className="tlc w mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_v')}</span>
-        <span><b className="tlc p mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_p')}</span>
-        <span><b className="tlc f mr-1 inline-block" style={{ animation: 'none' }} />{t('tl_f')}</span>
-        <span><b className="mr-1 inline-block h-[13px] w-[13px] rounded bg-[#202026]" />{t('tl_n')}</span>
-        <span className="w-full">{t('tl_hint')}</span>
-      </div>
-    </Card>
-  );
-
   /* OPÇÃO A: Mobile Combat Dashboard "Forjando Guerreiros" (Aço, Forja, Honra & Alta Densidade) */
   const renderMobileOneScreen = () => {
-    const dialCircumference = 515.22;
-    const dialOffset = dialCircumference * (1 - Math.min(100, Math.max(0, lvlPct)) / 100);
-
     return (
       <div className="flex flex-col gap-3">
         {/* 1. FRASE DE GUERRA & CÓDIGO DO GUERREIRO (Mantra clicável com som de bigorna) */}
@@ -954,8 +914,8 @@ export default function QgView() {
           </div>
         </div>
 
-        {/* 2. O CORAÇÃO DA FORJA: MOSTRADOR CIRCULAR DE AÇO E FOGO (Hero Combat Dial) */}
-        {renderCombatDial(false)}
+        {/* 2. OS 3 MONÓLITOS DA FORJA (3 Torres 3D Animadas / Pilares do Guerreiro Lado a Lado) */}
+        {renderPillars3DTowers(false)}
 
         {/* 3. BLINDAGEM DO DIA: REGISTRO TÁTICO DIRETO (Os 3 Escudos do Guerreiro) */}
         <div className="rounded-xl border border-line/80 bg-[#15151C] p-3 sm:p-3.5 shadow-sm w-full max-w-full overflow-hidden">
@@ -1099,70 +1059,41 @@ export default function QgView() {
           )}
         </div>
 
-        {/* 4. A FORJA HOJE - HÁBITOS DE DISCIPLINA & FORÇA */}
-        <Card className="p-3 sm:p-3.5">
-          <div className="flex items-center justify-between mb-2">
-            <K className="mb-0">🔨 {t('forgeToday')} — {doneF}{t('of_w')}{S.forge.active.length}</K>
-            <button
-              type="button"
-              onClick={() => { AF.click(); setTab('forge'); }}
-              className="text-[10.5px] text-gold hover:text-gold2 font-medium"
-            >
-              {curLang === 'en' ? 'Edit habits →' : curLang === 'es' ? 'Editar hábitos →' : 'Editar hábitos →'}
-            </button>
+        {/* 4. BOTÃO TÁTICO: MARCAR HÁBITOS (Direto para A Forja) */}
+        <button
+          type="button"
+          onClick={() => { AF.click(); setTab('forge'); }}
+          className="group w-full flex items-center justify-between p-3 sm:p-3.5 rounded-xl border border-gold/40 bg-gradient-to-r from-gold/15 via-[#16151D] to-surface hover:border-gold transition-all active:scale-[0.98] shadow-sm cursor-pointer select-none"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-gold/20 text-gold border border-gold/30 group-hover:scale-105 transition-transform text-base">
+              🔨
+            </div>
+            <div className="flex flex-col text-left min-w-0">
+              <span className="text-xs sm:text-sm font-extrabold text-[#F3EAD2] group-hover:text-gold transition-colors truncate">
+                {curLang === 'en' ? 'Forge Discipline Habits' : curLang === 'es' ? 'Hábitos de la Forja' : 'Hábitos da Forja'}
+              </span>
+              <span className="text-[10px] sm:text-[10.5px] text-muted truncate">
+                {totalHabits === 0
+                  ? (curLang === 'en' ? 'Tap to configure habits in Forge' : curLang === 'es' ? 'Toca para configurar hábitos' : 'Toque para gerenciar hábitos na Forja')
+                  : pendingHabits > 0
+                  ? `${pendingHabits} ${pendingHabits === 1 ? 'hábito pendente' : 'hábitos pendentes'} para marcar hoje`
+                  : 'Todos os hábitos cumpridos hoje! Honra mantida.'}
+              </span>
+            </div>
           </div>
 
-          {act.length ? (
-            <div className="flex flex-col gap-1.5 mt-1">
-              {act.map((id) => {
-                const h = ALLH.find((x) => x.id === id); if (!h) return null;
-                const dn = fd.includes(id), isF = ff.includes(id), tm = L.hTime(S, id);
-                return (
-                  <div key={id} className={`flex items-center gap-2 rounded-r border p-2 text-left text-xs font-semibold transition-colors ${dn ? 'border-gold/50 bg-gold/10' : isF ? 'border-danger/50 bg-danger/10' : 'border-line bg-surface2'}`}>
-                    <span className="w-[20px] text-center text-sm">{h.icon}</span>
-                    <span className={`min-w-0 flex-1 truncate ${dn ? 'text-muted line-through' : isF ? 'text-danger line-through opacity-80' : ''}`}>{h.n}</span>
-                    {tm && <span className="font-mono text-[10px] text-gold2">⏰{tm}</span>}
-                    <div className="flex items-center gap-1.5 flex-none">
-                      <button
-                        type="button"
-                        title="Marcar como Falho"
-                        onClick={(e) => toggleHabitFailed(id, e)}
-                        className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
-                          isF 
-                            ? 'border-danger bg-danger text-white shadow-sm' 
-                            : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-danger/60 hover:text-danger'
-                        }`}
-                      >
-                        <X size={13} strokeWidth={2.5} />
-                      </button>
-                      <button
-                        type="button"
-                        title="Marcar como Cumprido"
-                        onClick={(e) => toggleHabitDone(id, e)}
-                        className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
-                          dn 
-                            ? 'border-gold bg-gold text-[#141414] shadow-sm' 
-                            : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-gold/60 hover:text-gold'
-                        }`}
-                      >
-                        <Check size={13} strokeWidth={2.5} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="py-2 text-center">
-              <Empty>{t('ef1')}<br />{t('ef2')} <b className="text-gold">{t('forge_b')}</b>.</Empty>
-              <button className="btn-ghost btn-big mt-2 text-xs" onClick={() => setTab('forge')}>{t('goforge')}</button>
-            </div>
-          )}
-
-          {act.length > 0 && (
-            <div className="bar mt-2.5"><i style={{ width: (S.forge.active.length ? (doneF / S.forge.active.length) * 100 : 0) + '%' }} /></div>
-          )}
-        </Card>
+          <div className="flex items-center gap-1.5 flex-none pl-2">
+            <span className={`rounded-md px-2 sm:px-2.5 py-1 text-[9.5px] sm:text-[10.5px] font-black uppercase tracking-wider font-mono ${
+              pendingHabits > 0
+                ? 'bg-gold text-[#121214] shadow-sm animate-pulse'
+                : 'bg-ok/20 text-ok border border-ok/40'
+            }`}>
+              {totalHabits === 0 ? 'CONFIGURAR' : pendingHabits > 0 ? `${pendingHabits} A MARCAR` : '100% FORJADO'}
+            </span>
+            <span className="text-gold text-xs font-bold flex-none group-hover:translate-x-0.5 transition-transform">➔</span>
+          </div>
+        </button>
 
         {/* 5. ATALHO COMPACTO PARA OPERAÇÕES DO DIA (Se houver pendentes) */}
         {pendingTasksCount > 0 && (
@@ -1274,81 +1205,63 @@ export default function QgView() {
   };
 
   return (
-    <div className="grid gap-3.5 w-full max-w-full overflow-x-hidden">
-      {/* SELETOR DE VISTAS (Combate vs Linha do Tempo) */}
-      <div className="flex items-center justify-between gap-2 border-b border-line pb-2.5 min-w-0">
-        <div className="flex items-center gap-1.5 w-full sm:w-auto">
-          {QG_CATEGORIES.map((cat) => {
-            const Icon = cat.icon;
-            const isSelected = activeCategory === cat.id;
-            const badge = getCategoryBadge(cat.id);
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => {
-                  setActiveCategory(cat.id);
-                  AF.click();
-                }}
-                className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs font-bold transition-all border cursor-pointer select-none ${
-                  isSelected
-                    ? 'border-gold/80 bg-gold/15 text-gold shadow-sm'
-                    : 'border-line bg-surface hover:bg-surface2 text-muted hover:text-[#EDE5D5]'
-                }`}
-              >
-                <Icon size={14} className={isSelected ? 'text-gold' : 'text-muted'} />
-                <span className="truncate">{getCategoryLabel(cat.id)}</span>
-                {badge && (
-                  <span className={`text-[9.5px] px-1.5 py-0.2 rounded font-mono font-bold ${
-                    isSelected ? 'bg-gold/20 text-gold' : 'bg-surface2 text-muted'
-                  }`}>
-                    {badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+    <div className="grid gap-3.5 w-full max-w-full overflow-x-hidden pb-20 lg:pb-6">
+      {/* NO MOBILE: OPÇÃO A (Super Otimizada, 3 Torres 3D, Botão Tático para Hábitos da Forja) */}
+      <div className="lg:hidden">
+        {renderMobileOneScreen()}
       </div>
 
-      {/* RENDERIZAÇÃO CONDICIONAL POR CATEGORIA */}
-      {/* 1. PROGRESSO & COMBATE UNIFICADOS (Progresso, Nível, Efeitos Biológicos, Check-in Diário, Hábitos de Hoje, Tarefas, Protocolo Tático) */}
-      {activeCategory === 'overview' && (
-        <div className="grid gap-3.5 pb-20 lg:pb-6">
-          {/* NO MOBILE: OPÇÃO A (Tudo na 1ª Dobra, Zero Fricção, Painel de Combate Imediato) */}
-          <div className="lg:hidden">
-            {renderMobileOneScreen()}
-          </div>
-
-          {/* NO DESKTOP: GRID EM DUAS COLUNAS PERFEITAMENTE BALANCEADO */}
-          <div className="hidden lg:grid lg:grid-cols-12 gap-3.5 items-start">
-            <div className="lg:col-span-12">
-              {renderMantra()}
-            </div>
-
-            {/* Coluna Esquerda Desktop: O Anel de Fogo e Retenção (Hero Combat Dial), Nível e Protocolo Tático */}
-            <div className="lg:col-span-7 flex flex-col gap-3.5">
-              {renderCombatDial(true)}
-              {renderForgeLevel(false)}
-              {renderTacticalProtocol()}
-            </div>
-
-            {/* Coluna Direita Desktop: Registro Diário de Combate, Hábitos da Forja e Operações */}
-            <div className="lg:col-span-5 flex flex-col gap-3.5">
-              {renderDailyCheckin()}
-              {renderForgeToday()}
-              {renderTasksToday()}
-            </div>
-          </div>
+      {/* NO DESKTOP: GRID EM DUAS COLUNAS PERFEITAMENTE BALANCEADO */}
+      <div className="hidden lg:grid lg:grid-cols-12 gap-3.5 items-start">
+        <div className="lg:col-span-12">
+          {renderMantra()}
         </div>
-      )}
 
-      {/* 2. LINHA DO TEMPO (Histórico de Vitórias, Quedas, SOS, Navegação de Dias) */}
-      {activeCategory === 'timeline' && (
-        <div className="grid gap-3.5">
-          {renderTimeline()}
+        {/* Coluna Esquerda Desktop: As 3 Torres 3D dos Pilares, Nível e Protocolo Tático */}
+        <div className="lg:col-span-7 flex flex-col gap-3.5">
+          {renderPillars3DTowers(true)}
+          {renderForgeLevel(false)}
+          {renderTacticalProtocol()}
         </div>
-      )}
+
+        {/* Coluna Direita Desktop: Registro Diário de Combate, Botão de Hábitos da Forja e Operações */}
+        <div className="lg:col-span-5 flex flex-col gap-3.5">
+          {renderDailyCheckin()}
+          {/* Botão Tático de Hábitos da Forja (Desktop) */}
+          <button
+            type="button"
+            onClick={() => { AF.click(); setTab('forge'); }}
+            className="group w-full flex items-center justify-between p-3.5 rounded-xl border border-gold/40 bg-gradient-to-r from-gold/15 via-[#16151D] to-surface hover:border-gold transition-all active:scale-[0.98] shadow-sm cursor-pointer select-none"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="grid h-10 w-10 flex-none place-items-center rounded-lg bg-gold/20 text-gold border border-gold/30 group-hover:scale-105 transition-transform text-lg">
+                🔨
+              </div>
+              <div className="flex flex-col text-left min-w-0">
+                <span className="text-sm font-extrabold text-[#F3EAD2] group-hover:text-gold transition-colors truncate">
+                  {curLang === 'en' ? 'Forge Discipline Habits' : curLang === 'es' ? 'Hábitos de la Forja' : 'Hábitos da Forja'}
+                </span>
+                <span className="text-xs text-muted truncate">
+                  {totalHabits === 0
+                    ? (curLang === 'en' ? 'Configure your daily habits in Forge' : curLang === 'es' ? 'Configurar hábitos en la Forja' : 'Toque para gerenciar hábitos na Forja')
+                    : pendingHabits > 0
+                    ? `${pendingHabits} ${pendingHabits === 1 ? 'hábito pendente' : 'hábitos pendentes'} para marcar hoje`
+                    : 'Todos os hábitos cumpridos hoje! Honra mantida.'}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-none pl-2">
+              <span className={`rounded-md px-2.5 py-1 text-xs font-black uppercase tracking-wider font-mono ${
+                pendingHabits > 0 ? 'bg-gold text-[#121214] shadow-sm animate-pulse' : 'bg-ok/20 text-ok border border-ok/40'
+              }`}>
+                {totalHabits === 0 ? 'CONFIGURAR' : pendingHabits > 0 ? `${pendingHabits} A MARCAR` : '100% FORJADO'}
+              </span>
+              <span className="text-gold text-sm font-bold flex-none group-hover:translate-x-0.5 transition-transform">➔</span>
+            </div>
+          </button>
+          {renderTasksToday()}
+        </div>
+      </div>
     </div>
   );
 }
