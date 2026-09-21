@@ -37,7 +37,7 @@ export default function Shell() {
   }, [S]);
 
   return (
-    <div className="relative z-[2] min-h-dvh lg:grid lg:grid-cols-[242px_minmax(0,1fr)]">
+    <div className="relative z-[2] min-h-dvh w-full max-w-full overflow-x-hidden lg:grid lg:grid-cols-[242px_minmax(0,1fr)]">
       {/* sidebar desktop */}
       <aside className="sticky top-0 hidden h-dvh flex-col gap-1.5 overflow-y-auto border-r border-gold/20 bg-deep p-4 lg:flex">
         <div className="mb-5 flex items-center gap-2.5 px-2">
@@ -64,7 +64,7 @@ export default function Shell() {
         </div>
       </aside>
 
-      <div className="flex flex-col min-w-0 w-full">
+      <div className="flex flex-col min-w-0 w-full max-w-full overflow-x-hidden">
         {/* topbar */}
         <header className="sticky top-0 z-30 w-full border-b border-gold/20 bg-[rgba(13,13,14,.95)] px-3.5 sm:px-4 py-2.5 backdrop-blur-md lg:px-8">
           <div className="w-full flex items-center justify-between gap-2">
