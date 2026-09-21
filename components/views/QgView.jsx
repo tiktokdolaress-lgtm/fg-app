@@ -840,9 +840,9 @@ export default function QgView() {
         </div>
 
         {/* 2. O CORAÇÃO DA FORJA: MOSTRADOR CIRCULAR DE AÇO E FOGO (Hero Combat Dial) */}
-        <div className="rounded-2xl border border-[#4A3B22] bg-gradient-to-b from-[#1C1A24] via-[#121217] to-[#0A0A0D] p-3 sm:p-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.85)] relative overflow-hidden text-center w-full max-w-full">
+        <div className="rounded-2xl border border-[#4A3B22] bg-gradient-to-b from-[#1C1A24] via-[#121217] to-[#0A0A0D] p-3.5 sm:p-4 shadow-[0_8px_32px_rgba(0,0,0,0.85)] relative overflow-hidden text-center w-full max-w-full">
           {/* Brilho radial de brasa incandescente */}
-          <div className="pointer-events-none absolute left-1/2 top-[10%] h-[260px] w-[260px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,100,20,0.18)_0%,rgba(200,60,10,0.05)_55%,transparent_75%)]" />
+          <div className="pointer-events-none absolute left-1/2 top-[10%] h-[240px] w-[240px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,100,20,0.18)_0%,rgba(200,60,10,0.04)_55%,transparent_75%)]" />
 
           {/* Topo do Hero: Patente de Guerra, Pureza e Sequência */}
           <div className="flex items-center justify-between gap-1.5 pb-2 border-b border-line/60 relative z-10 min-w-0">
@@ -853,10 +853,10 @@ export default function QgView() {
               </span>
             </div>
             <div className="flex items-center gap-1.5 flex-none">
-              <span className="rounded-md border border-gold/30 bg-gold/10 px-1.5 sm:px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold whitespace-nowrap">
+              <span className="rounded-md border border-gold/30 bg-gold/10 px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold whitespace-nowrap">
                 💎 {S.purity}%
               </span>
-              <span className="rounded-md border border-gold/30 bg-gold/10 px-1.5 sm:px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold whitespace-nowrap">
+              <span className="rounded-md border border-gold/30 bg-gold/10 px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold whitespace-nowrap">
                 🔥 {streak} {streak === 1 ? (curLang === 'en' ? 'DIA' : 'DIA') : (curLang === 'en' ? 'DIAS' : 'DIAS')}
               </span>
             </div>
@@ -917,8 +917,35 @@ export default function QgView() {
             </div>
           </div>
 
+          {/* Pilares Secundários Integrados e Compactos (Sem poluição de cards extras) */}
+          <div className="grid grid-cols-2 gap-2 my-2 min-w-0">
+            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#14141A] border border-line/70 min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-xs flex-none">👁️</span>
+                <span className="text-[10px] font-bold text-muted truncate">
+                  {curLang === 'en' ? 'Porn-Free' : curLang === 'es' ? 'Sin Porno' : 'Sem Pornô'}
+                </span>
+              </div>
+              <span className="font-mono text-xs font-black text-gold pl-1 flex-none">
+                {pornFree}d
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#14141A] border border-line/70 min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-xs flex-none">⚡</span>
+                <span className="text-[10px] font-bold text-muted truncate">
+                  {curLang === 'en' ? 'Self-Mastery' : curLang === 'es' ? 'Autodominio' : 'Autodomínio'}
+                </span>
+              </div>
+              <span className="font-mono text-xs font-black text-gold pl-1 flex-none">
+                {mastFree}d
+              </span>
+            </div>
+          </div>
+
           {/* Rodapé do Mostrador: Próximo Patamar & Barra de Brasas */}
-          <div className="pt-1.5 pb-0.5 border-t border-line/40 relative z-10">
+          <div className="pt-2 border-t border-line/40 relative z-10">
             <div className="flex items-center justify-between text-[10px] sm:text-[10.5px] text-muted font-medium mb-1 min-w-0">
               <span className="truncate flex-1 text-left">{lvlTxt}</span>
               {tier.reward && <span className="text-gold2 truncate ml-2 flex-none">🎁 {tier.reward}</span>}
@@ -927,164 +954,13 @@ export default function QgView() {
           </div>
         </div>
 
-        {/* 3. CORRENTE DE FERRO DA DISCIPLINA (Streak Chain - Elos Inquebráveis) */}
-        <div className="rounded-xl border border-line/70 bg-[#131318] p-3 shadow-sm w-full max-w-full overflow-hidden">
-          <div className="flex items-center justify-between gap-1.5 mb-2 min-w-0">
-            <div className="flex items-center gap-1.5 min-w-0 flex-1">
-              <span className="text-sm flex-none">⛓️</span>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#EAE4D2] truncate">
-                {curLang === 'en' ? 'IRON DISCIPLINE CHAIN' : curLang === 'es' ? 'CADENA DE HIERRO' : 'CORRENTE DE FERRO'}
-              </span>
-            </div>
-            <span className="flex-none rounded bg-gold/15 border border-gold/30 px-2 py-0.5 text-[9.5px] font-mono font-bold text-gold whitespace-nowrap">
-              🔥 {streak} {streak === 1 ? (curLang === 'en' ? 'LINK' : 'ELO') : (curLang === 'en' ? 'LINKS' : 'ELOS')}
-            </span>
-          </div>
-
-          {/* Fileira de Elos Forjados */}
-          <div className="w-full max-w-full overflow-x-auto py-1 scrollbar-none">
-            <div className="flex items-center gap-1.5 min-w-max">
-              {Array.from({ length: Math.max(7, Math.min(14, streak + 2)) }, (_, idx) => {
-                const dayNum = idx + 1;
-                const isForged = dayNum <= streak;
-                const isCurrent = dayNum === streak && streak > 0;
-                return (
-                  <div
-                    key={idx}
-                    className={`flex flex-col items-center justify-center rounded-md px-2 py-1.5 min-w-[36px] border transition-all ${
-                      isCurrent
-                        ? 'border-gold bg-gold/25 shadow-[0_0_12px_rgba(255,200,70,0.3)] scale-105'
-                        : isForged
-                        ? 'border-gold/50 bg-gradient-to-b from-[#2B2314] to-[#1C170E] text-gold'
-                        : 'border-[#2D2D38] bg-[#1A1A22] opacity-40 text-muted'
-                    }`}
-                  >
-                    <span className={`text-xs ${isForged ? 'text-gold drop-shadow-sm' : 'text-muted'}`}>
-                      🔗
-                    </span>
-                    <span className="text-[8px] font-mono font-black mt-0.5">
-                      D{dayNum}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <p className="mt-1.5 text-[9px] font-medium text-muted/80 text-center italic truncate">
-            {curLang === 'en' 
-              ? 'Each clean day is a link forged in fire. Never break the chain.' 
-              : curLang === 'es' 
-              ? 'Cada día limpio es un eslabón forjado a fuego. Nunca rompas la cadena.' 
-              : 'Cada dia limpo é um elo forjado a fogo. Nunca quebre a corrente.'}
-          </p>
-        </div>
-
-        {/* 4. OS 3 PILARES DE AÇO (Métricas Táticas Rápidas) */}
-        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center w-full max-w-full">
-          {/* Pilar I: Retenção Seminal */}
-          <div className="flex flex-col items-center justify-center rounded-xl border border-gold/45 bg-gradient-to-b from-[#241F14] to-[#17140E] py-2 px-1 shadow-[0_4px_14px_rgba(255,180,50,0.12)] min-w-0 overflow-hidden">
-            <div className="flex items-center gap-1 text-gold text-xs mb-0.5">
-              <span className="text-[11px]">🛡️</span>
-              <span className="text-[7.5px] sm:text-[8px] font-mono uppercase font-black tracking-wider text-gold/80 truncate">Pilar I</span>
-            </div>
-            <span className="font-display text-2xl sm:text-3xl font-black leading-none bg-gradient-to-b from-[#FFF2CC] to-[#E5A93C] bg-clip-text text-transparent">
-              {d}
-            </span>
-            <span className="mt-1 text-[8px] sm:text-[8.5px] font-extrabold uppercase tracking-wide text-gold truncate max-w-full px-0.5">
-              {L.modeA(S) ? t('daysClean') : (curLang === 'en' ? 'Retention' : curLang === 'es' ? 'Retención' : 'Retenção')}
-            </span>
-            <span className="text-[7px] sm:text-[7.5px] text-muted font-mono truncate">
-              {d === 1 ? (curLang === 'en' ? '1 day' : '1 dia') : (curLang === 'en' ? `${d} days` : `${d} dias`)}
-            </span>
-          </div>
-
-          {/* Pilar II: Zero Pornografia */}
-          <div className="flex flex-col items-center justify-center rounded-xl border border-line/80 bg-[#16161C] py-2 px-1 shadow-sm min-w-0 overflow-hidden">
-            <div className="flex items-center gap-1 text-muted text-xs mb-0.5">
-              <span className="text-[11px]">👁️</span>
-              <span className="text-[7.5px] sm:text-[8px] font-mono uppercase font-black tracking-wider text-muted/80 truncate">Pilar II</span>
-            </div>
-            <span className="font-display text-2xl sm:text-3xl font-black leading-none text-[#F3EAD2]">
-              {pornFree}
-            </span>
-            <span className="mt-1 text-[8px] sm:text-[8.5px] font-extrabold uppercase tracking-wide text-[#A8A8B4] truncate max-w-full px-0.5">
-              {curLang === 'en' ? 'Porn-Free' : curLang === 'es' ? 'Sin Porno' : 'Sem Pornô'}
-            </span>
-            <span className="text-[7px] sm:text-[7.5px] text-muted font-mono truncate">
-              {pornFree === 1 ? (curLang === 'en' ? '1 day' : '1 dia') : (curLang === 'en' ? `${pornFree} days` : `${pornFree} dias`)}
-            </span>
-          </div>
-
-          {/* Pilar III: Zero Masturbação */}
-          <div className="flex flex-col items-center justify-center rounded-xl border border-line/80 bg-[#16161C] py-2 px-1 shadow-sm min-w-0 overflow-hidden">
-            <div className="flex items-center gap-1 text-muted text-xs mb-0.5">
-              <span className="text-[11px]">⚡</span>
-              <span className="text-[7.5px] sm:text-[8px] font-mono uppercase font-black tracking-wider text-muted/80 truncate">Pilar III</span>
-            </div>
-            <span className="font-display text-2xl sm:text-3xl font-black leading-none text-[#F3EAD2]">
-              {mastFree}
-            </span>
-            <span className="mt-1 text-[8px] sm:text-[8.5px] font-extrabold uppercase tracking-wide text-[#A8A8B4] truncate max-w-full px-0.5">
-              {curLang === 'en' ? 'Mast.-Free' : curLang === 'es' ? 'Sin Mast.' : 'Sem Mast.'}
-            </span>
-            <span className="text-[7px] sm:text-[7.5px] text-muted font-mono truncate">
-              {mastFree === 1 ? (curLang === 'en' ? '1 day' : '1 dia') : (curLang === 'en' ? `${mastFree} days` : `${mastFree} dias`)}
-            </span>
-          </div>
-        </div>
-
-        {/* 5. PODER BIOLÓGICO DO GUERREIRO ("Cérebro em Cura" & Restauração Neural) */}
-        {bioData && bioData.perks && bioData.perks.length > 0 && (
-          <div className="rounded-xl border border-gold/30 bg-gradient-to-b from-[#181820] to-[#101015] p-3 shadow-sm relative overflow-hidden w-full max-w-full">
-            <div className="pointer-events-none absolute right-[-20px] top-[-20px] h-[100px] w-[100px] rounded-full bg-[radial-gradient(circle,rgba(255,140,0,0.12),transparent_70%)]" />
-            
-            <div className="flex items-center justify-between gap-1.5 mb-2 min-w-0">
-              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                <span className="grid h-5 w-5 sm:h-6 sm:w-6 place-items-center rounded-full bg-gold/15 text-gold text-xs flex-none">
-                  🧬
-                </span>
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-gold truncate">
-                  {curLang === 'en' ? 'ACTIVE BIOLOGICAL POWER' : curLang === 'es' ? 'PODER BIOLÓGICO ACTIVO' : 'PODER BIOLÓGICO'}
-                </span>
-              </div>
-              <span className="text-[9px] font-mono text-muted flex-none whitespace-nowrap">
-                Fase {tier.name}
-              </span>
-            </div>
-
-            {/* Os benefícios ativos em badges táteis */}
-            <div className="flex flex-col gap-1.5 my-2">
-              {bioData.perks.map((perk, idx) => (
-                <div key={idx} className="flex items-start gap-2 rounded-lg border border-line/60 bg-surface2/70 px-2.5 py-1.5 text-left text-[10.5px] sm:text-[11px] font-medium text-[#ECE5D5] min-w-0">
-                  <span className="text-gold text-xs flex-none mt-0.5">✦</span>
-                  <span className="leading-snug break-words flex-1 min-w-0">{perk}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Barra de Restauração Dopaminérgica / Neural */}
-            <div className="mt-2.5 pt-2 border-t border-line/50">
-              <div className="flex items-center justify-between text-[9px] sm:text-[9.5px] font-extrabold uppercase tracking-wider text-muted mb-1 min-w-0">
-                <span className="truncate flex-1">{curLang === 'en' ? 'Neural Rewiring' : curLang === 'es' ? 'Reprogramación Neural' : 'Restauração Neural & Dopamina'}</span>
-                <span className="font-mono text-gold flex-none ml-1">{Math.min(100, Math.max(7, Math.round((d / 90) * 100)))}%</span>
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#202028]">
-                <div 
-                  className="h-full rounded-full bg-gradient-to-r from-danger via-amber-500 to-gold transition-all duration-700"
-                  style={{ width: `${Math.min(100, Math.max(7, Math.round((d / 90) * 100)))}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 6. REGISTRO DIÁRIO DE COMBATE (OS 3 ESCUDOS DE BLINDAGEM TÁTICA) */}
+        {/* 3. BLINDAGEM DO DIA: REGISTRO TÁTICO DIRETO (Os 3 Escudos do Guerreiro) */}
         <div className="rounded-xl border border-line/80 bg-[#15151C] p-3 sm:p-3.5 shadow-sm w-full max-w-full overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2.5 min-w-0">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-sm flex-none">🛡️</span>
               <span className="text-[10px] font-black uppercase tracking-wider text-[#F2ECE0] truncate">
-                {curLang === 'en' ? 'DAILY COMBAT' : curLang === 'es' ? 'BLINDAJE DIARIO' : 'REGISTRO DE COMBATE'}
+                {curLang === 'en' ? 'DAILY SHIELDING' : curLang === 'es' ? 'BLINDAJE DIARIO' : 'BLINDAGEM DE HOJE'}
               </span>
               <span className="text-[9.5px] font-mono text-gold/90 font-bold flex-none">
                 ({ciDate === today() ? fdmy(today()) : fdmy(ciDate)})
@@ -1145,7 +1021,7 @@ export default function QgView() {
                   key={k}
                   type="button"
                   onClick={() => setCI(k, !isChecked, ciDate)}
-                  className={`group flex items-center justify-between rounded-xl border p-3 text-left transition-all active:scale-[0.98] cursor-pointer ${
+                  className={`group flex items-center justify-between rounded-xl border p-2.5 sm:p-3 text-left transition-all active:scale-[0.98] cursor-pointer ${
                     isChecked
                       ? 'border-gold/60 bg-gradient-to-r from-gold/20 via-amber-500/10 to-surface2 shadow-[0_2px_12px_rgba(255,200,70,0.12)]'
                       : isFailed
@@ -1154,7 +1030,7 @@ export default function QgView() {
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <span className={`grid h-9 w-9 flex-none place-items-center rounded-lg border text-base transition-all ${
+                    <span className={`grid h-8 w-8 sm:h-9 sm:w-9 flex-none place-items-center rounded-lg border text-sm sm:text-base transition-all ${
                       isChecked
                         ? 'border-gold bg-gold text-[#141414] shadow-md scale-105 font-black'
                         : isFailed
@@ -1169,7 +1045,7 @@ export default function QgView() {
                       }`}>
                         {item.title}
                       </span>
-                      <span className="text-[10px] text-muted truncate mt-0.5">
+                      <span className="text-[9.5px] text-muted truncate mt-0.5">
                         {item.sub}
                       </span>
                     </div>
@@ -1209,19 +1085,19 @@ export default function QgView() {
           {ciDate === today() ? (
             <button
               type="button"
-              className="mt-2.5 w-full py-2 rounded-lg border border-danger/40 bg-danger/10 text-danger hover:bg-danger hover:text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.99]"
+              className="mt-2.5 w-full py-1.5 sm:py-2 rounded-lg border border-danger/30 bg-danger/10 text-danger hover:bg-danger hover:text-white text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.99]"
               onClick={failFlow}
             >
               <span>🩸</span>
-              <span>{curLang === 'en' ? 'Register Battle Fall / Restart Forge' : curLang === 'es' ? 'Registrar Caída / Reiniciar Forja' : 'Registrar Queda em Combate / Reiniciar Forja'}</span>
+              <span>{curLang === 'en' ? 'Register Battle Fall' : curLang === 'es' ? 'Registrar Caída' : 'Registrar Queda em Combate'}</span>
             </button>
           ) : (
             <p className="fnote mt-1.5 text-center">{t('retro')}</p>
           )}
         </div>
 
-        {/* 7. A FORJA HOJE - HÁBITOS DE DISCIPLINA & FORÇA */}
-        <Card className="p-3.5">
+        {/* 4. A FORJA HOJE - HÁBITOS DE DISCIPLINA & FORÇA */}
+        <Card className="p-3 sm:p-3.5">
           <div className="flex items-center justify-between mb-2">
             <K className="mb-0">🔨 {t('forgeToday')} — {doneF}{t('of_w')}{S.forge.active.length}</K>
             <button
@@ -1285,7 +1161,7 @@ export default function QgView() {
           )}
         </Card>
 
-        {/* 8. ATALHO COMPACTO PARA OPERAÇÕES DO DIA (Se houver pendentes) */}
+        {/* 5. ATALHO COMPACTO PARA OPERAÇÕES DO DIA (Se houver pendentes) */}
         {pendingTasksCount > 0 && (
           <button
             type="button"
@@ -1302,28 +1178,69 @@ export default function QgView() {
           </button>
         )}
 
-        {/* 9. PROTOCOLO TÁTICO & REGRAS DE SOBREVIVÊNCIA (Acordeão Discreto) */}
-        <Card className="p-3">
+        {/* 6. EVOLUÇÃO BIOLÓGICA & PROTOCOLO TÁTICO (Acordeão Elegante e Minimalista) */}
+        <Card className="p-3 bg-[#131318] border-line/70">
           <button
             type="button"
             onClick={() => setShowTacticsAccordion((v) => !v)}
-            className="w-full flex items-center justify-between text-left text-xs font-bold text-muted hover:text-gold transition-colors cursor-pointer"
+            className="w-full flex items-center justify-between text-left cursor-pointer"
           >
-            <span className="flex items-center gap-2">
-              <ShieldCheck size={14} className="text-gold flex-none" />
-              <span className="uppercase tracking-wider text-[10.5px]">
-                {curLang === 'en' ? 'Tactical Protocol & Bio Perks' : curLang === 'es' ? 'Protocolo Táctico y Efectos' : 'Protocolo Tático & Efeitos do Marco'}
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="grid h-6 w-6 place-items-center rounded-lg bg-gold/15 text-gold text-xs flex-none">
+                🧬
               </span>
-            </span>
-            <span className="flex items-center gap-1 text-[10.5px] text-muted">
-              {showTacticsAccordion ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            </span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-[#EDE5D5] truncate">
+                  {curLang === 'en' ? 'Biological Evolution & Tactics' : curLang === 'es' ? 'Evolución Biológica y Táctica' : 'Evolução Biológica & Protocolo'}
+                </span>
+                <span className="text-[10px] text-gold/80 font-mono truncate">
+                  Fase {tier.name} · {Math.min(100, Math.max(7, Math.round((d / 90) * 100)))}% Restauração
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-muted flex-none pl-2">
+              <span className="text-[10px] uppercase font-bold text-gold/70 hidden sm:inline">
+                {showTacticsAccordion ? 'Fechar' : 'Explorar'}
+              </span>
+              {showTacticsAccordion ? <ChevronUp size={16} className="text-gold" /> : <ChevronDown size={16} />}
+            </div>
           </button>
 
           {showTacticsAccordion && (
             <div className="mt-3 pt-3 border-t border-line/60 flex flex-col gap-3">
-              {/* As 3 regras táticas */}
-              <div className="flex flex-col gap-2">
+              {/* Efeitos Ativos */}
+              {bioData && bioData.perks && bioData.perks.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[9.5px] font-mono uppercase font-black tracking-wider text-muted">
+                    {curLang === 'en' ? 'Active Neurochemical Effects:' : curLang === 'es' ? 'Efectos Neuroquímicos Activos:' : 'Efeitos Neuroquímicos Deste Marco:'}
+                  </span>
+                  {bioData.perks.map((perk, idx) => (
+                    <div key={idx} className="flex items-start gap-2 rounded-lg border border-line/50 bg-surface px-2.5 py-1.5 text-left text-[11px] text-[#EDE5D5]">
+                      <span className="text-gold text-xs flex-none mt-0.5">✦</span>
+                      <span className="leading-snug">{perk}</span>
+                    </div>
+                  ))}
+                  {/* Barra de dopamina */}
+                  <div className="mt-1 pt-1.5">
+                    <div className="flex items-center justify-between text-[9px] font-bold text-muted mb-1">
+                      <span>{curLang === 'en' ? 'Dopamine Receptors Rewiring' : curLang === 'es' ? 'Reprogramación de Dopamina' : 'Receptores de Dopamina'}</span>
+                      <span className="font-mono text-gold">{Math.min(100, Math.max(7, Math.round((d / 90) * 100)))}%</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#202028]">
+                      <div 
+                        className="h-full rounded-full bg-gradient-to-r from-danger via-amber-500 to-gold transition-all duration-500"
+                        style={{ width: `${Math.min(100, Math.max(7, Math.round((d / 90) * 100)))}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Regras Táticas */}
+              <div className="flex flex-col gap-2 pt-2 border-t border-line/50">
+                <span className="text-[9.5px] font-mono uppercase font-black tracking-wider text-muted">
+                  {curLang === 'en' ? 'Tactical Survival Rules:' : curLang === 'es' ? 'Reglas Tácticas de Supervivencia:' : 'Regras Táticas de Combate:'}
+                </span>
                 <div className="rounded border border-danger/30 bg-danger/5 p-2">
                   <div className="flex items-center gap-1.5 text-danger font-bold text-[10px] uppercase tracking-wider mb-0.5">
                     <ShieldAlert size={12} />
@@ -1331,7 +1248,6 @@ export default function QgView() {
                   </div>
                   <p className="text-[10.5px] text-muted leading-tight">{tac.riskDesc[curLang]}</p>
                 </div>
-
                 <div className="rounded border border-gold/30 bg-gold/5 p-2">
                   <div className="flex items-center gap-1.5 text-gold font-bold text-[10px] uppercase tracking-wider mb-0.5">
                     <Target size={12} />
@@ -1339,7 +1255,6 @@ export default function QgView() {
                   </div>
                   <p className="text-[10.5px] text-muted leading-tight">{tac.goldenRuleDesc[curLang]}</p>
                 </div>
-
                 <div className="rounded border border-ok/30 bg-ok/5 p-2">
                   <div className="flex items-center gap-1.5 text-ok font-bold text-[10px] uppercase tracking-wider mb-0.5">
                     <Flame size={12} />
@@ -1357,105 +1272,39 @@ export default function QgView() {
 
   return (
     <div className="grid gap-3.5 w-full max-w-full overflow-x-hidden">
-      {/* SELETOR DE CATEGORIAS RESPONSIVO (Desktop: Abas / Mobile: 3 Pontinhos) */}
+      {/* SELETOR DE VISTAS (Combate vs Linha do Tempo) */}
       <div className="flex items-center justify-between gap-2 border-b border-line pb-2.5 min-w-0">
-        {/* Mobile: Categoria Ativa + 3 Pontinhos */}
-        <div className="sm:hidden flex items-center justify-between w-full relative min-w-0">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            {(() => {
-              const currentCat = QG_CATEGORIES.find((c) => c.id === activeCategory) || QG_CATEGORIES[0];
-              const IconComp = currentCat.icon;
-              return (
-                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface2 border border-gold/30 text-gold font-bold text-xs truncate max-w-full">
-                  <IconComp size={14} className="flex-none" />
-                  <span className="truncate">{getCategoryLabel(currentCat.id)}</span>
-                </div>
-              );
-            })()}
-          </div>
-
-          <div className="relative flex-none pl-2">
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1.5 rounded-lg border border-line bg-surface hover:border-gold/50 text-ink transition-colors flex items-center justify-center"
-              aria-label="Abrir menu de categorias"
-            >
-              <MoreVertical size={16} />
-            </button>
-
-            {mobileMenuOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-60 rounded-lg border border-line bg-surface2 shadow-xl z-50 p-1">
-                {QG_CATEGORIES.map((cat) => {
-                  const Icon = cat.icon;
-                  const isSelected = activeCategory === cat.id;
-                  const badge = getCategoryBadge(cat.id);
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveCategory(cat.id);
-                        setMobileMenuOpen(false);
-                        AF.click();
-                      }}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-semibold transition-colors ${
-                        isSelected
-                          ? 'bg-gold/15 text-gold font-bold'
-                          : 'text-muted hover:text-ink hover:bg-surface'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Icon size={14} className={isSelected ? 'text-gold' : 'text-muted'} />
-                        <span>{getCategoryLabel(cat.id)}</span>
-                      </div>
-                      {badge && (
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface border border-line">
-                          {badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Desktop: Abas Horizontais */}
-        <div className="hidden sm:flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            {QG_CATEGORIES.map((cat) => {
-              const Icon = cat.icon;
-              const isSelected = activeCategory === cat.id;
-              const badge = getCategoryBadge(cat.id);
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveCategory(cat.id);
-                    AF.click();
-                  }}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all border ${
-                    isSelected
-                      ? 'border-gold bg-gold/15 text-gold shadow-sm'
-                      : 'border-line bg-surface hover:bg-surface2 text-muted hover:text-ink'
-                  }`}
-                >
-                  <Icon size={14} className={isSelected ? 'text-gold' : 'text-muted'} />
-                  <span>{getCategoryLabel(cat.id)}</span>
-                  {badge && (
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
-                      isSelected ? 'bg-gold/20 text-gold' : 'bg-surface2 text-muted'
-                    }`}>
-                      {badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+          {QG_CATEGORIES.map((cat) => {
+            const Icon = cat.icon;
+            const isSelected = activeCategory === cat.id;
+            const badge = getCategoryBadge(cat.id);
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  setActiveCategory(cat.id);
+                  AF.click();
+                }}
+                className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs font-bold transition-all border cursor-pointer select-none ${
+                  isSelected
+                    ? 'border-gold/80 bg-gold/15 text-gold shadow-sm'
+                    : 'border-line bg-surface hover:bg-surface2 text-muted hover:text-[#EDE5D5]'
+                }`}
+              >
+                <Icon size={14} className={isSelected ? 'text-gold' : 'text-muted'} />
+                <span className="truncate">{getCategoryLabel(cat.id)}</span>
+                {badge && (
+                  <span className={`text-[9.5px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                    isSelected ? 'bg-gold/20 text-gold' : 'bg-surface2 text-muted'
+                  }`}>
+                    {badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
