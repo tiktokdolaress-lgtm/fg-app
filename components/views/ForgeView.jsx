@@ -480,124 +480,82 @@ export default function ForgeView() {
   };
 
   return (
-    <div className="grid gap-3.5">
-      {/* SELETOR DE CATEGORIAS RESPONSIVO (Desktop: Abas / Mobile: 3 Pontinhos) */}
-      <div className="flex items-center justify-between gap-2 border-b border-line pb-3">
-        {/* Mobile: Categoria Ativa + 3 Pontinhos */}
-        <div className="sm:hidden flex items-center justify-between w-full relative">
-          <div className="flex items-center gap-2">
-            {(() => {
-              const currentCat = FORGE_CATEGORIES.find((c) => c.id === activeCategory) || FORGE_CATEGORIES[0];
-              const IconComp = currentCat.icon;
-              return (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface2 border border-gold/30 text-gold font-bold text-xs">
-                  <IconComp size={15} />
-                  <span>{currentCat.label}</span>
-                </div>
-              );
-            })()}
-          </div>
-
-          <div className="relative">
+    <div className="flex flex-col gap-3.5 w-full max-w-full min-w-0 overflow-x-hidden">
+      {/* SELETOR DE CATEGORIAS RESPONSIVO */}
+      <div className="w-full max-w-full min-w-0 p-1 rounded-xl bg-surface2/80 border border-line/80 flex items-center gap-1 sm:gap-2">
+        {FORGE_CATEGORIES.map((cat) => {
+          const Icon = cat.icon;
+          const isSelected = activeCategory === cat.id;
+          return (
             <button
+              key={cat.id}
               type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg border border-line bg-surface hover:border-gold/50 text-ink transition-colors flex items-center justify-center"
-              aria-label="Abrir menu de categorias"
+              onClick={() => {
+                AF.click();
+                setActiveCategory(cat.id);
+              }}
+              className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2 sm:px-3 rounded-lg text-xs font-bold transition-all truncate select-none cursor-pointer ${
+                isSelected
+                  ? 'bg-gold text-[#141414] shadow-sm font-extrabold'
+                  : 'text-muted hover:text-ink hover:bg-surface/50'
+              }`}
             >
-              <MoreVertical size={16} />
+              <Icon size={14} className="flex-none" />
+              <span className="truncate">
+                {cat.id === 'active' ? (curLang === 'en' ? 'Protocol' : curLang === 'es' ? 'Protocolo' : 'Protocolo') :
+                 cat.id === 'reserve' ? (curLang === 'en' ? 'Reserve' : curLang === 'es' ? 'Reserva' : 'Reserva') :
+                 (curLang === 'en' ? 'Slots' : curLang === 'es' ? 'Reglas' : 'Regras')}
+              </span>
+              {cat.id === 'active' && (
+                <span className={`text-[9.5px] px-1.5 py-0.2 rounded font-mono font-bold flex-none ${
+                  isSelected ? 'bg-black/20 text-black' : 'bg-surface text-gold'
+                }`}>
+                  {activeCount}/{maxSlots >= 99 ? '∞' : maxSlots}
+                </span>
+              )}
             </button>
-
-            {mobileMenuOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-48 rounded-lg border border-line bg-surface2 shadow-xl z-50 p-1">
-                {FORGE_CATEGORIES.map((cat) => {
-                  const Icon = cat.icon;
-                  const isSelected = activeCategory === cat.id;
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveCategory(cat.id);
-                        setMobileMenuOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-semibold transition-colors ${
-                        isSelected
-                          ? 'bg-gold/15 text-gold font-bold'
-                          : 'text-muted hover:text-ink hover:bg-surface'
-                      }`}
-                    >
-                      <Icon size={14} className={isSelected ? 'text-gold' : 'text-muted'} />
-                      <span>{cat.label}</span>
-                      {isSelected && <Check size={12} className="ml-auto text-gold" />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Desktop: Abas Horizontais */}
-        <div className="hidden sm:flex items-center gap-2 w-full">
-          {FORGE_CATEGORIES.map((cat) => {
-            const Icon = cat.icon;
-            const isSelected = activeCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setActiveCategory(cat.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all border ${
-                  isSelected
-                    ? 'border-gold bg-gold/15 text-gold shadow-sm'
-                    : 'border-line bg-surface hover:bg-surface2 text-muted hover:text-ink'
-                }`}
-              >
-                <Icon size={14} className={isSelected ? 'text-gold' : 'text-muted'} />
-                <span>{cat.label}</span>
-              </button>
-            );
-          })}
-        </div>
+          );
+        })}
       </div>
 
       {/* 1. PROTOCOLO ATIVO */}
       {activeCategory === 'active' && (
-        <div className="grid gap-3.5">
+        <div className="flex flex-col gap-3.5 w-full max-w-full min-w-0 overflow-hidden">
           {/* TOPO COMPACTO: Regras de Desbloqueio e Slots */}
-          <Card className="p-3.5 sm:p-4 border-gold/30 bg-surface2/60">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <K className="mb-0">REGRAS DE SLOTS POR PATAMAR</K>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gold/10 border border-gold/30 text-gold font-bold">
-                    {activeCount}/{maxSlots >= 99 ? '∞' : maxSlots} SLOTS ATIVOS
+          <Card className="p-3 sm:p-3.5 border-gold/30 bg-surface2/60 w-full max-w-full min-w-0 overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 min-w-0 w-full">
+              <div className="flex-1 min-w-0 w-full">
+                <div className="flex items-center justify-between gap-2 mb-1.5 min-w-0">
+                  <K className="mb-0 text-[10.5px] sm:text-xs truncate">REGRAS DE SLOTS POR PATAMAR</K>
+                  <span className="text-[9.5px] sm:text-[10px] font-mono px-2 py-0.5 rounded bg-gold/10 border border-gold/30 text-gold font-bold flex-none">
+                    {activeCount}/{maxSlots >= 99 ? '∞' : maxSlots} ATIVOS
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted overflow-x-auto no-scrollbar pb-1 -mx-0.5 px-0.5">
-                  {FORGE_RULES && FORGE_RULES.map((r, i) => {
-                    const isCur = d >= r.min && (i === FORGE_RULES.length - 1 || d < FORGE_RULES[i + 1].min);
-                    return (
-                      <span
-                        key={r.min}
-                        className={`shrink-0 px-2 py-0.5 rounded border transition-colors ${
-                          isCur
-                            ? 'border-gold bg-gold/15 text-gold font-bold shadow-[0_0_8px_rgba(255,200,70,0.25)]'
-                            : 'border-line/60 bg-surface text-muted/80'
-                        }`}
-                      >
-                        {r.min}+d → {r.slots >= 99 ? '∞' : r.slots} {r.slots === 1 ? 'hábito' : 'hábitos'}
-                      </span>
-                    );
-                  })}
+                <div className="relative w-full min-w-0 overflow-hidden">
+                  <div className="flex items-center gap-1.5 text-[9.5px] sm:text-[10px] font-mono text-muted overflow-x-auto no-scrollbar pb-1 w-full min-w-0">
+                    {FORGE_RULES && FORGE_RULES.map((r, i) => {
+                      const isCur = d >= r.min && (i === FORGE_RULES.length - 1 || d < FORGE_RULES[i + 1].min);
+                      return (
+                        <span
+                          key={r.min}
+                          className={`shrink-0 px-2 py-0.5 rounded border transition-colors whitespace-nowrap ${
+                            isCur
+                              ? 'border-gold bg-gold/15 text-gold font-bold shadow-[0_0_8px_rgba(255,200,70,0.25)]'
+                              : 'border-line/60 bg-surface text-muted/80'
+                          }`}
+                        >
+                          {r.min}+d → {r.slots >= 99 ? '∞' : r.slots} {r.slots === 1 ? 'hábito' : 'hábitos'}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
               <button
                 type="button"
                 onClick={openCreateModal}
-                className="btn-gold flex-none py-2 px-4 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm"
+                className="btn-gold w-full sm:w-auto flex-none py-2 px-3.5 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm"
               >
                 <Plus size={14} strokeWidth={2.5} />
                 <span>CRIAR HÁBITO</span>
@@ -605,284 +563,284 @@ export default function ForgeView() {
             </div>
           </Card>
 
-      {/* 2. ALERTA DE NEGLIGÊNCIA COMPACTO */}
-      {neglected.length > 0 && (
-        <Card className="border-danger/40 bg-danger/5 p-3.5">
-          <div className="flex items-center gap-1.5 mb-2 text-danger font-bold text-xs uppercase tracking-wider">
-            <AlertTriangle size={14} />
-            <span>ALERTA DE NEGLIGÊNCIA — A FORJA ESFRIA</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {neglected.map((h) => (
-              <div
-                key={h.id}
-                className="flex items-center justify-between gap-2 p-2 rounded border border-danger/30 bg-surface2 text-xs"
-              >
-                <span className="flex items-center gap-1.5 truncate font-semibold">
-                  <span>{h.icon}</span>
-                  <span className="truncate">{h.n}</span>
-                </span>
-                <span className="flex-none font-mono text-[10.5px] font-bold text-danger">
-                  2+ dias sem fazer
-                </span>
+          {/* 2. ALERTA DE NEGLIGÊNCIA COMPACTO */}
+          {neglected.length > 0 && (
+            <Card className="border-danger/40 bg-danger/5 p-3 sm:p-3.5 w-full max-w-full min-w-0 overflow-hidden">
+              <div className="flex items-center gap-1.5 mb-2 text-danger font-bold text-xs uppercase tracking-wider min-w-0">
+                <AlertTriangle size={14} className="flex-none" />
+                <span className="truncate">ALERTA DE NEGLIGÊNCIA — A FORJA ESFRIA</span>
               </div>
-            ))}
-          </div>
-          <p className="mt-2 text-[10.5px] text-muted">
-            Guerreiro que desaparece do treino vira estatística. Retome HOJE.
-          </p>
-        </Card>
-      )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 w-full min-w-0">
+                {neglected.map((h) => (
+                  <div
+                    key={h.id}
+                    className="flex items-center justify-between gap-2 p-2 rounded-lg border border-danger/30 bg-surface2 text-xs w-full min-w-0 overflow-hidden"
+                  >
+                    <span className="flex items-center gap-1.5 truncate font-semibold min-w-0 flex-1">
+                      <span className="flex-none">{h.icon}</span>
+                      <span className="truncate">{h.n}</span>
+                    </span>
+                    <span className="flex-none font-mono text-[10px] sm:text-[10.5px] font-bold text-danger whitespace-nowrap pl-1">
+                      2+ dias sem fazer
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-[10.5px] text-muted leading-tight">
+                Guerreiro que desaparece do treino vira estatística. Retome HOJE.
+              </p>
+            </Card>
+          )}
 
-      {/* 3. ATIVOS NO PROTOCOLO (Com Edição, Exclusão e Arquivamento) */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <K className="mb-0">⚡ ATIVOS NO PROTOCOLO ({activeCount}/{maxSlots >= 99 ? '∞' : maxSlots} SLOTS)</K>
-        </div>
+          {/* 3. ATIVOS NO PROTOCOLO */}
+          <div className="w-full max-w-full min-w-0">
+            <div className="flex items-center justify-between mb-2">
+              <K className="mb-0">⚡ ATIVOS NO PROTOCOLO ({activeCount}/{maxSlots >= 99 ? '∞' : maxSlots} SLOTS)</K>
+            </div>
 
-        {activeHabits.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
-            {activeHabits.map((h) => {
-              const isDone = fd.some((x) => String(x) === String(h.id));
-              const isFail = ff.some((x) => String(x) === String(h.id));
-              const tm = (L.hTime && L.hTime(S, h.id)) || (S.forge && S.forge.times && S.forge.times[h.id]) || '';
-              const isBenefitOpen = openBenefitId === h.id;
-              const isHistoryOpen = openHistoryId === h.id;
-              const benefitText = getHabitBenefitText(h, lang);
-              const isCustom = isCustomHabit(h.id);
+            {activeHabits.length > 0 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 w-full max-w-full min-w-0">
+                {activeHabits.map((h) => {
+                  const isDone = fd.some((x) => String(x) === String(h.id));
+                  const isFail = ff.some((x) => String(x) === String(h.id));
+                  const tm = (L.hTime && L.hTime(S, h.id)) || (S.forge && S.forge.times && S.forge.times[h.id]) || '';
+                  const isBenefitOpen = openBenefitId === h.id;
+                  const isHistoryOpen = openHistoryId === h.id;
+                  const benefitText = getHabitBenefitText(h, lang);
+                  const isCustom = isCustomHabit(h.id);
 
-              return (
-                <Card
-                  key={h.id}
-                  className={`p-3 transition-all border ${
-                    isDone
-                      ? 'border-gold/50 bg-gold/5'
-                      : isFail
-                      ? 'border-danger/50 bg-danger/5'
-                      : 'border-line hover:border-gold/30'
-                  }`}
-                >
-                  {/* Cabeçalho com ações de Editar, Excluir e Arquivar */}
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xl flex-none">{h.icon}</span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs sm:text-[13.5px] font-bold block truncate ${isDone ? 'text-gold' : isFail ? 'text-danger' : 'text-ink'}`}>
-                            {h.n}
-                          </span>
-                          {/* Botões de Ação para hábitos customizados */}
-                          {isCustom && (
-                            <div className="flex items-center gap-1 flex-none">
-                              <button
-                                type="button"
-                                title={LBL.editHabit[curLang]}
-                                onClick={() => openEditModal(h)}
-                                className="text-muted hover:text-gold p-0.5"
-                              >
-                                <Edit3 size={13} />
-                              </button>
-                              <button
-                                type="button"
-                                title={LBL.deleteHabit[curLang]}
-                                onClick={() => deleteCustomHabit(h.id)}
-                                className="text-muted hover:text-danger p-0.5"
-                              >
-                                <Trash2 size={13} />
-                              </button>
+                  return (
+                    <Card
+                      key={h.id}
+                      className={`p-3 sm:p-3.5 transition-all border w-full max-w-full min-w-0 overflow-hidden ${
+                        isDone
+                          ? 'border-gold/50 bg-gold/5'
+                          : isFail
+                          ? 'border-danger/50 bg-danger/5'
+                          : 'border-line hover:border-gold/30'
+                      }`}
+                    >
+                      {/* Cabeçalho com ações de Editar, Excluir e Arquivar */}
+                      <div className="flex items-center justify-between gap-2 mb-2 min-w-0 w-full">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span className="text-xl flex-none">{h.icon}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className={`text-xs sm:text-[13.5px] font-bold block truncate ${isDone ? 'text-gold' : isFail ? 'text-danger' : 'text-ink'}`}>
+                                {h.n}
+                              </span>
+                              {/* Botões de Ação para hábitos customizados */}
+                              {isCustom && (
+                                <div className="flex items-center gap-1 flex-none">
+                                  <button
+                                    type="button"
+                                    title={LBL.editHabit[curLang]}
+                                    onClick={() => openEditModal(h)}
+                                    className="text-muted hover:text-gold p-0.5"
+                                  >
+                                    <Edit3 size={13} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    title={LBL.deleteHabit[curLang]}
+                                    onClick={() => deleteCustomHabit(h.id)}
+                                    className="text-muted hover:text-danger p-0.5"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-[9.5px] uppercase font-mono text-muted block truncate">
+                              #{String(h.id).slice(-4)} · {isCustom ? '★ PERSONALIZADO' : LBL.activeInProtocol[curLang]}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 sm:gap-1.5 flex-none pl-1">
+                          {/* Botão Arquivar */}
+                          <button
+                            type="button"
+                            title={LBL.archiveHabit[curLang]}
+                            onClick={() => toggleArchive(h.id)}
+                            className="text-muted/70 hover:text-gold p-1 rounded hover:bg-surface2 transition-colors flex-none"
+                          >
+                            <Archive size={14} />
+                          </button>
+
+                          {/* Botão de Status Ativo (clique para mover à reserva) */}
+                          <button
+                            type="button"
+                            title="Mover para a Reserva"
+                            onClick={() => toggleActive(h.id)}
+                            className="flex items-center gap-1 text-[9.5px] sm:text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-gold/20 text-gold border border-gold/40 hover:bg-gold/30 transition-colors flex-none"
+                          >
+                            {LBL.activeBtn[curLang]}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Linha de Ação: Concluir + Horário + Falhar/Desfazer */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 pt-2 border-t border-line/50 w-full min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleDone(h.id)}
+                          className={`flex-1 min-w-0 min-h-[36px] flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg border text-xs font-bold transition-all truncate ${
+                            isDone
+                              ? 'border-gold bg-gold text-[#141414] shadow-[0_0_12px_rgba(255,200,70,0.35)]'
+                              : 'border-line bg-surface hover:border-gold/50 text-muted hover:text-ink'
+                          }`}
+                        >
+                          <Check size={14} strokeWidth={2.5} className="flex-none" />
+                          <span className="truncate">{isDone ? LBL.completeBtn[curLang] : LBL.toCompleteBtn[curLang]}</span>
+                        </button>
+
+                        <div className="flex items-center gap-1 bg-surface px-1.5 sm:px-2 py-1 min-h-[36px] rounded-lg border border-line text-[11px] font-mono flex-none">
+                          <Clock size={12} className="text-gold flex-none" />
+                          <input
+                            type="time"
+                            value={tm}
+                            onChange={(e) => setTime(h.id, e.target.value)}
+                            className="bg-transparent text-ink focus:outline-none w-[48px] sm:w-[54px] text-center"
+                          />
+                        </div>
+
+                        {!isDone ? (
+                          <button
+                            type="button"
+                            title={LBL.failBtn[curLang]}
+                            onClick={() => toggleFailed(h.id)}
+                            className={`flex-none min-h-[36px] px-2.5 py-1 rounded-lg border text-xs font-bold transition-all flex items-center justify-center gap-1 ${
+                              isFail
+                                ? 'border-danger bg-danger text-white shadow-sm'
+                                : 'border-line bg-surface text-danger/80 hover:border-danger hover:text-danger'
+                            }`}
+                          >
+                            <X size={13} strokeWidth={2.5} className="flex-none" />
+                            <span className="hidden xs:inline sm:inline">{LBL.failBtn[curLang]}</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            title="Desfazer conclusão"
+                            onClick={() => toggleDone(h.id)}
+                            className="flex-none min-h-[36px] px-2.5 py-1 rounded-lg border border-line bg-surface text-[10.5px] font-mono text-muted hover:text-gold hover:border-gold/40 transition-colors"
+                          >
+                            Desfazer
+                          </button>
+                        )}
+                      </div>
+
+                      {/* BOTÕES EXPANSÍVEIS TÁTICOS */}
+                      <div className="mt-2.5 pt-2 border-t border-line/40 flex flex-col gap-1.5 w-full min-w-0">
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => setOpenHistoryId(isHistoryOpen ? null : h.id)}
+                            className="text-[10px] text-muted hover:text-gold flex items-center justify-between w-full font-mono py-0.5"
+                          >
+                            <span className="flex items-center gap-1">
+                              <CalendarDays size={11} className="text-gold2" />
+                              <span>{isHistoryOpen ? LBL.hideHistory[curLang] : LBL.viewHistory[curLang]}</span>
+                            </span>
+                            {isHistoryOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                          </button>
+                          {isHistoryOpen && renderLast7Days(h.id)}
+                        </div>
+
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => setOpenBenefitId(isBenefitOpen ? null : h.id)}
+                            className="text-[10px] text-muted hover:text-gold flex items-center justify-between w-full font-mono py-0.5"
+                          >
+                            <span className="flex items-center gap-1">
+                              <ShieldCheck size={11} className="text-gold" />
+                              <span>{isBenefitOpen ? LBL.hideBenefit[curLang] : LBL.viewBenefit[curLang]}</span>
+                            </span>
+                            {isBenefitOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                          </button>
+                          {isBenefitOpen && (
+                            <div className="mt-1 text-[11px] text-[#e3e3ea] bg-surface/90 p-2.5 rounded-lg border border-gold/30 leading-relaxed shadow-sm">
+                              <p className="flex items-start gap-1.5">
+                                <Sparkles size={12} className="text-gold flex-none mt-0.5" />
+                                <span>{benefitText}</span>
+                              </p>
                             </div>
                           )}
                         </div>
-                        <span className="text-[9.5px] uppercase font-mono text-muted">
-                          #{String(h.id).slice(-4)} · {isCustom ? '★ PERSONALIZADO' : LBL.activeInProtocol[curLang]}
-                        </span>
                       </div>
+                    </Card>
+                  );
+                })}
+
+                {/* CARD DE SLOT DISPONÍVEL */}
+                {activeCount < maxSlots && (
+                  <div
+                    onClick={() => setActiveCategory('reserve')}
+                    className="cursor-pointer border-2 border-dashed border-gold/30 hover:border-gold/60 bg-gold/5 hover:bg-gold/10 rounded-lg p-4 flex flex-col items-center justify-center text-center transition-all min-h-[145px] group w-full min-w-0"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gold/15 border border-gold/35 text-gold flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-sm">
+                      <Plus size={20} strokeWidth={2.5} />
                     </div>
-
-                    <div className="flex items-center gap-1.5 flex-none">
-                      {/* Botão Arquivar */}
-                      <button
-                        type="button"
-                        title={LBL.archiveHabit[curLang]}
-                        onClick={() => toggleArchive(h.id)}
-                        className="text-muted/70 hover:text-gold p-1"
-                      >
-                        <Archive size={14} />
-                      </button>
-
-                      {/* Botão de Status Ativo (clique para mover à reserva) */}
-                      <button
-                        type="button"
-                        title="Mover para a Reserva"
-                        onClick={() => toggleActive(h.id)}
-                        className="flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-gold/20 text-gold border border-gold/40 hover:bg-gold/30 transition-colors"
-                      >
-                        {LBL.activeBtn[curLang]}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Linha de Ação: Concluir + Horário + Falhar/Desfazer */}
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-line/50">
-                    <button
-                      type="button"
-                      onClick={() => toggleDone(h.id)}
-                      className={`flex-1 min-h-[38px] flex items-center justify-center gap-1.5 py-1.5 px-3 rounded border text-xs font-bold transition-all ${
-                        isDone
-                          ? 'border-gold bg-gold text-[#141414] shadow-[0_0_12px_rgba(255,200,70,0.35)]'
-                          : 'border-line bg-surface hover:border-gold/50 text-muted hover:text-ink'
-                      }`}
-                    >
-                      <Check size={14} strokeWidth={2.5} />
-                      <span>{isDone ? LBL.completeBtn[curLang] : LBL.toCompleteBtn[curLang]}</span>
-                    </button>
-
-                    <div className="flex items-center gap-1 bg-surface px-2 py-1.5 min-h-[38px] rounded border border-line text-[11px] font-mono">
-                      <Clock size={12} className="text-gold flex-none" />
-                      <input
-                        type="time"
-                        value={tm}
-                        onChange={(e) => setTime(h.id, e.target.value)}
-                        className="bg-transparent text-ink focus:outline-none w-[58px]"
-                      />
-                    </div>
-
-                    {!isDone ? (
-                      <button
-                        type="button"
-                        title={LBL.failBtn[curLang]}
-                        onClick={() => toggleFailed(h.id)}
-                        className={`flex-none min-h-[38px] py-1.5 px-3 rounded border text-[11px] font-bold transition-all flex items-center gap-1 ${
-                          isFail
-                            ? 'border-danger bg-danger text-white shadow-[0_0_8px_rgba(239,68,68,0.4)]'
-                            : 'border-line bg-surface text-danger/80 hover:border-danger hover:text-danger'
-                        }`}
-                      >
-                        <X size={13} strokeWidth={2.5} />
-                        <span className="hidden sm:inline">{LBL.failBtn[curLang]}</span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        title="Desfazer conclusão"
-                        onClick={() => toggleDone(h.id)}
-                        className="flex-none min-h-[38px] py-1.5 px-2.5 rounded border border-line bg-surface text-[10.5px] font-mono text-muted hover:text-gold hover:border-gold/40 transition-colors"
-                      >
-                        Desfazer
-                      </button>
-                    )}
-                  </div>
-
-                  {/* BOTÕES EXPANSÍVEIS TÁTICOS */}
-                  <div className="mt-2.5 pt-2 border-t border-line/40 flex flex-col gap-1.5">
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => setOpenHistoryId(isHistoryOpen ? null : h.id)}
-                        className="text-[10px] text-muted hover:text-gold flex items-center justify-between w-full font-mono py-0.5"
-                      >
-                        <span className="flex items-center gap-1">
-                          <CalendarDays size={11} className="text-gold2" />
-                          <span>{isHistoryOpen ? LBL.hideHistory[curLang] : LBL.viewHistory[curLang]}</span>
-                        </span>
-                        {isHistoryOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                      </button>
-                      {isHistoryOpen && renderLast7Days(h.id)}
-                    </div>
-
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => setOpenBenefitId(isBenefitOpen ? null : h.id)}
-                        className="text-[10px] text-muted hover:text-gold flex items-center justify-between w-full font-mono py-0.5"
-                      >
-                        <span className="flex items-center gap-1">
-                          <ShieldCheck size={11} className="text-gold" />
-                          <span>{isBenefitOpen ? LBL.hideBenefit[curLang] : LBL.viewBenefit[curLang]}</span>
-                        </span>
-                        {isBenefitOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                      </button>
-                      {isBenefitOpen && (
-                        <div className="mt-1 text-[11px] text-[#e3e3ea] bg-surface/90 p-2.5 rounded border border-gold/30 leading-relaxed shadow-sm">
-                          <p className="flex items-start gap-1.5">
-                            <Sparkles size={12} className="text-gold flex-none mt-0.5" />
-                            <span>{benefitText}</span>
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-
-            {/* CARD DE SLOT DISPONÍVEL (Elimina vácuo visual quando há slot livre) */}
-            {activeCount < maxSlots && (
-              <div
-                onClick={() => setActiveCategory('reserve')}
-                className="cursor-pointer border-2 border-dashed border-gold/30 hover:border-gold/60 bg-gold/5 hover:bg-gold/10 rounded-lg p-4 flex flex-col items-center justify-center text-center transition-all min-h-[145px] group"
-              >
-                <div className="w-10 h-10 rounded-full bg-gold/15 border border-gold/35 text-gold flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-sm">
-                  <Plus size={20} strokeWidth={2.5} />
-                </div>
-                <b className="text-xs text-gold font-bold uppercase tracking-wider block">
-                  Slot Disponível ({activeCount + 1}/{maxSlots >= 99 ? '∞' : maxSlots})
-                </b>
-                <span className="text-[11px] text-muted mt-1">
-                  Toque aqui para ativar um hábito da Reserva →
-                </span>
-              </div>
-            )}
-
-            {/* CARD DE PRÓXIMO PATAMAR (Elimina vácuo visual quando slots estão cheios e a contagem é ímpar) */}
-            {activeCount >= maxSlots && activeHabits.length % 2 === 1 && (
-              <div className="border border-line/70 bg-surface2/70 rounded-lg p-4 flex flex-col justify-between min-h-[145px]">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[10.5px] font-mono font-bold uppercase text-gold2 tracking-wider flex items-center gap-1.5">
-                      <ShieldCheck size={13} className="text-gold" /> Próximo Desbloqueio
+                    <b className="text-xs text-gold font-bold uppercase tracking-wider block">
+                      Slot Disponível ({activeCount + 1}/{maxSlots >= 99 ? '∞' : maxSlots})
+                    </b>
+                    <span className="text-[11px] text-muted mt-1">
+                      Toque aqui para ativar um hábito da Reserva →
                     </span>
-                    <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-surface border border-line text-muted">Slots Esgotados</span>
                   </div>
-                  <p className="text-xs text-ink font-semibold mt-1">
-                    {nextRule ? `Mantenha a retenção até ${nextRule.min} dias para destravar ${nextRule.slots >= 99 ? 'slots ilimitados' : `${nextRule.slots} slots`} no protocolo.` : 'Você atingiu o patamar supremo de slots ilimitados!'}
-                  </p>
-                </div>
-                <div className="pt-2 border-t border-line/60 flex items-center justify-between text-[11px] text-muted">
-                  <span>Slots em uso: <b className="text-gold font-mono">{activeCount}/{maxSlots >= 99 ? '∞' : maxSlots}</b></span>
+                )}
+
+                {/* CARD DE PRÓXIMO PATAMAR */}
+                {activeCount >= maxSlots && activeHabits.length % 2 === 1 && (
+                  <div className="border border-line/70 bg-surface2/70 rounded-lg p-4 flex flex-col justify-between min-h-[145px] w-full min-w-0">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10.5px] font-mono font-bold uppercase text-gold2 tracking-wider flex items-center gap-1.5">
+                          <ShieldCheck size={13} className="text-gold" /> Próximo Desbloqueio
+                        </span>
+                        <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-surface border border-line text-muted">Slots Esgotados</span>
+                      </div>
+                      <p className="text-xs text-ink font-semibold mt-1">
+                        {nextRule ? `Mantenha a retenção até ${nextRule.min} dias para destravar ${nextRule.slots >= 99 ? 'slots ilimitados' : `${nextRule.slots} slots`} no protocolo.` : 'Você atingiu o patamar supremo de slots ilimitados!'}
+                      </p>
+                    </div>
+                    <div className="pt-2 border-t border-line/60 flex items-center justify-between text-[11px] text-muted">
+                      <span>Slots em uso: <b className="text-gold font-mono">{activeCount}/{maxSlots >= 99 ? '∞' : maxSlots}</b></span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveCategory('reserve')}
+                        className="text-gold hover:underline text-[11px] font-semibold"
+                      >
+                        Ver Reserva →
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Card className="text-center py-6 w-full min-w-0">
+                <Empty>Nenhum hábito ativo no protocolo.<br />Selecione hábitos na Reserva para forjar seu dia.</Empty>
+                <div className="mt-3">
                   <button
                     type="button"
                     onClick={() => setActiveCategory('reserve')}
-                    className="text-gold hover:underline text-[11px] font-semibold"
+                    className="btn-gold py-1.5 px-4 text-xs font-bold"
                   >
-                    Ver Reserva →
+                    Explorar Reserva de Hábitos →
                   </button>
                 </div>
-              </div>
+              </Card>
             )}
           </div>
-        ) : (
-          <Card className="text-center py-6">
-            <Empty>Nenhum hábito ativo no protocolo.<br />Selecione hábitos na Reserva para forjar seu dia.</Empty>
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={() => setActiveCategory('reserve')}
-                className="btn-gold py-1.5 px-4 text-xs font-bold"
-              >
-                Explorar Reserva de Hábitos →
-              </button>
-            </div>
-          </Card>
-        )}
-      </div>
-    </div>
-  )}
+        </div>
+      )}
 
       {/* 2. RESERVA DA FORJA COM FILTROS DE CATEGORIA */}
       {activeCategory === 'reserve' && (
-        <div id="reserva-forja-section" className="grid gap-3.5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div id="reserva-forja-section" className="flex flex-col gap-3.5 w-full max-w-full min-w-0 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0 w-full">
             <div className="flex items-center gap-2">
               <K className="mb-0">📦 RESERVA DA FORJA ({filteredReserve.length} DISPONÍVEIS)</K>
             </div>
@@ -897,7 +855,7 @@ export default function ForgeView() {
           </div>
 
           {/* Filtros por Categorias + Aba Arquivados com Scroll Horizontal Suave no Mobile */}
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1 max-w-full -mx-0.5 px-0.5">
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1 w-full max-w-full min-w-0">
             {[
               { id: 'all', label: PIL.all[curLang] },
               { id: 'body', label: PIL.body[curLang] },
@@ -917,7 +875,7 @@ export default function ForgeView() {
                   key={p.id}
                   type="button"
                   onClick={() => setSelectedPillar(p.id)}
-                  className={`shrink-0 text-[10.5px] font-mono px-2.5 py-1 rounded transition-all flex items-center gap-1 ${
+                  className={`shrink-0 text-[10.5px] font-mono px-2.5 py-1 rounded transition-all flex items-center gap-1 whitespace-nowrap ${
                     isSelected
                       ? 'bg-gold text-[#141414] font-bold shadow-sm'
                       : 'bg-surface2 text-muted hover:text-ink border border-line'
@@ -932,142 +890,142 @@ export default function ForgeView() {
             })}
           </div>
 
-        {/* Grade de 3 Colunas na Reserva */}
-        {filteredReserve.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {filteredReserve.map((h) => {
-              const isBenefitOpen = openBenefitId === h.id;
-              const benefitText = getHabitBenefitText(h, lang);
-              const isCustom = isCustomHabit(h.id);
-              const isArchived = archivedIds.some((arid) => String(arid) === String(h.id));
+          {/* Grade de 3 Colunas na Reserva */}
+          {filteredReserve.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 w-full max-w-full min-w-0">
+              {filteredReserve.map((h) => {
+                const isBenefitOpen = openBenefitId === h.id;
+                const benefitText = getHabitBenefitText(h, lang);
+                const isCustom = isCustomHabit(h.id);
+                const isArchived = archivedIds.some((arid) => String(arid) === String(h.id));
 
-              return (
-                <div
-                  key={h.id}
-                  className={`p-2.5 rounded-r border transition-colors flex flex-col justify-between ${
-                    isArchived
-                      ? 'border-line/40 bg-surface/50 opacity-70'
-                      : 'border-line bg-surface2/70 hover:border-gold/40'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-lg flex-none">{h.icon}</span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-bold text-ink truncate">
-                            {h.n}
-                          </span>
-                          {/* Botão de Editar/Excluir se for customizado na reserva */}
+                return (
+                  <div
+                    key={h.id}
+                    className={`p-2.5 rounded-lg border transition-colors flex flex-col justify-between w-full min-w-0 overflow-hidden ${
+                      isArchived
+                        ? 'border-line/40 bg-surface/50 opacity-70'
+                        : 'border-line bg-surface2/70 hover:border-gold/40'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="text-lg flex-none">{h.icon}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-xs font-bold text-ink truncate">
+                              {h.n}
+                            </span>
+                            {/* Botão de Editar/Excluir se for customizado na reserva */}
+                            {isCustom && (
+                              <div className="flex items-center gap-1 flex-none">
+                                <button
+                                  type="button"
+                                  title={LBL.editHabit[curLang]}
+                                  onClick={() => openEditModal(h)}
+                                  className="text-muted hover:text-gold p-0.5"
+                                >
+                                  <Edit3 size={11} />
+                                </button>
+                                <button
+                                  type="button"
+                                  title={LBL.deleteHabit[curLang]}
+                                  onClick={() => deleteCustomHabit(h.id)}
+                                  className="text-muted hover:text-danger p-0.5"
+                                >
+                                  <Trash2 size={11} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                           {isCustom && (
-                            <div className="flex items-center gap-1 flex-none">
-                              <button
-                                type="button"
-                                title={LBL.editHabit[curLang]}
-                                onClick={() => openEditModal(h)}
-                                className="text-muted hover:text-gold p-0.5"
-                              >
-                                <Edit3 size={11} />
-                              </button>
-                              <button
-                                type="button"
-                                title={LBL.deleteHabit[curLang]}
-                                onClick={() => deleteCustomHabit(h.id)}
-                                className="text-muted hover:text-danger p-0.5"
-                              >
-                                <Trash2 size={11} />
-                              </button>
-                            </div>
+                            <span className="text-[8.5px] uppercase font-mono text-gold/80 block truncate">
+                              ★ Personalizado
+                            </span>
                           )}
                         </div>
-                        {isCustom && (
-                          <span className="text-[8.5px] uppercase font-mono text-gold/80 block">
-                            ★ Personalizado
-                          </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 flex-none pl-1">
+                        {/* Botão Arquivar / Desarquivar */}
+                        <button
+                          type="button"
+                          title={isArchived ? LBL.unarchiveHabit[curLang] : LBL.archiveHabit[curLang]}
+                          onClick={() => toggleArchive(h.id)}
+                          className="text-muted/70 hover:text-gold p-1 rounded hover:bg-surface"
+                        >
+                          {isArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
+                        </button>
+
+                        {/* Botão Ativar */}
+                        {!isArchived && (
+                          <button
+                            type="button"
+                            title="Ativar no Protocolo"
+                            onClick={() => toggleActive(h.id)}
+                            className="flex-none text-[10px] font-mono px-2 py-0.5 rounded border border-line bg-surface text-muted hover:border-gold hover:text-gold transition-colors font-bold"
+                          >
+                            {LBL.activateBtn[curLang]}
+                          </button>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 flex-none">
-                      {/* Botão Arquivar / Desarquivar */}
+                    {/* Botão Expansível de Benefício na Reserva */}
+                    <div className="mt-1.5 pt-1 border-t border-line/30 w-full min-w-0">
                       <button
                         type="button"
-                        title={isArchived ? LBL.unarchiveHabit[curLang] : LBL.archiveHabit[curLang]}
-                        onClick={() => toggleArchive(h.id)}
-                        className="text-muted/70 hover:text-gold p-1"
+                        onClick={() => setOpenBenefitId(isBenefitOpen ? null : h.id)}
+                        className="text-[9.5px] text-muted hover:text-gold flex items-center justify-between w-full font-mono py-0.5"
                       >
-                        {isArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
+                        <span className="flex items-center gap-1 truncate">
+                          <ShieldCheck size={10} className="text-gold flex-none" />
+                          <span className="truncate">{isBenefitOpen ? LBL.hideBenefit[curLang] : LBL.viewBenefit[curLang]}</span>
+                        </span>
+                        {isBenefitOpen ? <ChevronUp size={10} className="flex-none" /> : <ChevronDown size={10} className="flex-none" />}
                       </button>
-
-                      {/* Botão Ativar */}
-                      {!isArchived && (
-                        <button
-                          type="button"
-                          title="Ativar no Protocolo"
-                          onClick={() => toggleActive(h.id)}
-                          className="flex-none text-[10px] font-mono px-2 py-0.5 rounded border border-line bg-surface text-muted hover:border-gold hover:text-gold transition-colors font-bold"
-                        >
-                          {LBL.activateBtn[curLang]}
-                        </button>
+                      {isBenefitOpen && (
+                        <div className="mt-1 text-[10px] text-muted bg-surface p-2 rounded-lg border border-line leading-snug">
+                          {benefitText}
+                        </div>
                       )}
                     </div>
                   </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-6 text-center bg-surface2/30 rounded-lg border border-line/40 w-full min-w-0">
+              <p className="text-xs text-muted">
+                {selectedPillar === 'archived' ? 'Nenhum hábito arquivado no momento.' : 'Nenhum hábito nesta categoria.'}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
-                  {/* Botão Expansível de Benefício na Reserva */}
-                  <div className="mt-1.5 pt-1 border-t border-line/30">
-                    <button
-                      type="button"
-                      onClick={() => setOpenBenefitId(isBenefitOpen ? null : h.id)}
-                      className="text-[9.5px] text-muted hover:text-gold flex items-center justify-between w-full font-mono py-0.5"
-                    >
-                      <span className="flex items-center gap-1">
-                        <ShieldCheck size={10} className="text-gold" />
-                        <span>{isBenefitOpen ? LBL.hideBenefit[curLang] : LBL.viewBenefit[curLang]}</span>
-                      </span>
-                      {isBenefitOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                    </button>
-                    {isBenefitOpen && (
-                      <div className="mt-1 text-[10px] text-muted bg-surface p-2 rounded border border-line leading-snug">
-                        {benefitText}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="py-6 text-center bg-surface2/30 rounded border border-line/40">
-            <p className="text-xs text-muted">
-              {selectedPillar === 'archived' ? 'Nenhum hábito arquivado no momento.' : 'Nenhum hábito nesta categoria.'}
-            </p>
-          </div>
-        )}
-      </div>
-    )}
-
-      {/* 3. REGRAS & SLOTS + ARQUIVADOS */}
+      {/* 3. REGRAS & SLOTS */}
       {activeCategory === 'rules' && (
-        <div className="grid gap-3.5">
+        <div className="flex flex-col gap-3.5 w-full max-w-full min-w-0 overflow-hidden">
           {/* Card Detalhado de Regras de Desbloqueio */}
-          <Card className="p-4 border-gold/30 bg-surface2/60">
-            <div className="flex items-center justify-between mb-3">
-              <K className="mb-0">🛡️ PATAMARES DE DESBLOQUEIO DE SLOTS</K>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gold/10 border border-gold/30 text-gold font-bold">
+          <Card className="p-3.5 sm:p-4 border-gold/30 bg-surface2/60 w-full max-w-full min-w-0 overflow-hidden">
+            <div className="flex items-center justify-between mb-3 min-w-0">
+              <K className="mb-0 truncate">🛡️ PATAMARES DE DESBLOQUEIO DE SLOTS</K>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gold/10 border border-gold/30 text-gold font-bold flex-none">
                 {activeCount}/{maxSlots >= 99 ? '∞' : maxSlots} SLOTS ATIVOS
               </span>
             </div>
-            <p className="text-xs text-muted mb-4">
+            <p className="text-xs text-muted mb-4 leading-relaxed">
               A retenção seminal e a disciplina forjam seu caráter. Conforme seus dias limpos aumentam, novos slots no protocolo diário são liberados.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 w-full min-w-0">
               {FORGE_RULES && FORGE_RULES.map((r, i) => {
                 const isCur = d >= r.min && (i === FORGE_RULES.length - 1 || d < FORGE_RULES[i + 1].min);
                 const isUnlocked = d >= r.min;
                 return (
                   <div
                     key={r.min}
-                    className={`p-3 rounded-lg border flex flex-col justify-between ${
+                    className={`p-3 rounded-lg border flex flex-col justify-between w-full min-w-0 overflow-hidden ${
                       isCur
                         ? 'border-gold bg-gold/15 shadow-[0_0_12px_rgba(255,200,70,0.2)]'
                         : isUnlocked
@@ -1075,22 +1033,22 @@ export default function ForgeView() {
                         : 'border-line/40 bg-surface/40 opacity-60'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-xs font-bold text-ink flex items-center gap-1.5">
-                        <span>{r.icon || '🎖️'}</span>
-                        <span>{r.name || `Nível ${i + 1}`}</span>
+                    <div className="flex items-center justify-between gap-2 mb-1.5 min-w-0">
+                      <span className="text-xs font-bold text-ink flex items-center gap-1.5 truncate">
+                        <span className="flex-none">{r.icon || '🎖️'}</span>
+                        <span className="truncate">{r.name || `Nível ${i + 1}`}</span>
                       </span>
                       {isCur ? (
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-gold text-[#141414]">
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-gold text-[#141414] flex-none">
                           ATUAL
                         </span>
                       ) : isUnlocked ? (
-                        <span className="text-[9px] font-mono text-gold font-semibold">LIBERADO</span>
+                        <span className="text-[9px] font-mono text-gold font-semibold flex-none">LIBERADO</span>
                       ) : (
-                        <span className="text-[9px] font-mono text-muted">BLOQUEADO</span>
+                        <span className="text-[9px] font-mono text-muted flex-none">BLOQUEADO</span>
                       )}
                     </div>
-                    <div className="text-[11px] font-mono text-muted">
+                    <div className="text-[11px] font-mono text-muted truncate">
                       <span>Mínimo: <b className="text-ink">{r.min} dias</b></span>
                       <span className="mx-1.5">·</span>
                       <span>Slots: <b className="text-gold">{r.slots >= 99 ? 'Ilimitados (∞)' : `${r.slots} hábitos`}</b></span>
@@ -1102,18 +1060,18 @@ export default function ForgeView() {
           </Card>
 
           {/* Seção de Hábitos Arquivados */}
-          <Card className="p-4 border-line">
-            <div className="flex items-center justify-between mb-3">
+          <Card className="p-3.5 sm:p-4 border-line w-full max-w-full min-w-0 overflow-hidden">
+            <div className="flex items-center justify-between mb-3 min-w-0">
               <K className="mb-0">📦 HÁBITOS ARQUIVADOS ({archivedHabits.length})</K>
             </div>
             {archivedHabits.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 w-full min-w-0">
                 {archivedHabits.map((h) => (
                   <div
                     key={h.id}
-                    className="p-2.5 rounded border border-line/60 bg-surface2/60 flex items-center justify-between gap-2"
+                    className="p-2.5 rounded-lg border border-line/60 bg-surface2/60 flex items-center justify-between gap-2 w-full min-w-0 overflow-hidden"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <span className="text-lg flex-none">{h.icon}</span>
                       <span className="text-xs font-semibold text-ink truncate">{h.n}</span>
                     </div>
