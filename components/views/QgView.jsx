@@ -1,6 +1,6 @@
 'use client';
-import React, { useState } from 'react';
-import { RefreshCw, Trophy, CalendarDays, Flame, ShieldCheck, Droplets, Hand, HeartPulse, Check, X, Zap, Sparkles, ShieldAlert, Target, Compass, MoreVertical, LayoutDashboard, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { RefreshCw, Trophy, CalendarDays, Flame, ShieldCheck, Droplets, Hand, HeartPulse, Check, X, Zap, Sparkles, ShieldAlert, Target, Compass, MoreVertical, LayoutDashboard, ChevronDown, ChevronUp, Clock, Link as LinkIcon } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { Card, K, Bar, Chk, Empty } from '@/components/ui';
 import { METAS, NEXTF, FAIL_PEN, TRIGGERS, FAIL_LBL, TIERS, QUOTES } from '@/lib/data';
@@ -129,6 +129,49 @@ function getBioPerksI18n(days, lang) {
   };
 }
 
+/* Hook de Cronômetro Tático em Tempo Real (Segundo a Segundo) */
+function useLiveTimer(startDateStr, daysTotal) {
+  const [time, setTime] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    function tick() {
+      if (!startDateStr) {
+        setTime({ days: Number(daysTotal) || 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+      let startMs = 0;
+      if (typeof startDateStr === 'number') {
+        startMs = startDateStr;
+      } else if (typeof startDateStr === 'string' && startDateStr.length === 10) {
+        const p = startDateStr.split('-').map(Number);
+        startMs = new Date(p[0], p[1] - 1, p[2], 0, 0, 0).getTime();
+      } else {
+        startMs = new Date(startDateStr).getTime();
+      }
+
+      if (isNaN(startMs) || startMs <= 0) {
+        startMs = Date.now();
+      }
+
+      const diff = Math.max(0, Date.now() - startMs);
+      const totalSec = Math.floor(diff / 1000);
+      const days = Math.floor(totalSec / 86400);
+      const hours = Math.floor((totalSec % 86400) / 3600);
+      const minutes = Math.floor((totalSec % 3600) / 60);
+      const seconds = totalSec % 60;
+
+      const effectiveDays = Math.max(days, Number(daysTotal) || 0);
+      setTime({ days: effectiveDays, hours, minutes, seconds });
+    }
+
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [startDateStr, daysTotal]);
+
+  return time;
+}
+
 export default function QgView() {
   const { S, update, t, openModal, closeModal, toast, setTab } = useApp();
   const lang = (S && S.settings && S.settings.lang) || 'pt';
@@ -167,6 +210,7 @@ export default function QgView() {
   const lw = L.sosLast(S);
   const bioData = getBioPerksI18n(d, lang);
   const tac = TACTICAL_BLOCK_I18N;
+  const liveTime = useLiveTimer(S.retStart || S.created || today(), d);
 
   /* linha do tempo */
   let cells = [], wins = 0, falls = 0, part = 0;
@@ -199,8 +243,12 @@ export default function QgView() {
     if (all && dd === today()) {
       AF.victory(L.tierNow(S).min >= 180); metaSfx(d);
       openModal(<Victory />);
-    } else if (all) toast('✅ ' + fdmy(dd) + t('recvit'));
-    else AF.click();
+    } else if (all) {
+      toast('✅ ' + fdmy(dd) + t('recvit'));
+    } else {
+      if (v) AF.seal();
+      else AF.click();
+    }
   };
 
   const toggleHabitDone = (id, e) => {
@@ -449,6 +497,12 @@ export default function QgView() {
         <div className="col-span-2 bg-gradient-to-b from-[#FFE79A] via-gold to-gold2 bg-clip-text font-display text-[clamp(64px,9vw,110px)] leading-[.92] text-transparent drop-shadow-[0_4px_22px_rgba(255,200,70,.3)] sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:py-2">
           {d}
           <small className="mt-1 block font-body text-[10px] sm:text-[10.5px] font-extrabold tracking-[.28em] text-muted" style={{ WebkitTextFillColor: '#8E8E93' }}>{L.modeA(S) ? t('daysClean') : t('days')}</small>
+          <div className="mt-2 inline-flex items-center gap-1 rounded-full border border-gold/40 bg-black/60 px-2.5 py-0.5 shadow-inner">
+            <Clock size={10} className="text-gold animate-pulse flex-none" />
+            <span className="font-mono text-[9px] font-bold text-gold tracking-wider">
+              {pad(liveTime.days)}d · {pad(liveTime.hours)}h · {pad(liveTime.minutes)}m · {pad(liveTime.seconds)}s
+            </span>
+          </div>
         </div>
         <div className="rounded-r border border-line bg-surface2 p-2 sm:p-2.5 sm:col-start-1 sm:row-start-2">
           <div className="relative mx-auto h-[58px] w-[58px] sm:h-[66px] sm:w-[66px]">
@@ -756,128 +810,298 @@ export default function QgView() {
     </Card>
   );
 
-  /* OPÇÃO A: Mobile One-Screen de Alta Densidade (Tudo na 1ª Dobra sem rolagem) */
-  const renderMobileOneScreen = () => (
-    <div className="flex flex-col gap-3">
-      {/* 1. FRASE INSPIRADORA COMPACTA (Sem corte de texto, clicável) */}
-      <div
-        onClick={nextMantra}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') nextMantra(); }}
-        className="group flex items-start justify-between gap-2.5 rounded-lg border border-gold/30 bg-surface/90 px-3.5 py-2.5 cursor-pointer select-none transition-all active:scale-[0.99]"
-      >
-        <div className="min-w-0 flex-1 flex items-start gap-2">
-          <span className="text-xs text-gold flex-none mt-0.5">⚡</span>
-          <p className="text-xs font-semibold italic text-[#f3ead2] group-hover:text-gold transition-colors leading-relaxed">
-            "{mantra}"
+  /* OPÇÃO A: Mobile Combat Dashboard "Forjando Guerreiros" (Aço, Forja, Honra & Alta Densidade) */
+  const renderMobileOneScreen = () => {
+    const dialCircumference = 515.22;
+    const dialOffset = dialCircumference * (1 - Math.min(100, Math.max(0, lvlPct)) / 100);
+
+    return (
+      <div className="flex flex-col gap-3">
+        {/* 1. FRASE DE GUERRA & CÓDIGO DO GUERREIRO (Mantra clicável com som de bigorna) */}
+        <div
+          onClick={nextMantra}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') nextMantra(); }}
+          className="group flex items-start justify-between gap-2.5 rounded-xl border border-gold/35 bg-gradient-to-r from-[#17161E] to-[#121217] px-3.5 py-2.5 cursor-pointer select-none transition-all active:scale-[0.99] shadow-sm"
+        >
+          <div className="min-w-0 flex-1 flex items-start gap-2">
+            <span className="text-xs text-gold flex-none mt-0.5 animate-pulse">⚡</span>
+            <p className="text-xs font-semibold italic text-[#f3ead2] group-hover:text-gold transition-colors leading-relaxed">
+              "{mantra}"
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 flex-none pl-1 pt-0.5">
+            <span className="text-[10px] text-muted font-mono">
+              {(S.phraseIdx % mantraPool.length) + 1}/{mantraPool.length}
+            </span>
+            <RefreshCw size={11} className="text-muted/60 group-hover:text-gold transition-colors" />
+          </div>
+        </div>
+
+        {/* 2. O CORAÇÃO DA FORJA: MOSTRADOR CIRCULAR DE AÇO E FOGO (Hero Combat Dial) */}
+        <div className="rounded-2xl border border-[#4A3B22] bg-gradient-to-b from-[#1C1A24] via-[#121217] to-[#0A0A0D] p-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.85)] relative overflow-hidden text-center">
+          {/* Brilho radial de brasa incandescente */}
+          <div className="pointer-events-none absolute left-1/2 top-[10%] h-[260px] w-[260px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,100,20,0.18)_0%,rgba(200,60,10,0.05)_55%,transparent_75%)]" />
+
+          {/* Topo do Hero: Patente de Guerra, Pureza e Sequência */}
+          <div className="flex items-center justify-between gap-2 pb-2 border-b border-line/60 relative z-10">
+            <div className="flex items-center gap-1.5">
+              <span className="text-base drop-shadow-sm">{tier.icon}</span>
+              <span className="font-display text-xs uppercase tracking-wider text-gold font-black">
+                {tier.name}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="rounded-md border border-gold/30 bg-gold/10 px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold">
+                💎 {S.purity}%
+              </span>
+              <span className="rounded-md border border-gold/30 bg-gold/10 px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold">
+                🔥 {streak} {streak === 1 ? (curLang === 'en' ? 'DAY' : 'DIA') : (curLang === 'en' ? 'DAYS' : 'DIAS')}
+              </span>
+            </div>
+          </div>
+
+          {/* O Mostrador Circular da Forja */}
+          <div className="relative mx-auto h-[190px] w-[190px] my-2">
+            <svg width="100%" height="100%" viewBox="0 0 200 200" className="-rotate-90">
+              <defs>
+                <linearGradient id="forgeFireGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FF3B00" />
+                  <stop offset="50%" stopColor="#FF9500" />
+                  <stop offset="100%" stopColor="#FFC846" />
+                </linearGradient>
+                <filter id="forgeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <circle cx="100" cy="100" r="82" fill="none" stroke="#22222C" strokeWidth="8" strokeDasharray="4 6" opacity="0.3" />
+              <circle cx="100" cy="100" r="82" fill="none" stroke="#181822" strokeWidth="9" />
+              <circle
+                cx="100"
+                cy="100"
+                r="82"
+                fill="none"
+                stroke="url(#forgeFireGrad)"
+                strokeWidth="9"
+                strokeLinecap="round"
+                strokeDasharray="515.22"
+                strokeDashoffset={dialOffset.toFixed(1)}
+                filter="url(#forgeGlow)"
+                style={{ transition: 'stroke-dashoffset 0.8s ease-out' }}
+              />
+            </svg>
+
+            {/* Conteúdo Central do Mostrador */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2 select-none">
+              <div className="flex items-center gap-1 text-gold/80 mb-0.5">
+                <span className="text-sm">⚔️</span>
+              </div>
+
+              <span className="font-display text-5xl font-black leading-none bg-gradient-to-b from-[#FFF5D6] via-[#FFCA40] to-[#B87A18] bg-clip-text text-transparent drop-shadow-[0_4px_16px_rgba(255,180,50,0.35)] tracking-tight">
+                {d}
+              </span>
+
+              <span className="mt-1 text-[9px] font-extrabold uppercase tracking-[0.22em] text-[#C9C2B0]">
+                {L.modeA(S) ? t('daysClean') : (curLang === 'en' ? 'RAW RETENTION' : curLang === 'es' ? 'RETENCIÓN PURA' : 'RETENÇÃO BRUTA')}
+              </span>
+
+              {/* Cronômetro ao vivo segundo a segundo */}
+              <div className="mt-1.5 flex items-center gap-1 rounded-full border border-gold/40 bg-black/75 px-2.5 py-0.5 shadow-inner">
+                <Clock size={10} className="text-gold animate-pulse flex-none" />
+                <span className="font-mono text-[9.5px] font-bold text-gold tracking-wider">
+                  {pad(liveTime.days)}d · {pad(liveTime.hours)}h · {pad(liveTime.minutes)}m · {pad(liveTime.seconds)}s
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Rodapé do Mostrador: Próximo Patamar & Barra de Brasas */}
+          <div className="pt-1.5 pb-1 border-t border-line/40 relative z-10">
+            <div className="flex items-center justify-between text-[10.5px] text-muted font-medium mb-1">
+              <span className="truncate">{lvlTxt}</span>
+              {tier.reward && <span className="text-gold2 truncate ml-2">🎁 {tier.reward}</span>}
+            </div>
+            <Bar pct={lvlPct} />
+          </div>
+        </div>
+
+        {/* 3. CORRENTE DE FERRO DA DISCIPLINA (Streak Chain - Elos Inquebráveis) */}
+        <div className="rounded-xl border border-line/70 bg-[#131318] p-3 shadow-sm">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm">⛓️</span>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#EAE4D2]">
+                {curLang === 'en' ? 'IRON DISCIPLINE CHAIN' : curLang === 'es' ? 'CADENA DE HIERRO' : 'CORRENTE DE FERRO DA DISCIPLINA'}
+              </span>
+            </div>
+            <span className="rounded bg-gold/15 border border-gold/30 px-2 py-0.5 text-[9.5px] font-mono font-bold text-gold">
+              🔥 {streak} {streak === 1 ? (curLang === 'en' ? 'LINK FORGED' : 'ELO FORJADO') : (curLang === 'en' ? 'LINKS FORGED' : 'ELOS FORJADOS')}
+            </span>
+          </div>
+
+          {/* Fileira de Elos Forjados */}
+          <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none">
+            {Array.from({ length: Math.max(7, Math.min(14, streak + 2)) }, (_, idx) => {
+              const dayNum = idx + 1;
+              const isForged = dayNum <= streak;
+              const isCurrent = dayNum === streak && streak > 0;
+              return (
+                <div
+                  key={idx}
+                  className={`flex flex-col items-center justify-center rounded-md px-2 py-1.5 min-w-[38px] border transition-all ${
+                    isCurrent
+                      ? 'border-gold bg-gold/25 shadow-[0_0_12px_rgba(255,200,70,0.3)] scale-105'
+                      : isForged
+                      ? 'border-gold/50 bg-gradient-to-b from-[#2B2314] to-[#1C170E] text-gold'
+                      : 'border-[#2D2D38] bg-[#1A1A22] opacity-40 text-muted'
+                  }`}
+                >
+                  <span className={`text-xs ${isForged ? 'text-gold drop-shadow-sm' : 'text-muted'}`}>
+                    🔗
+                  </span>
+                  <span className="text-[8px] font-mono font-black mt-0.5">
+                    D{dayNum}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-1.5 text-[9.5px] font-medium text-muted/80 text-center italic">
+            {curLang === 'en' 
+              ? 'Each clean day is a link forged in fire. Never break the chain.' 
+              : curLang === 'es' 
+              ? 'Cada día limpio es un eslabón forjado a fuego. Nunca rompas la cadena.' 
+              : 'Cada dia limpo é um elo forjado a fogo. Nunca quebre a corrente.'}
           </p>
         </div>
-        <div className="flex items-center gap-1.5 flex-none pl-1 pt-0.5">
-          <span className="text-[10px] text-muted font-mono">
-            {(S.phraseIdx % mantraPool.length) + 1}/{mantraPool.length}
-          </span>
-          <RefreshCw size={11} className="text-muted/60 group-hover:text-gold transition-colors" />
-        </div>
-      </div>
 
-      {/* 2. O CENTRO DE COMANDO & REGISTRO DIÁRIO */}
-      <Card glow className="p-3.5 overflow-hidden relative">
-        <div className="pointer-events-none absolute left-1/2 top-[-25%] h-[240px] w-[240px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,200,70,.12),transparent_70%)]" />
-        
-        {/* Topo do Card: Patamar, Pureza e Sequência */}
-        <div className="flex items-center justify-between gap-2 pb-2 border-b border-line/60">
-          <div className="flex items-center gap-1.5">
-            <span className="text-base">{tier.icon}</span>
-            <span className="font-display text-xs uppercase tracking-wider text-gold font-bold">
-              {tier.name}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="rounded border border-line bg-surface2 px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold">
-              {S.purity}% {t('purity')}
-            </span>
-            <span className="rounded border border-line bg-surface2 px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold">
-              🔥 {streak} {t('hstreak')}
-            </span>
-          </div>
-        </div>
-
-        {/* OS 3 CONTADORES PRINCIPAIS: RETENÇÃO, SEM PORNÔ E SEM MASTURBAÇÃO */}
-        <div className="grid grid-cols-3 gap-2 py-2.5 border-b border-line/50 text-center">
-          {/* 1. Dias em Retenção */}
-          <div className="flex flex-col items-center justify-center rounded-lg border border-gold/40 bg-gold/10 py-2 px-1 shadow-[0_2px_8px_rgba(255,200,70,0.08)]">
-            <span className="bg-gradient-to-b from-[#FFE79A] via-gold to-gold2 bg-clip-text font-display text-2xl sm:text-3xl font-bold leading-none text-transparent drop-shadow-sm">
+        {/* 4. OS 3 PILARES DE AÇO (Métricas Táticas Rápidas) */}
+        <div className="grid grid-cols-3 gap-2 text-center">
+          {/* Pilar I: Retenção Seminal */}
+          <div className="flex flex-col items-center justify-center rounded-xl border border-gold/45 bg-gradient-to-b from-[#241F14] to-[#17140E] py-2.5 px-1 shadow-[0_4px_14px_rgba(255,180,50,0.12)]">
+            <div className="flex items-center gap-1 text-gold text-xs mb-0.5">
+              <span>🛡️</span>
+              <span className="text-[8px] font-mono uppercase font-black tracking-widest text-gold/80">Pilar I</span>
+            </div>
+            <span className="font-display text-2xl sm:text-3xl font-black leading-none bg-gradient-to-b from-[#FFF2CC] to-[#E5A93C] bg-clip-text text-transparent">
               {d}
             </span>
             <span className="mt-1 text-[8.5px] font-extrabold uppercase tracking-wide text-gold">
               {L.modeA(S) ? t('daysClean') : (curLang === 'en' ? 'Retention' : curLang === 'es' ? 'Retención' : 'Retenção')}
             </span>
-            <span className="text-[8px] text-muted font-mono">
+            <span className="text-[7.5px] text-muted font-mono">
               {d === 1 ? (curLang === 'en' ? '1 day' : '1 dia') : (curLang === 'en' ? `${d} days` : `${d} dias`)}
             </span>
           </div>
 
-          {/* 2. Sem Pornografia */}
-          <div className="flex flex-col items-center justify-center rounded-lg border border-line bg-surface2 py-2 px-1 shadow-sm">
-            <span className="font-display text-2xl sm:text-3xl font-bold leading-none text-[#F3EAD2]">
+          {/* Pilar II: Zero Pornografia */}
+          <div className="flex flex-col items-center justify-center rounded-xl border border-line/80 bg-[#16161C] py-2.5 px-1 shadow-sm">
+            <div className="flex items-center gap-1 text-muted text-xs mb-0.5">
+              <span>👁️</span>
+              <span className="text-[8px] font-mono uppercase font-black tracking-widest text-muted/80">Pilar II</span>
+            </div>
+            <span className="font-display text-2xl sm:text-3xl font-black leading-none text-[#F3EAD2]">
               {pornFree}
             </span>
-            <span className="mt-1 text-[8.5px] font-extrabold uppercase tracking-wide text-muted">
-              {t('hporn')}
+            <span className="mt-1 text-[8.5px] font-extrabold uppercase tracking-wide text-[#A8A8B4]">
+              {curLang === 'en' ? 'Porn-Free' : curLang === 'es' ? 'Sin Porno' : 'Sem Pornô'}
             </span>
-            <span className="text-[8px] text-muted font-mono">
+            <span className="text-[7.5px] text-muted font-mono">
               {pornFree === 1 ? (curLang === 'en' ? '1 day' : '1 dia') : (curLang === 'en' ? `${pornFree} days` : `${pornFree} dias`)}
             </span>
           </div>
 
-          {/* 3. Sem Masturbação */}
-          <div className="flex flex-col items-center justify-center rounded-lg border border-line bg-surface2 py-2 px-1 shadow-sm">
-            <span className="font-display text-2xl sm:text-3xl font-bold leading-none text-[#F3EAD2]">
+          {/* Pilar III: Zero Masturbação */}
+          <div className="flex flex-col items-center justify-center rounded-xl border border-line/80 bg-[#16161C] py-2.5 px-1 shadow-sm">
+            <div className="flex items-center gap-1 text-muted text-xs mb-0.5">
+              <span>⚡</span>
+              <span className="text-[8px] font-mono uppercase font-black tracking-widest text-muted/80">Pilar III</span>
+            </div>
+            <span className="font-display text-2xl sm:text-3xl font-black leading-none text-[#F3EAD2]">
               {mastFree}
             </span>
-            <span className="mt-1 text-[8.5px] font-extrabold uppercase tracking-wide text-muted">
-              {t('hmast')}
+            <span className="mt-1 text-[8.5px] font-extrabold uppercase tracking-wide text-[#A8A8B4]">
+              {curLang === 'en' ? 'Mast.-Free' : curLang === 'es' ? 'Sin Mast.' : 'Sem Mast.'}
             </span>
-            <span className="text-[8px] text-muted font-mono">
+            <span className="text-[7.5px] text-muted font-mono">
               {mastFree === 1 ? (curLang === 'en' ? '1 day' : '1 dia') : (curLang === 'en' ? `${mastFree} days` : `${mastFree} dias`)}
             </span>
           </div>
         </div>
 
-        {/* Micro Barra de Nível e Meta */}
-        <div className="pt-2 pb-2.5 border-b border-line/40">
-          <div className="flex items-center justify-between text-[10px] text-muted font-medium mb-1">
-            <span className="truncate">{lvlTxt}</span>
-            {tier.reward && <span className="text-gold2 truncate ml-2">🎁 {tier.reward}</span>}
-          </div>
-          <Bar pct={lvlPct} />
-        </div>
-
-        {/* Ação Imediata: OS 3 CHECKS DO DIA */}
-        <div className="pt-2.5">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1.5">
-              <span className="k text-[10.5px] text-gold font-extrabold uppercase tracking-wider mb-0">
-                {t('checkin')}
+        {/* 5. PODER BIOLÓGICO DO GUERREIRO ("Cérebro em Cura" & Restauração Neural) */}
+        {bioData && bioData.perks && bioData.perks.length > 0 && (
+          <div className="rounded-xl border border-gold/30 bg-gradient-to-b from-[#181820] to-[#101015] p-3.5 shadow-sm relative overflow-hidden">
+            <div className="pointer-events-none absolute right-[-20px] top-[-20px] h-[100px] w-[100px] rounded-full bg-[radial-gradient(circle,rgba(255,140,0,0.12),transparent_70%)]" />
+            
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <span className="grid h-6 w-6 place-items-center rounded-full bg-gold/15 text-gold text-xs">
+                  🧬
+                </span>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-gold">
+                  {curLang === 'en' ? 'ACTIVE BIOLOGICAL POWER' : curLang === 'es' ? 'PODER BIOLÓGICO ACTIVO' : 'PODER BIOLÓGICO DO GUERREIRO'}
+                </span>
+              </div>
+              <span className="text-[9px] font-mono text-muted">
+                Fase {tier.name}
               </span>
-              <span className="text-[10px] font-mono text-muted">
+            </div>
+
+            {/* Os benefícios ativos em badges táteis */}
+            <div className="flex flex-col gap-1.5 my-2">
+              {bioData.perks.map((perk, idx) => (
+                <div key={idx} className="flex items-start gap-2 rounded-lg border border-line/60 bg-surface2/70 px-2.5 py-1.5 text-left text-[11px] font-medium text-[#ECE5D5]">
+                  <span className="text-gold text-xs flex-none mt-0.5">✦</span>
+                  <span className="leading-snug">{perk}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Barra de Restauração Dopaminérgica / Neural */}
+            <div className="mt-2.5 pt-2 border-t border-line/50">
+              <div className="flex items-center justify-between text-[9.5px] font-extrabold uppercase tracking-wider text-muted mb-1">
+                <span>{curLang === 'en' ? 'Neural Rewiring' : curLang === 'es' ? 'Reprogramación Neural' : 'Restauração Neural & Dopamina'}</span>
+                <span className="font-mono text-gold">{Math.min(100, Math.max(7, Math.round((d / 90) * 100)))}%</span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#202028]">
+                <div 
+                  className="h-full rounded-full bg-gradient-to-r from-danger via-amber-500 to-gold transition-all duration-700"
+                  style={{ width: `${Math.min(100, Math.max(7, Math.round((d / 90) * 100)))}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 6. REGISTRO DIÁRIO DE COMBATE (OS 3 ESCUDOS DE BLINDAGEM TÁTICA) */}
+        <div className="rounded-xl border border-line/80 bg-[#15151C] p-3.5 shadow-sm">
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm">🛡️</span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#F2ECE0]">
+                {curLang === 'en' ? 'DAILY COMBAT SHIELDING' : curLang === 'es' ? 'BLINDAJE DIARIO DE COMBATE' : 'REGISTRO DE COMBATE DO DIA'}
+              </span>
+              <span className="text-[9.5px] font-mono text-muted">
                 ({ciDate === today() ? fdmy(today()) : fdmy(ciDate)})
               </span>
             </div>
+
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                className="text-[10.5px] text-muted hover:text-gold px-2 py-0.5 rounded border border-line/60 bg-surface2"
+                className="text-[10px] text-muted hover:text-gold px-2 py-0.5 rounded border border-line/60 bg-surface2 font-semibold transition-colors"
                 onClick={() => { AF.click(); setCiDate(yesterday(ciDate)); }}
                 title={t('prev_d')}
               >
-                ◀ {curLang === 'en' ? 'Prev' : curLang === 'es' ? 'Ant.' : 'Ontem'}
+                ◀ {curLang === 'en' ? 'Yesterday' : curLang === 'es' ? 'Ayer' : 'Ontem'}
               </button>
               {ciDate !== today() && (
                 <button
                   type="button"
-                  className="text-[10.5px] text-gold px-2 py-0.5 rounded border border-gold/40 bg-gold/10 font-bold"
+                  className="text-[10px] text-gold px-2 py-0.5 rounded border border-gold/40 bg-gold/15 font-black transition-colors"
                   onClick={() => { AF.click(); setCiDate(today()); }}
                 >
                   {curLang === 'en' ? 'Today' : curLang === 'es' ? 'Hoy' : 'Hoje'}
@@ -886,185 +1110,248 @@ export default function QgView() {
             </div>
           </div>
 
-          {/* Os 3 Checkboxes Grandes Touch-Friendly */}
+          {/* OS 3 ESCUDOS INTERATIVOS TÁTEIS */}
           <div className="flex flex-col gap-2">
             {L.pillars(S).map((k) => {
+              const isChecked = !!cView[k];
               const FAILMAP = { p: 'porn', m: 'mast', r: 'ejac' };
               const failTypes = String(cView.fail || '').split('+').filter(Boolean);
+              const isFailed = !isChecked && failTypes.includes(FAILMAP[k]);
+
+              const SHIELD_DATA = {
+                r: {
+                  icon: '🛡️',
+                  title: curLang === 'en' ? 'Semen Retention Maintained' : curLang === 'es' ? 'Retención Seminal Mantenida' : 'Retenção Seminal Mantida',
+                  sub: curLang === 'en' ? 'Vital energy preserved (No ejaculation)' : curLang === 'es' ? 'Energía vital preservada (Sin eyaculación)' : 'Energia vital preservada (Sem ejaculação)',
+                },
+                p: {
+                  icon: '👁️',
+                  title: curLang === 'en' ? 'Zero Pornography' : curLang === 'es' ? 'Cero Pornografía' : 'Zero Pornografia',
+                  sub: curLang === 'en' ? 'Mind guarded, clean gaze' : curLang === 'es' ? 'Mente blindada, mirada limpia' : 'Mente blindada, olhar firme e limpo',
+                },
+                m: {
+                  icon: '⚡',
+                  title: curLang === 'en' ? 'Unshakable Self-Mastery' : curLang === 'es' ? 'Autodominio Inquebrantable' : 'Autodomínio Inabalável',
+                  sub: curLang === 'en' ? 'Zero masturbation, impulse conquered' : curLang === 'es' ? 'Cero masturbación, impulso dominado' : 'Zero masturbação, soberania sobre o impulso',
+                },
+              };
+
+              const item = SHIELD_DATA[k] || { icon: '⚔️', title: t(k === 'p' ? 'c1' : k === 'm' ? 'c2' : 'c3'), sub: '' };
+
               return (
-                <Chk key={k} on={!!cView[k]} failed={!cView[k] && failTypes.includes(FAILMAP[k])} onClick={() => setCI(k, !cView[k], ciDate)}>
-                  {t(k === 'p' ? 'c1' : k === 'm' ? 'c2' : 'c3')}
-                </Chk>
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setCI(k, !isChecked, ciDate)}
+                  className={`group flex items-center justify-between rounded-xl border p-3 text-left transition-all active:scale-[0.98] cursor-pointer ${
+                    isChecked
+                      ? 'border-gold/60 bg-gradient-to-r from-gold/20 via-amber-500/10 to-surface2 shadow-[0_2px_12px_rgba(255,200,70,0.12)]'
+                      : isFailed
+                      ? 'border-danger/60 bg-danger/10'
+                      : 'border-line/70 bg-surface2/60 hover:border-gold/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <span className={`grid h-9 w-9 flex-none place-items-center rounded-lg border text-base transition-all ${
+                      isChecked
+                        ? 'border-gold bg-gold text-[#141414] shadow-md scale-105 font-black'
+                        : isFailed
+                        ? 'border-danger bg-danger/20 text-danger'
+                        : 'border-[#383844] bg-[#1C1C24] text-muted group-hover:border-gold/50'
+                    }`}>
+                      {isChecked ? '✓' : item.icon}
+                    </span>
+                    <div className="flex flex-col min-w-0">
+                      <span className={`text-xs font-bold leading-tight ${
+                        isChecked ? 'text-gold' : isFailed ? 'text-danger' : 'text-[#EDE5D5]'
+                      }`}>
+                        {item.title}
+                      </span>
+                      <span className="text-[10px] text-muted truncate mt-0.5">
+                        {item.sub}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center flex-none pl-2">
+                    {isChecked ? (
+                      <span className="rounded-md border border-gold/40 bg-gold/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-gold shadow-sm">
+                        BLINDADO
+                      </span>
+                    ) : isFailed ? (
+                      <span className="rounded-md border border-danger/40 bg-danger/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-danger">
+                        FALHOU
+                      </span>
+                    ) : (
+                      <span className="rounded-md border border-line bg-surface px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-muted group-hover:text-gold group-hover:border-gold/30">
+                        MARCAR
+                      </span>
+                    )}
+                  </div>
+                </button>
               );
             })}
           </div>
 
-          {/* Botão de Falha */}
+          {/* Selo de Vitória Se Hoje For 100% Blindado */}
+          {cView.ok && (
+            <div className="mt-2.5 flex items-center justify-center gap-1.5 rounded-lg border border-gold/40 bg-gold/10 py-1.5 text-center text-gold text-xs font-extrabold shadow-sm animate-pulse">
+              <span>🏆</span>
+              <span className="tracking-wide">
+                {curLang === 'en' ? 'DAILY BATTLE WON · HONOR INTACT' : curLang === 'es' ? 'BATALLA DIARIA GANADA · HONOR INTACTO' : 'BATALHA DE HOJE VENCIDA · HONRA INTACTA'}
+              </span>
+            </div>
+          )}
+
+          {/* Botão de Queda Solene em Combate */}
           {ciDate === today() ? (
             <button
               type="button"
-              className="mt-2.5 w-full py-2 rounded border border-danger/40 bg-danger/10 text-danger hover:bg-danger hover:text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              className="mt-2.5 w-full py-2 rounded-lg border border-danger/40 bg-danger/10 text-danger hover:bg-danger hover:text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.99]"
               onClick={failFlow}
             >
-              <span>🔴 {t('fail')}</span>
+              <span>🩸</span>
+              <span>{curLang === 'en' ? 'Register Battle Fall / Restart Forge' : curLang === 'es' ? 'Registrar Caída / Reiniciar Forja' : 'Registrar Queda em Combate / Reiniciar Forja'}</span>
             </button>
           ) : (
             <p className="fnote mt-1.5 text-center">{t('retro')}</p>
           )}
         </div>
-      </Card>
 
-      {/* 3. A FORJA HOJE - HÁBITOS DO DIA (1 toque de scroll com o polegar) */}
-      <Card className="p-3.5">
-        <div className="flex items-center justify-between mb-2">
-          <K className="mb-0">🔨 {t('forgeToday')} — {doneF}{t('of_w')}{S.forge.active.length}</K>
+        {/* 7. A FORJA HOJE - HÁBITOS DE DISCIPLINA & FORÇA */}
+        <Card className="p-3.5">
+          <div className="flex items-center justify-between mb-2">
+            <K className="mb-0">🔨 {t('forgeToday')} — {doneF}{t('of_w')}{S.forge.active.length}</K>
+            <button
+              type="button"
+              onClick={() => { AF.click(); setTab('forge'); }}
+              className="text-[10.5px] text-gold hover:text-gold2 font-medium"
+            >
+              {curLang === 'en' ? 'Edit habits →' : curLang === 'es' ? 'Editar hábitos →' : 'Editar hábitos →'}
+            </button>
+          </div>
+
+          {act.length ? (
+            <div className="flex flex-col gap-1.5 mt-1">
+              {act.map((id) => {
+                const h = ALLH.find((x) => x.id === id); if (!h) return null;
+                const dn = fd.includes(id), isF = ff.includes(id), tm = L.hTime(S, id);
+                return (
+                  <div key={id} className={`flex items-center gap-2 rounded-r border p-2 text-left text-xs font-semibold transition-colors ${dn ? 'border-gold/50 bg-gold/10' : isF ? 'border-danger/50 bg-danger/10' : 'border-line bg-surface2'}`}>
+                    <span className="w-[20px] text-center text-sm">{h.icon}</span>
+                    <span className={`min-w-0 flex-1 truncate ${dn ? 'text-muted line-through' : isF ? 'text-danger line-through opacity-80' : ''}`}>{h.n}</span>
+                    {tm && <span className="font-mono text-[10px] text-gold2">⏰{tm}</span>}
+                    <div className="flex items-center gap-1.5 flex-none">
+                      <button
+                        type="button"
+                        title="Marcar como Falho"
+                        onClick={(e) => toggleHabitFailed(id, e)}
+                        className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
+                          isF 
+                            ? 'border-danger bg-danger text-white shadow-sm' 
+                            : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-danger/60 hover:text-danger'
+                        }`}
+                      >
+                        <X size={13} strokeWidth={2.5} />
+                      </button>
+                      <button
+                        type="button"
+                        title="Marcar como Cumprido"
+                        onClick={(e) => toggleHabitDone(id, e)}
+                        className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
+                          dn 
+                            ? 'border-gold bg-gold text-[#141414] shadow-sm' 
+                            : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-gold/60 hover:text-gold'
+                        }`}
+                      >
+                        <Check size={13} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-2 text-center">
+              <Empty>{t('ef1')}<br />{t('ef2')} <b className="text-gold">{t('forge_b')}</b>.</Empty>
+              <button className="btn-ghost btn-big mt-2 text-xs" onClick={() => setTab('forge')}>{t('goforge')}</button>
+            </div>
+          )}
+
+          {act.length > 0 && (
+            <div className="bar mt-2.5"><i style={{ width: (S.forge.active.length ? (doneF / S.forge.active.length) * 100 : 0) + '%' }} /></div>
+          )}
+        </Card>
+
+        {/* 8. ATALHO COMPACTO PARA OPERAÇÕES DO DIA (Se houver pendentes) */}
+        {pendingTasksCount > 0 && (
           <button
             type="button"
-            onClick={() => { AF.click(); setTab('forge'); }}
-            className="text-[10.5px] text-gold hover:text-gold2 font-medium"
+            onClick={() => { AF.click(); setTab('ops'); }}
+            className="flex items-center justify-between rounded-lg border border-gold/30 bg-gold/5 px-3 py-2 text-xs font-bold text-gold hover:bg-gold/10 transition-all cursor-pointer"
           >
-            {curLang === 'en' ? 'Edit habits →' : curLang === 'es' ? 'Editar hábitos →' : 'Editar hábitos →'}
-          </button>
-        </div>
-
-        {act.length ? (
-          <div className="flex flex-col gap-1.5 mt-1">
-            {act.map((id) => {
-              const h = ALLH.find((x) => x.id === id); if (!h) return null;
-              const dn = fd.includes(id), isF = ff.includes(id), tm = L.hTime(S, id);
-              return (
-                <div key={id} className={`flex items-center gap-2 rounded-r border p-2 text-left text-xs font-semibold transition-colors ${dn ? 'border-gold/50 bg-gold/10' : isF ? 'border-danger/50 bg-danger/10' : 'border-line bg-surface2'}`}>
-                  <span className="w-[20px] text-center text-sm">{h.icon}</span>
-                  <span className={`min-w-0 flex-1 truncate ${dn ? 'text-muted line-through' : isF ? 'text-danger line-through opacity-80' : ''}`}>{h.n}</span>
-                  {tm && <span className="font-mono text-[10px] text-gold2">⏰{tm}</span>}
-                  <div className="flex items-center gap-1.5 flex-none">
-                    <button
-                      type="button"
-                      title="Marcar como Falho"
-                      onClick={(e) => toggleHabitFailed(id, e)}
-                      className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
-                        isF 
-                          ? 'border-danger bg-danger text-white shadow-sm' 
-                          : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-danger/60 hover:text-danger'
-                      }`}
-                    >
-                      <X size={13} strokeWidth={2.5} />
-                    </button>
-                    <button
-                      type="button"
-                      title="Marcar como Cumprido"
-                      onClick={(e) => toggleHabitDone(id, e)}
-                      className={`grid h-[28px] w-[28px] place-items-center rounded border text-xs font-bold transition-all ${
-                        dn 
-                          ? 'border-gold bg-gold text-[#141414] shadow-sm' 
-                          : 'border-[#3c3c46] bg-surface text-muted/60 hover:border-gold/60 hover:text-gold'
-                      }`}
-                    >
-                      <Check size={13} strokeWidth={2.5} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="py-2 text-center">
-            <Empty>{t('ef1')}<br />{t('ef2')} <b className="text-gold">{t('forge_b')}</b>.</Empty>
-            <button className="btn-ghost btn-big mt-2 text-xs" onClick={() => setTab('forge')}>{t('goforge')}</button>
-          </div>
-        )}
-
-        {act.length > 0 && (
-          <div className="bar mt-2.5"><i style={{ width: (S.forge.active.length ? (doneF / S.forge.active.length) * 100 : 0) + '%' }} /></div>
-        )}
-      </Card>
-
-      {/* 4. ATALHO COMPACTO PARA OPERAÇÕES DO DIA (Se houver pendentes) */}
-      {pendingTasksCount > 0 && (
-        <button
-          type="button"
-          onClick={() => { AF.click(); setTab('ops'); }}
-          className="flex items-center justify-between rounded-lg border border-gold/30 bg-gold/5 px-3 py-2 text-xs font-bold text-gold hover:bg-gold/10 transition-all cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <Target size={14} className="text-gold" />
-            <span>🎯 {pendingTasksCount} {curLang === 'en' ? 'daily tasks pending' : curLang === 'es' ? 'operaciones pendientes' : 'operações pendentes hoje'}</span>
-          </div>
-          <span className="text-[11px] font-semibold text-gold2">
-            {curLang === 'en' ? 'Open Missions →' : curLang === 'es' ? 'Ver Misiones →' : 'Ver Missões →'}
-          </span>
-        </button>
-      )}
-
-      {/* 5. PROTOCOLO TÁTICO & EFEITOS BIOLÓGICOS (Sanfona Discreta / Acordeão) */}
-      <Card className="p-3">
-        <button
-          type="button"
-          onClick={() => setShowTacticsAccordion((v) => !v)}
-          className="w-full flex items-center justify-between text-left text-xs font-bold text-muted hover:text-gold transition-colors cursor-pointer"
-        >
-          <span className="flex items-center gap-2">
-            <ShieldCheck size={14} className="text-gold flex-none" />
-            <span className="uppercase tracking-wider text-[10.5px]">
-              {curLang === 'en' ? 'Tactical Protocol & Bio Perks' : curLang === 'es' ? 'Protocolo Táctico y Efectos' : 'Protocolo Tático & Efeitos do Marco'}
+            <div className="flex items-center gap-2">
+              <Target size={14} className="text-gold" />
+              <span>🎯 {pendingTasksCount} {curLang === 'en' ? 'daily tasks pending' : curLang === 'es' ? 'operaciones pendientes' : 'operações pendentes hoje'}</span>
+            </div>
+            <span className="text-[11px] font-semibold text-gold2">
+              {curLang === 'en' ? 'Open Missions →' : curLang === 'es' ? 'Ver Misiones →' : 'Ver Missões →'}
             </span>
-          </span>
-          <span className="flex items-center gap-1 text-[10.5px] text-muted">
-            {showTacticsAccordion ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </span>
-        </button>
+          </button>
+        )}
 
-        {showTacticsAccordion && (
-          <div className="mt-3 pt-3 border-t border-line/60 flex flex-col gap-3">
-            {/* Efeitos biológicos */}
-            {bioData && bioData.perks && bioData.perks.length > 0 && (
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-gold2 flex items-center gap-1.5 mb-1.5">
-                  <Zap size={11} className="text-gold" />
-                  {bioData.header}
-                </span>
-                <div className="flex flex-col gap-1.5">
-                  {bioData.perks.map((perk, idx) => (
-                    <div key={idx} className="flex items-center gap-1.5 rounded border border-line bg-surface2 px-2.5 py-1 text-left text-[11px] font-medium text-ink">
-                      <ShieldCheck size={11} className="flex-none text-gold" />
-                      <span className="truncate">{perk}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* 9. PROTOCOLO TÁTICO & REGRAS DE SOBREVIVÊNCIA (Acordeão Discreto) */}
+        <Card className="p-3">
+          <button
+            type="button"
+            onClick={() => setShowTacticsAccordion((v) => !v)}
+            className="w-full flex items-center justify-between text-left text-xs font-bold text-muted hover:text-gold transition-colors cursor-pointer"
+          >
+            <span className="flex items-center gap-2">
+              <ShieldCheck size={14} className="text-gold flex-none" />
+              <span className="uppercase tracking-wider text-[10.5px]">
+                {curLang === 'en' ? 'Tactical Protocol & Bio Perks' : curLang === 'es' ? 'Protocolo Táctico y Efectos' : 'Protocolo Tático & Efeitos do Marco'}
+              </span>
+            </span>
+            <span className="flex items-center gap-1 text-[10.5px] text-muted">
+              {showTacticsAccordion ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </span>
+          </button>
 
-            {/* As 3 regras táticas */}
-            <div className="flex flex-col gap-2">
-              <div className="rounded border border-danger/30 bg-danger/5 p-2">
-                <div className="flex items-center gap-1.5 text-danger font-bold text-[10px] uppercase tracking-wider mb-0.5">
-                  <ShieldAlert size={12} />
-                  <span>{tac.riskTitle[curLang]}</span>
+          {showTacticsAccordion && (
+            <div className="mt-3 pt-3 border-t border-line/60 flex flex-col gap-3">
+              {/* As 3 regras táticas */}
+              <div className="flex flex-col gap-2">
+                <div className="rounded border border-danger/30 bg-danger/5 p-2">
+                  <div className="flex items-center gap-1.5 text-danger font-bold text-[10px] uppercase tracking-wider mb-0.5">
+                    <ShieldAlert size={12} />
+                    <span>{tac.riskTitle[curLang]}</span>
+                  </div>
+                  <p className="text-[10.5px] text-muted leading-tight">{tac.riskDesc[curLang]}</p>
                 </div>
-                <p className="text-[10.5px] text-muted leading-tight">{tac.riskDesc[curLang]}</p>
-              </div>
 
-              <div className="rounded border border-gold/30 bg-gold/5 p-2">
-                <div className="flex items-center gap-1.5 text-gold font-bold text-[10px] uppercase tracking-wider mb-0.5">
-                  <Target size={12} />
-                  <span>{tac.goldenRuleTitle[curLang]}</span>
+                <div className="rounded border border-gold/30 bg-gold/5 p-2">
+                  <div className="flex items-center gap-1.5 text-gold font-bold text-[10px] uppercase tracking-wider mb-0.5">
+                    <Target size={12} />
+                    <span>{tac.goldenRuleTitle[curLang]}</span>
+                  </div>
+                  <p className="text-[10.5px] text-muted leading-tight">{tac.goldenRuleDesc[curLang]}</p>
                 </div>
-                <p className="text-[10.5px] text-muted leading-tight">{tac.goldenRuleDesc[curLang]}</p>
-              </div>
 
-              <div className="rounded border border-ok/30 bg-ok/5 p-2">
-                <div className="flex items-center gap-1.5 text-ok font-bold text-[10px] uppercase tracking-wider mb-0.5">
-                  <Flame size={12} />
-                  <span>{tac.energyTitle[curLang]}</span>
+                <div className="rounded border border-ok/30 bg-ok/5 p-2">
+                  <div className="flex items-center gap-1.5 text-ok font-bold text-[10px] uppercase tracking-wider mb-0.5">
+                    <Flame size={12} />
+                    <span>{tac.energyTitle[curLang]}</span>
+                  </div>
+                  <p className="text-[10.5px] text-muted leading-tight">{tac.energyDesc[curLang]}</p>
                 </div>
-                <p className="text-[10.5px] text-muted leading-tight">{tac.energyDesc[curLang]}</p>
               </div>
             </div>
-          </div>
-        )}
-      </Card>
-    </div>
-  );
+          )}
+        </Card>
+      </div>
+    );
+  };
 
   return (
     <div className="grid gap-3.5 w-full max-w-full overflow-x-hidden">
