@@ -64,26 +64,26 @@ export default function Shell() {
         </div>
       </aside>
 
-      <main className="max-w-full px-4 pb-16 lg:px-8 lg:pb-16">
+      <main className="w-full min-w-0 max-w-full px-3.5 sm:px-4 pb-28 lg:px-8 lg:pb-16 overflow-x-hidden">
         {/* topbar */}
-        <header className="sticky top-0 z-30 -mx-4 mb-4 flex items-center justify-between gap-2.5 border-b border-gold/20 bg-[rgba(13,13,14,.92)] px-4 py-2.5 backdrop-blur-md lg:-mx-8 lg:mb-6 lg:px-8">
+        <header className="sticky top-0 z-30 -mx-3.5 sm:-mx-4 mb-3 sm:mb-4 flex items-center justify-between gap-2 border-b border-gold/20 bg-[rgba(13,13,14,.92)] px-3.5 sm:px-4 py-2.5 backdrop-blur-md lg:-mx-8 lg:mb-6 lg:px-8">
           {/* Botão no canto superior com a SETINHA para alternar as abas no mobile */}
-          <div className="relative flex items-center gap-2">
+          <div className="relative flex items-center gap-2 min-w-0 flex-1">
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex items-center gap-2 rounded-lg border border-gold/40 bg-surface2/90 px-3 py-1.5 text-left transition-all active:scale-[0.98] hover:border-gold lg:pointer-events-none lg:border-transparent lg:bg-transparent lg:p-0"
+              className="flex items-center gap-1.5 sm:gap-2 rounded-lg border border-gold/40 bg-surface2/90 px-2.5 sm:px-3 py-1.5 text-left transition-all active:scale-[0.98] hover:border-gold lg:pointer-events-none lg:border-transparent lg:bg-transparent lg:p-0 min-w-0 max-w-full"
               aria-expanded={menuOpen}
               aria-label="Abrir menu de abas"
             >
-              <TabIcon size={19} className="text-gold flex-none" />
-              <div className="flex items-center gap-1.5">
-                <h1 className="truncate font-display text-xl sm:text-2xl tracking-[.06em] text-ink leading-tight">
+              <TabIcon size={18} className="text-gold flex-none" />
+              <div className="flex items-center gap-1.5 min-w-0">
+                <h1 className="truncate font-display text-lg sm:text-2xl tracking-[.06em] text-ink leading-tight">
                   {t(tab)}
                 </h1>
-                <span className="grid h-6 w-6 place-items-center rounded bg-gold/15 text-gold lg:hidden">
+                <span className="grid h-5 w-5 sm:h-6 sm:w-6 place-items-center rounded bg-gold/15 text-gold lg:hidden flex-none">
                   <ChevronDown
-                    size={15}
+                    size={13}
                     className={`transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`}
                   />
                 </span>
@@ -91,14 +91,14 @@ export default function Shell() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="chip flex-none text-[11px] font-bold">{lifeLbl}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-none">
+            <span className="chip flex-none text-[10.5px] sm:text-[11px] font-bold px-2 py-0.5">{lifeLbl}</span>
             <button
-              className="flex-none rounded-r border border-line bg-surface2 p-2 text-muted hover:text-gold transition-colors"
+              className="flex-none rounded-r border border-line bg-surface2 p-1.5 sm:p-2 text-muted hover:text-gold transition-colors"
               onClick={() => go('settings')}
               aria-label={t('adj')}
             >
-              <Settings size={18} />
+              <Settings size={17} />
             </button>
           </div>
 

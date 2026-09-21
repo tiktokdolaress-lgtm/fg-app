@@ -840,30 +840,30 @@ export default function QgView() {
         </div>
 
         {/* 2. O CORAÇÃO DA FORJA: MOSTRADOR CIRCULAR DE AÇO E FOGO (Hero Combat Dial) */}
-        <div className="rounded-2xl border border-[#4A3B22] bg-gradient-to-b from-[#1C1A24] via-[#121217] to-[#0A0A0D] p-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.85)] relative overflow-hidden text-center">
+        <div className="rounded-2xl border border-[#4A3B22] bg-gradient-to-b from-[#1C1A24] via-[#121217] to-[#0A0A0D] p-3 sm:p-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.85)] relative overflow-hidden text-center w-full max-w-full">
           {/* Brilho radial de brasa incandescente */}
           <div className="pointer-events-none absolute left-1/2 top-[10%] h-[260px] w-[260px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,100,20,0.18)_0%,rgba(200,60,10,0.05)_55%,transparent_75%)]" />
 
           {/* Topo do Hero: Patente de Guerra, Pureza e Sequência */}
-          <div className="flex items-center justify-between gap-2 pb-2 border-b border-line/60 relative z-10">
-            <div className="flex items-center gap-1.5">
-              <span className="text-base drop-shadow-sm">{tier.icon}</span>
-              <span className="font-display text-xs uppercase tracking-wider text-gold font-black">
+          <div className="flex items-center justify-between gap-1.5 pb-2 border-b border-line/60 relative z-10 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <span className="text-base drop-shadow-sm flex-none">{tier.icon}</span>
+              <span className="font-display text-xs uppercase tracking-wider text-gold font-black truncate">
                 {tier.name}
               </span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="rounded-md border border-gold/30 bg-gold/10 px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold">
+            <div className="flex items-center gap-1.5 flex-none">
+              <span className="rounded-md border border-gold/30 bg-gold/10 px-1.5 sm:px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold whitespace-nowrap">
                 💎 {S.purity}%
               </span>
-              <span className="rounded-md border border-gold/30 bg-gold/10 px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold">
-                🔥 {streak} {streak === 1 ? (curLang === 'en' ? 'DAY' : 'DIA') : (curLang === 'en' ? 'DAYS' : 'DIAS')}
+              <span className="rounded-md border border-gold/30 bg-gold/10 px-1.5 sm:px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold whitespace-nowrap">
+                🔥 {streak} {streak === 1 ? (curLang === 'en' ? 'DIA' : 'DIA') : (curLang === 'en' ? 'DIAS' : 'DIAS')}
               </span>
             </div>
           </div>
 
           {/* O Mostrador Circular da Forja */}
-          <div className="relative mx-auto h-[190px] w-[190px] my-2">
+          <div className="relative mx-auto h-[176px] w-[176px] sm:h-[190px] sm:w-[190px] my-1 sm:my-2">
             <svg width="100%" height="100%" viewBox="0 0 200 200" className="-rotate-90">
               <defs>
                 <linearGradient id="forgeFireGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -894,23 +894,23 @@ export default function QgView() {
             </svg>
 
             {/* Conteúdo Central do Mostrador */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2 select-none">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1.5 select-none">
               <div className="flex items-center gap-1 text-gold/80 mb-0.5">
-                <span className="text-sm">⚔️</span>
+                <span className="text-xs sm:text-sm">⚔️</span>
               </div>
 
-              <span className="font-display text-5xl font-black leading-none bg-gradient-to-b from-[#FFF5D6] via-[#FFCA40] to-[#B87A18] bg-clip-text text-transparent drop-shadow-[0_4px_16px_rgba(255,180,50,0.35)] tracking-tight">
+              <span className="font-display text-4xl sm:text-5xl font-black leading-none bg-gradient-to-b from-[#FFF5D6] via-[#FFCA40] to-[#B87A18] bg-clip-text text-transparent drop-shadow-[0_4px_16px_rgba(255,180,50,0.35)] tracking-tight">
                 {d}
               </span>
 
-              <span className="mt-1 text-[9px] font-extrabold uppercase tracking-[0.22em] text-[#C9C2B0]">
+              <span className="mt-1 text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-[0.2em] text-[#C9C2B0] px-1 truncate max-w-full">
                 {L.modeA(S) ? t('daysClean') : (curLang === 'en' ? 'RAW RETENTION' : curLang === 'es' ? 'RETENCIÓN PURA' : 'RETENÇÃO BRUTA')}
               </span>
 
               {/* Cronômetro ao vivo segundo a segundo */}
-              <div className="mt-1.5 flex items-center gap-1 rounded-full border border-gold/40 bg-black/75 px-2.5 py-0.5 shadow-inner">
-                <Clock size={10} className="text-gold animate-pulse flex-none" />
-                <span className="font-mono text-[9.5px] font-bold text-gold tracking-wider">
+              <div className="mt-1 sm:mt-1.5 flex items-center gap-1 rounded-full border border-gold/40 bg-black/80 px-2 sm:px-2.5 py-0.5 shadow-inner max-w-full">
+                <Clock size={9} className="text-gold animate-pulse flex-none" />
+                <span className="font-mono text-[9px] sm:text-[9.5px] font-bold text-gold tracking-wider truncate">
                   {pad(liveTime.days)}d · {pad(liveTime.hours)}h · {pad(liveTime.minutes)}m · {pad(liveTime.seconds)}s
                 </span>
               </div>
@@ -918,57 +918,59 @@ export default function QgView() {
           </div>
 
           {/* Rodapé do Mostrador: Próximo Patamar & Barra de Brasas */}
-          <div className="pt-1.5 pb-1 border-t border-line/40 relative z-10">
-            <div className="flex items-center justify-between text-[10.5px] text-muted font-medium mb-1">
-              <span className="truncate">{lvlTxt}</span>
-              {tier.reward && <span className="text-gold2 truncate ml-2">🎁 {tier.reward}</span>}
+          <div className="pt-1.5 pb-0.5 border-t border-line/40 relative z-10">
+            <div className="flex items-center justify-between text-[10px] sm:text-[10.5px] text-muted font-medium mb-1 min-w-0">
+              <span className="truncate flex-1 text-left">{lvlTxt}</span>
+              {tier.reward && <span className="text-gold2 truncate ml-2 flex-none">🎁 {tier.reward}</span>}
             </div>
             <Bar pct={lvlPct} />
           </div>
         </div>
 
         {/* 3. CORRENTE DE FERRO DA DISCIPLINA (Streak Chain - Elos Inquebráveis) */}
-        <div className="rounded-xl border border-line/70 bg-[#131318] p-3 shadow-sm">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm">⛓️</span>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#EAE4D2]">
-                {curLang === 'en' ? 'IRON DISCIPLINE CHAIN' : curLang === 'es' ? 'CADENA DE HIERRO' : 'CORRENTE DE FERRO DA DISCIPLINA'}
+        <div className="rounded-xl border border-line/70 bg-[#131318] p-3 shadow-sm w-full max-w-full overflow-hidden">
+          <div className="flex items-center justify-between gap-1.5 mb-2 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <span className="text-sm flex-none">⛓️</span>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#EAE4D2] truncate">
+                {curLang === 'en' ? 'IRON DISCIPLINE CHAIN' : curLang === 'es' ? 'CADENA DE HIERRO' : 'CORRENTE DE FERRO'}
               </span>
             </div>
-            <span className="rounded bg-gold/15 border border-gold/30 px-2 py-0.5 text-[9.5px] font-mono font-bold text-gold">
-              🔥 {streak} {streak === 1 ? (curLang === 'en' ? 'LINK FORGED' : 'ELO FORJADO') : (curLang === 'en' ? 'LINKS FORGED' : 'ELOS FORJADOS')}
+            <span className="flex-none rounded bg-gold/15 border border-gold/30 px-2 py-0.5 text-[9.5px] font-mono font-bold text-gold whitespace-nowrap">
+              🔥 {streak} {streak === 1 ? (curLang === 'en' ? 'LINK' : 'ELO') : (curLang === 'en' ? 'LINKS' : 'ELOS')}
             </span>
           </div>
 
           {/* Fileira de Elos Forjados */}
-          <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none">
-            {Array.from({ length: Math.max(7, Math.min(14, streak + 2)) }, (_, idx) => {
-              const dayNum = idx + 1;
-              const isForged = dayNum <= streak;
-              const isCurrent = dayNum === streak && streak > 0;
-              return (
-                <div
-                  key={idx}
-                  className={`flex flex-col items-center justify-center rounded-md px-2 py-1.5 min-w-[38px] border transition-all ${
-                    isCurrent
-                      ? 'border-gold bg-gold/25 shadow-[0_0_12px_rgba(255,200,70,0.3)] scale-105'
-                      : isForged
-                      ? 'border-gold/50 bg-gradient-to-b from-[#2B2314] to-[#1C170E] text-gold'
-                      : 'border-[#2D2D38] bg-[#1A1A22] opacity-40 text-muted'
-                  }`}
-                >
-                  <span className={`text-xs ${isForged ? 'text-gold drop-shadow-sm' : 'text-muted'}`}>
-                    🔗
-                  </span>
-                  <span className="text-[8px] font-mono font-black mt-0.5">
-                    D{dayNum}
-                  </span>
-                </div>
-              );
-            })}
+          <div className="w-full max-w-full overflow-x-auto py-1 scrollbar-none">
+            <div className="flex items-center gap-1.5 min-w-max">
+              {Array.from({ length: Math.max(7, Math.min(14, streak + 2)) }, (_, idx) => {
+                const dayNum = idx + 1;
+                const isForged = dayNum <= streak;
+                const isCurrent = dayNum === streak && streak > 0;
+                return (
+                  <div
+                    key={idx}
+                    className={`flex flex-col items-center justify-center rounded-md px-2 py-1.5 min-w-[36px] border transition-all ${
+                      isCurrent
+                        ? 'border-gold bg-gold/25 shadow-[0_0_12px_rgba(255,200,70,0.3)] scale-105'
+                        : isForged
+                        ? 'border-gold/50 bg-gradient-to-b from-[#2B2314] to-[#1C170E] text-gold'
+                        : 'border-[#2D2D38] bg-[#1A1A22] opacity-40 text-muted'
+                    }`}
+                  >
+                    <span className={`text-xs ${isForged ? 'text-gold drop-shadow-sm' : 'text-muted'}`}>
+                      🔗
+                    </span>
+                    <span className="text-[8px] font-mono font-black mt-0.5">
+                      D{dayNum}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <p className="mt-1.5 text-[9.5px] font-medium text-muted/80 text-center italic">
+          <p className="mt-1.5 text-[9px] font-medium text-muted/80 text-center italic truncate">
             {curLang === 'en' 
               ? 'Each clean day is a link forged in fire. Never break the chain.' 
               : curLang === 'es' 
@@ -978,54 +980,54 @@ export default function QgView() {
         </div>
 
         {/* 4. OS 3 PILARES DE AÇO (Métricas Táticas Rápidas) */}
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center w-full max-w-full">
           {/* Pilar I: Retenção Seminal */}
-          <div className="flex flex-col items-center justify-center rounded-xl border border-gold/45 bg-gradient-to-b from-[#241F14] to-[#17140E] py-2.5 px-1 shadow-[0_4px_14px_rgba(255,180,50,0.12)]">
+          <div className="flex flex-col items-center justify-center rounded-xl border border-gold/45 bg-gradient-to-b from-[#241F14] to-[#17140E] py-2 px-1 shadow-[0_4px_14px_rgba(255,180,50,0.12)] min-w-0 overflow-hidden">
             <div className="flex items-center gap-1 text-gold text-xs mb-0.5">
-              <span>🛡️</span>
-              <span className="text-[8px] font-mono uppercase font-black tracking-widest text-gold/80">Pilar I</span>
+              <span className="text-[11px]">🛡️</span>
+              <span className="text-[7.5px] sm:text-[8px] font-mono uppercase font-black tracking-wider text-gold/80 truncate">Pilar I</span>
             </div>
             <span className="font-display text-2xl sm:text-3xl font-black leading-none bg-gradient-to-b from-[#FFF2CC] to-[#E5A93C] bg-clip-text text-transparent">
               {d}
             </span>
-            <span className="mt-1 text-[8.5px] font-extrabold uppercase tracking-wide text-gold">
+            <span className="mt-1 text-[8px] sm:text-[8.5px] font-extrabold uppercase tracking-wide text-gold truncate max-w-full px-0.5">
               {L.modeA(S) ? t('daysClean') : (curLang === 'en' ? 'Retention' : curLang === 'es' ? 'Retención' : 'Retenção')}
             </span>
-            <span className="text-[7.5px] text-muted font-mono">
+            <span className="text-[7px] sm:text-[7.5px] text-muted font-mono truncate">
               {d === 1 ? (curLang === 'en' ? '1 day' : '1 dia') : (curLang === 'en' ? `${d} days` : `${d} dias`)}
             </span>
           </div>
 
           {/* Pilar II: Zero Pornografia */}
-          <div className="flex flex-col items-center justify-center rounded-xl border border-line/80 bg-[#16161C] py-2.5 px-1 shadow-sm">
+          <div className="flex flex-col items-center justify-center rounded-xl border border-line/80 bg-[#16161C] py-2 px-1 shadow-sm min-w-0 overflow-hidden">
             <div className="flex items-center gap-1 text-muted text-xs mb-0.5">
-              <span>👁️</span>
-              <span className="text-[8px] font-mono uppercase font-black tracking-widest text-muted/80">Pilar II</span>
+              <span className="text-[11px]">👁️</span>
+              <span className="text-[7.5px] sm:text-[8px] font-mono uppercase font-black tracking-wider text-muted/80 truncate">Pilar II</span>
             </div>
             <span className="font-display text-2xl sm:text-3xl font-black leading-none text-[#F3EAD2]">
               {pornFree}
             </span>
-            <span className="mt-1 text-[8.5px] font-extrabold uppercase tracking-wide text-[#A8A8B4]">
+            <span className="mt-1 text-[8px] sm:text-[8.5px] font-extrabold uppercase tracking-wide text-[#A8A8B4] truncate max-w-full px-0.5">
               {curLang === 'en' ? 'Porn-Free' : curLang === 'es' ? 'Sin Porno' : 'Sem Pornô'}
             </span>
-            <span className="text-[7.5px] text-muted font-mono">
+            <span className="text-[7px] sm:text-[7.5px] text-muted font-mono truncate">
               {pornFree === 1 ? (curLang === 'en' ? '1 day' : '1 dia') : (curLang === 'en' ? `${pornFree} days` : `${pornFree} dias`)}
             </span>
           </div>
 
           {/* Pilar III: Zero Masturbação */}
-          <div className="flex flex-col items-center justify-center rounded-xl border border-line/80 bg-[#16161C] py-2.5 px-1 shadow-sm">
+          <div className="flex flex-col items-center justify-center rounded-xl border border-line/80 bg-[#16161C] py-2 px-1 shadow-sm min-w-0 overflow-hidden">
             <div className="flex items-center gap-1 text-muted text-xs mb-0.5">
-              <span>⚡</span>
-              <span className="text-[8px] font-mono uppercase font-black tracking-widest text-muted/80">Pilar III</span>
+              <span className="text-[11px]">⚡</span>
+              <span className="text-[7.5px] sm:text-[8px] font-mono uppercase font-black tracking-wider text-muted/80 truncate">Pilar III</span>
             </div>
             <span className="font-display text-2xl sm:text-3xl font-black leading-none text-[#F3EAD2]">
               {mastFree}
             </span>
-            <span className="mt-1 text-[8.5px] font-extrabold uppercase tracking-wide text-[#A8A8B4]">
+            <span className="mt-1 text-[8px] sm:text-[8.5px] font-extrabold uppercase tracking-wide text-[#A8A8B4] truncate max-w-full px-0.5">
               {curLang === 'en' ? 'Mast.-Free' : curLang === 'es' ? 'Sin Mast.' : 'Sem Mast.'}
             </span>
-            <span className="text-[7.5px] text-muted font-mono">
+            <span className="text-[7px] sm:text-[7.5px] text-muted font-mono truncate">
               {mastFree === 1 ? (curLang === 'en' ? '1 day' : '1 dia') : (curLang === 'en' ? `${mastFree} days` : `${mastFree} dias`)}
             </span>
           </div>
@@ -1033,19 +1035,19 @@ export default function QgView() {
 
         {/* 5. PODER BIOLÓGICO DO GUERREIRO ("Cérebro em Cura" & Restauração Neural) */}
         {bioData && bioData.perks && bioData.perks.length > 0 && (
-          <div className="rounded-xl border border-gold/30 bg-gradient-to-b from-[#181820] to-[#101015] p-3.5 shadow-sm relative overflow-hidden">
+          <div className="rounded-xl border border-gold/30 bg-gradient-to-b from-[#181820] to-[#101015] p-3 shadow-sm relative overflow-hidden w-full max-w-full">
             <div className="pointer-events-none absolute right-[-20px] top-[-20px] h-[100px] w-[100px] rounded-full bg-[radial-gradient(circle,rgba(255,140,0,0.12),transparent_70%)]" />
             
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="flex items-center gap-2">
-                <span className="grid h-6 w-6 place-items-center rounded-full bg-gold/15 text-gold text-xs">
+            <div className="flex items-center justify-between gap-1.5 mb-2 min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <span className="grid h-5 w-5 sm:h-6 sm:w-6 place-items-center rounded-full bg-gold/15 text-gold text-xs flex-none">
                   🧬
                 </span>
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-gold">
-                  {curLang === 'en' ? 'ACTIVE BIOLOGICAL POWER' : curLang === 'es' ? 'PODER BIOLÓGICO ACTIVO' : 'PODER BIOLÓGICO DO GUERREIRO'}
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-gold truncate">
+                  {curLang === 'en' ? 'ACTIVE BIOLOGICAL POWER' : curLang === 'es' ? 'PODER BIOLÓGICO ACTIVO' : 'PODER BIOLÓGICO'}
                 </span>
               </div>
-              <span className="text-[9px] font-mono text-muted">
+              <span className="text-[9px] font-mono text-muted flex-none whitespace-nowrap">
                 Fase {tier.name}
               </span>
             </div>
@@ -1053,18 +1055,18 @@ export default function QgView() {
             {/* Os benefícios ativos em badges táteis */}
             <div className="flex flex-col gap-1.5 my-2">
               {bioData.perks.map((perk, idx) => (
-                <div key={idx} className="flex items-start gap-2 rounded-lg border border-line/60 bg-surface2/70 px-2.5 py-1.5 text-left text-[11px] font-medium text-[#ECE5D5]">
+                <div key={idx} className="flex items-start gap-2 rounded-lg border border-line/60 bg-surface2/70 px-2.5 py-1.5 text-left text-[10.5px] sm:text-[11px] font-medium text-[#ECE5D5] min-w-0">
                   <span className="text-gold text-xs flex-none mt-0.5">✦</span>
-                  <span className="leading-snug">{perk}</span>
+                  <span className="leading-snug break-words flex-1 min-w-0">{perk}</span>
                 </div>
               ))}
             </div>
 
             {/* Barra de Restauração Dopaminérgica / Neural */}
             <div className="mt-2.5 pt-2 border-t border-line/50">
-              <div className="flex items-center justify-between text-[9.5px] font-extrabold uppercase tracking-wider text-muted mb-1">
-                <span>{curLang === 'en' ? 'Neural Rewiring' : curLang === 'es' ? 'Reprogramación Neural' : 'Restauração Neural & Dopamina'}</span>
-                <span className="font-mono text-gold">{Math.min(100, Math.max(7, Math.round((d / 90) * 100)))}%</span>
+              <div className="flex items-center justify-between text-[9px] sm:text-[9.5px] font-extrabold uppercase tracking-wider text-muted mb-1 min-w-0">
+                <span className="truncate flex-1">{curLang === 'en' ? 'Neural Rewiring' : curLang === 'es' ? 'Reprogramación Neural' : 'Restauração Neural & Dopamina'}</span>
+                <span className="font-mono text-gold flex-none ml-1">{Math.min(100, Math.max(7, Math.round((d / 90) * 100)))}%</span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#202028]">
                 <div 
@@ -1077,19 +1079,19 @@ export default function QgView() {
         )}
 
         {/* 6. REGISTRO DIÁRIO DE COMBATE (OS 3 ESCUDOS DE BLINDAGEM TÁTICA) */}
-        <div className="rounded-xl border border-line/80 bg-[#15151C] p-3.5 shadow-sm">
-          <div className="flex items-center justify-between gap-2 mb-2.5">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm">🛡️</span>
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#F2ECE0]">
-                {curLang === 'en' ? 'DAILY COMBAT SHIELDING' : curLang === 'es' ? 'BLINDAJE DIARIO DE COMBATE' : 'REGISTRO DE COMBATE DO DIA'}
+        <div className="rounded-xl border border-line/80 bg-[#15151C] p-3 sm:p-3.5 shadow-sm w-full max-w-full overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2.5 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-sm flex-none">🛡️</span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#F2ECE0] truncate">
+                {curLang === 'en' ? 'DAILY COMBAT' : curLang === 'es' ? 'BLINDAJE DIARIO' : 'REGISTRO DE COMBATE'}
               </span>
-              <span className="text-[9.5px] font-mono text-muted">
+              <span className="text-[9.5px] font-mono text-gold/90 font-bold flex-none">
                 ({ciDate === today() ? fdmy(today()) : fdmy(ciDate)})
               </span>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-none ml-auto">
               <button
                 type="button"
                 className="text-[10px] text-muted hover:text-gold px-2 py-0.5 rounded border border-line/60 bg-surface2 font-semibold transition-colors"
@@ -1104,7 +1106,7 @@ export default function QgView() {
                   className="text-[10px] text-gold px-2 py-0.5 rounded border border-gold/40 bg-gold/15 font-black transition-colors"
                   onClick={() => { AF.click(); setCiDate(today()); }}
                 >
-                  {curLang === 'en' ? 'Today' : curLang === 'es' ? 'Hoy' : 'Hoje'}
+                  {curLang === 'en' ? 'Today' : curLang === 'es' ? 'Hoy' : 'Hoje'} ▶
                 </button>
               )}
             </div>
@@ -1161,8 +1163,8 @@ export default function QgView() {
                     }`}>
                       {isChecked ? '✓' : item.icon}
                     </span>
-                    <div className="flex flex-col min-w-0">
-                      <span className={`text-xs font-bold leading-tight ${
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className={`text-xs font-bold leading-tight truncate ${
                         isChecked ? 'text-gold' : isFailed ? 'text-danger' : 'text-[#EDE5D5]'
                       }`}>
                         {item.title}
@@ -1356,27 +1358,27 @@ export default function QgView() {
   return (
     <div className="grid gap-3.5 w-full max-w-full overflow-x-hidden">
       {/* SELETOR DE CATEGORIAS RESPONSIVO (Desktop: Abas / Mobile: 3 Pontinhos) */}
-      <div className="flex items-center justify-between gap-2 border-b border-line pb-3">
+      <div className="flex items-center justify-between gap-2 border-b border-line pb-2.5 min-w-0">
         {/* Mobile: Categoria Ativa + 3 Pontinhos */}
-        <div className="sm:hidden flex items-center justify-between w-full relative">
-          <div className="flex items-center gap-2">
+        <div className="sm:hidden flex items-center justify-between w-full relative min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             {(() => {
               const currentCat = QG_CATEGORIES.find((c) => c.id === activeCategory) || QG_CATEGORIES[0];
               const IconComp = currentCat.icon;
               return (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface2 border border-gold/30 text-gold font-bold text-xs">
-                  <IconComp size={15} />
-                  <span>{getCategoryLabel(currentCat.id)}</span>
+                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface2 border border-gold/30 text-gold font-bold text-xs truncate max-w-full">
+                  <IconComp size={14} className="flex-none" />
+                  <span className="truncate">{getCategoryLabel(currentCat.id)}</span>
                 </div>
               );
             })()}
           </div>
 
-          <div className="relative">
+          <div className="relative flex-none pl-2">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg border border-line bg-surface hover:border-gold/50 text-ink transition-colors flex items-center justify-center"
+              className="p-1.5 rounded-lg border border-line bg-surface hover:border-gold/50 text-ink transition-colors flex items-center justify-center"
               aria-label="Abrir menu de categorias"
             >
               <MoreVertical size={16} />
