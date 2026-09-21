@@ -488,42 +488,157 @@ export default function QgView() {
     </Card>
   );
 
-  const renderProgressHero = () => (
-    <Card glow className="overflow-hidden text-center relative flex-1 flex flex-col justify-between py-2.5 px-3 sm:py-4 sm:px-5">
-      <div className="pointer-events-none absolute left-1/2 top-[6%] h-[340px] w-[340px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,200,70,.14),transparent_65%)]" style={{ animation: 'breathe 5s ease-in-out infinite' }} />
-      <K className="text-center">{tier.min >= 90 ? t('prog_aura') : t('prog')}</K>
-      
-      <div className="relative my-2 sm:my-3 grid grid-cols-2 gap-1.5 sm:gap-2.5 sm:grid-cols-3">
-        <div className="col-span-2 bg-gradient-to-b from-[#FFE79A] via-gold to-gold2 bg-clip-text font-display text-[clamp(64px,9vw,110px)] leading-[.92] text-transparent drop-shadow-[0_4px_22px_rgba(255,200,70,.3)] sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:py-2">
-          {d}
-          <small className="mt-1 block font-body text-[10px] sm:text-[10.5px] font-extrabold tracking-[.28em] text-muted" style={{ WebkitTextFillColor: '#8E8E93' }}>{L.modeA(S) ? t('daysClean') : t('days')}</small>
-          <div className="mt-2 inline-flex items-center gap-1 rounded-full border border-gold/40 bg-black/60 px-2.5 py-0.5 shadow-inner">
-            <Clock size={10} className="text-gold animate-pulse flex-none" />
-            <span className="font-mono text-[9px] font-bold text-gold tracking-wider">
-              {pad(liveTime.days)}d · {pad(liveTime.hours)}h · {pad(liveTime.minutes)}m · {pad(liveTime.seconds)}s
+  /* 2. O CORAÇÃO DA FORJA: MOSTRADOR CIRCULAR DE AÇO E FOGO (Hero Combat Dial / Anel da Forja) */
+  const renderCombatDial = (isDesktop = false) => {
+    const dialCircumference = 515.22;
+    const dialOffset = dialCircumference * (1 - Math.min(100, Math.max(0, lvlPct)) / 100);
+
+    return (
+      <div className={`rounded-2xl border border-[#4A3B22] bg-gradient-to-b from-[#1C1A24] via-[#121217] to-[#0A0A0D] ${isDesktop ? 'p-4 sm:p-5' : 'p-3.5 sm:p-4'} shadow-[0_8px_32px_rgba(0,0,0,0.85)] relative overflow-hidden text-center w-full max-w-full`}>
+        {/* Brilho radial de brasa incandescente */}
+        <div className={`pointer-events-none absolute left-1/2 top-[8%] ${isDesktop ? 'h-[300px] w-[300px]' : 'h-[240px] w-[240px]'} -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,100,20,0.18)_0%,rgba(200,60,10,0.04)_55%,transparent_75%)]`} />
+
+        {/* Topo do Hero: Patente de Guerra, Pureza, Sequência e SOS */}
+        <div className="flex items-center justify-between gap-1.5 pb-2.5 border-b border-line/60 relative z-10 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className={`${isDesktop ? 'text-xl' : 'text-base'} drop-shadow-sm flex-none`}>{tier.icon}</span>
+            <div className="flex flex-col min-w-0 text-left">
+              <span className={`font-display ${isDesktop ? 'text-sm sm:text-base' : 'text-xs'} uppercase tracking-wider text-gold font-black truncate`}>
+                {tier.name}
+              </span>
+              {isDesktop && (
+                <span className="text-[10px] text-muted font-mono truncate">
+                  {tier.min >= 90 ? t('prog_aura') : `${d} ${t('days')} ${t('of_w')} 90d`}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-none">
+            <span className="rounded-md border border-gold/30 bg-gold/10 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-mono text-gold font-bold whitespace-nowrap">
+              💎 {S.purity}%
             </span>
+            <span className="rounded-md border border-gold/30 bg-gold/10 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-mono text-gold font-bold whitespace-nowrap">
+              🔥 {streak} {streak === 1 ? 'DIA' : 'DIAS'}
+            </span>
+            {isDesktop && (
+              <span className="rounded-md border border-ok/30 bg-ok/10 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-mono text-ok font-bold whitespace-nowrap" title={lw ? t('lastw') + fdmy(lw.d) + t('atw') + lw.h : t('nosos')}>
+                🛡️ {L.sosWins(S)} SOS
+              </span>
+            )}
           </div>
         </div>
-        <div className="rounded-r border border-line bg-surface2 p-2 sm:p-2.5 sm:col-start-1 sm:row-start-2">
-          <div className="relative mx-auto h-[58px] w-[58px] sm:h-[66px] sm:w-[66px]">
-            <svg width="100%" height="100%" viewBox="0 0 80 80" className="-rotate-90">
-              <circle cx="40" cy="40" r="34" fill="none" stroke="#26262c" strokeWidth="7" />
-              <circle cx="40" cy="40" r="34" fill="none" stroke="#FFC846" strokeWidth="7" strokeLinecap="round" strokeDasharray="213.6" strokeDashoffset={ring.toFixed(1)} style={{ transition: 'stroke-dashoffset .8s' }} />
-            </svg>
-            <div className="absolute inset-0 grid place-content-center">
-              <b className="font-display text-sm sm:text-base text-gold">{S.purity}%</b>
-              <small className="text-[7px] font-extrabold tracking-[.18em] text-muted">{t('purity')}</small>
+
+        {/* O Mostrador Circular da Forja */}
+        <div className={`relative mx-auto ${isDesktop ? 'h-[210px] w-[210px] sm:h-[230px] sm:w-[230px] my-2 sm:my-3' : 'h-[176px] w-[176px] sm:h-[190px] sm:w-[190px] my-1 sm:my-2'}`}>
+          <svg width="100%" height="100%" viewBox="0 0 200 200" className="-rotate-90">
+            <defs>
+              <linearGradient id={isDesktop ? "forgeFireGradDesk" : "forgeFireGrad"} x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FF3B00" />
+                <stop offset="50%" stopColor="#FF9500" />
+                <stop offset="100%" stopColor="#FFC846" />
+              </linearGradient>
+              <filter id={isDesktop ? "forgeGlowDesk" : "forgeGlow"} x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3.5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+            <circle cx="100" cy="100" r="82" fill="none" stroke="#22222C" strokeWidth="8" strokeDasharray="4 6" opacity="0.3" />
+            <circle cx="100" cy="100" r="82" fill="none" stroke="#181822" strokeWidth="9" />
+            <circle
+              cx="100"
+              cy="100"
+              r="82"
+              fill="none"
+              stroke={isDesktop ? "url(#forgeFireGradDesk)" : "url(#forgeFireGrad)"}
+              strokeWidth="9"
+              strokeLinecap="round"
+              strokeDasharray="515.22"
+              strokeDashoffset={dialOffset.toFixed(1)}
+              filter={isDesktop ? "url(#forgeGlowDesk)" : "url(#forgeGlow)"}
+              style={{ transition: 'stroke-dashoffset 0.8s ease-out' }}
+            />
+          </svg>
+
+          {/* Conteúdo Central do Mostrador */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1.5 select-none">
+            <div className="flex items-center gap-1 text-gold/80 mb-0.5">
+              <span className={isDesktop ? "text-sm sm:text-base" : "text-xs sm:text-sm"}>⚔️</span>
+            </div>
+
+            <span className={`font-display ${isDesktop ? 'text-5xl sm:text-6xl' : 'text-4xl sm:text-5xl'} font-black leading-none bg-gradient-to-b from-[#FFF5D6] via-[#FFCA40] to-[#B87A18] bg-clip-text text-transparent drop-shadow-[0_4px_18px_rgba(255,180,50,0.35)] tracking-tight`}>
+              {d}
+            </span>
+
+            <span className={`mt-1 ${isDesktop ? 'text-[9.5px] sm:text-[10.5px]' : 'text-[8.5px] sm:text-[9px]'} font-extrabold uppercase tracking-[0.2em] text-[#C9C2B0] px-1 truncate max-w-full`}>
+              {L.modeA(S) ? t('daysClean') : (curLang === 'en' ? 'RAW RETENTION' : curLang === 'es' ? 'RETENCIÓN PURA' : 'RETENÇÃO BRUTA')}
+            </span>
+
+            {/* Cronômetro ao vivo segundo a segundo */}
+            <div className={`mt-1 sm:mt-1.5 flex items-center gap-1.5 rounded-full border border-gold/40 bg-black/80 ${isDesktop ? 'px-3 py-0.5' : 'px-2 sm:px-2.5 py-0.5'} shadow-inner max-w-full`}>
+              <Clock size={isDesktop ? 11 : 9} className="text-gold animate-pulse flex-none" />
+              <span className={`font-mono ${isDesktop ? 'text-[10px] sm:text-[11px]' : 'text-[9px] sm:text-[9.5px]'} font-bold text-gold tracking-wider truncate`}>
+                {pad(liveTime.days)}d · {pad(liveTime.hours)}h · {pad(liveTime.minutes)}m · {pad(liveTime.seconds)}s
+              </span>
             </div>
           </div>
         </div>
-        <div className="rounded-r border border-line bg-surface2 p-2 sm:p-2.5 sm:col-start-1 sm:row-start-1 sm:self-center"><b className="block font-display text-lg sm:text-2xl text-gold">{pornFree}</b><small className="text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-[.12em] text-muted">{t('hporn')}</small></div>
-        <div className="rounded-r border border-line bg-surface2 p-2 sm:p-2.5 sm:col-start-3 sm:row-start-1 sm:self-center"><b className="block font-display text-lg sm:text-2xl text-gold">{mastFree}</b><small className="text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-[.12em] text-muted">{t('hmast')}</small></div>
-        <div className="rounded-r border border-line bg-surface2 p-2 sm:p-2.5 sm:col-start-2 sm:row-start-2"><b className="block font-display text-lg sm:text-2xl text-gold">🔥 {streak}</b><small className="text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-[.12em] text-muted">{t('hstreak')}</small></div>
-        <div className="rounded-r border border-line bg-surface2 p-2 sm:p-2.5 sm:col-start-3 sm:row-start-2"><b className="block font-display text-lg sm:text-2xl text-gold">🛡️ {L.sosWins(S)}</b><small className="text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-[.12em] text-muted">{t('hsos')}</small></div>
-        {tier.min >= 365 && <div className="col-span-2 rounded-r border border-[#EDEDF2] bg-gradient-to-br from-[#EDEDF2] to-[#8F96A0] p-2.5 shadow-[0_0_18px_rgba(230,232,240,.35)] sm:col-span-3 sm:col-start-1 sm:row-start-3"><b className="block font-display text-2xl text-[#141414]">🐉</b><small className="text-[9px] font-extrabold uppercase tracking-[.14em] text-[#33383f]">{t('titan')}</small></div>}
+
+        {/* Pilares Secundários Integrados e Compactos */}
+        <div className={`grid ${isDesktop ? 'grid-cols-3' : 'grid-cols-2'} gap-2 my-2.5 min-w-0`}>
+          <div className="flex items-center justify-between px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#14141A] border border-line/70 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-xs sm:text-sm flex-none">👁️</span>
+              <span className="text-[10px] sm:text-[11px] font-bold text-muted truncate">
+                {curLang === 'en' ? 'Porn-Free' : curLang === 'es' ? 'Sin Porno' : 'Sem Pornô'}
+              </span>
+            </div>
+            <span className="font-mono text-xs sm:text-sm font-black text-gold pl-1 flex-none">
+              {pornFree}d
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#14141A] border border-line/70 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-xs sm:text-sm flex-none">⚡</span>
+              <span className="text-[10px] sm:text-[11px] font-bold text-muted truncate">
+                {curLang === 'en' ? 'Self-Mastery' : curLang === 'es' ? 'Autodominio' : 'Autodomínio'}
+              </span>
+            </div>
+            <span className="font-mono text-xs sm:text-sm font-black text-gold pl-1 flex-none">
+              {mastFree}d
+            </span>
+          </div>
+
+          {isDesktop && (
+            <div className="flex items-center justify-between px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#14141A] border border-line/70 min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-xs sm:text-sm flex-none">🛡️</span>
+                <span className="text-[10px] sm:text-[11px] font-bold text-muted truncate">
+                  {curLang === 'en' ? 'SOS Shield' : curLang === 'es' ? 'Escudos SOS' : 'Escudos S.O.S'}
+                </span>
+              </div>
+              <span className="font-mono text-xs sm:text-sm font-black text-gold pl-1 flex-none">
+                {L.sosWins(S)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Rodapé do Mostrador: Próximo Patamar & Barra de Brasas */}
+        <div className="pt-2.5 border-t border-line/40 relative z-10">
+          <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-muted font-medium mb-1.5 min-w-0">
+            <span className="truncate flex-1 text-left font-semibold text-[#EDE5D5]">{lvlTxt}</span>
+            {tier.reward && (
+              <span className="text-gold2 truncate ml-2 flex-none font-bold">
+                🎁 {tier.reward}
+              </span>
+            )}
+          </div>
+          <Bar pct={lvlPct} />
+        </div>
       </div>
-    </Card>
-  );
+    );
+  };
 
   const renderForgeLevel = (isMobile = false) => (
     <Card className="py-3 px-3.5 sm:py-4 sm:px-5">
@@ -840,119 +955,7 @@ export default function QgView() {
         </div>
 
         {/* 2. O CORAÇÃO DA FORJA: MOSTRADOR CIRCULAR DE AÇO E FOGO (Hero Combat Dial) */}
-        <div className="rounded-2xl border border-[#4A3B22] bg-gradient-to-b from-[#1C1A24] via-[#121217] to-[#0A0A0D] p-3.5 sm:p-4 shadow-[0_8px_32px_rgba(0,0,0,0.85)] relative overflow-hidden text-center w-full max-w-full">
-          {/* Brilho radial de brasa incandescente */}
-          <div className="pointer-events-none absolute left-1/2 top-[10%] h-[240px] w-[240px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,100,20,0.18)_0%,rgba(200,60,10,0.04)_55%,transparent_75%)]" />
-
-          {/* Topo do Hero: Patente de Guerra, Pureza e Sequência */}
-          <div className="flex items-center justify-between gap-1.5 pb-2 border-b border-line/60 relative z-10 min-w-0">
-            <div className="flex items-center gap-1.5 min-w-0 flex-1">
-              <span className="text-base drop-shadow-sm flex-none">{tier.icon}</span>
-              <span className="font-display text-xs uppercase tracking-wider text-gold font-black truncate">
-                {tier.name}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 flex-none">
-              <span className="rounded-md border border-gold/30 bg-gold/10 px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold whitespace-nowrap">
-                💎 {S.purity}%
-              </span>
-              <span className="rounded-md border border-gold/30 bg-gold/10 px-2 py-0.5 text-[9.5px] font-mono text-gold font-bold whitespace-nowrap">
-                🔥 {streak} {streak === 1 ? (curLang === 'en' ? 'DIA' : 'DIA') : (curLang === 'en' ? 'DIAS' : 'DIAS')}
-              </span>
-            </div>
-          </div>
-
-          {/* O Mostrador Circular da Forja */}
-          <div className="relative mx-auto h-[176px] w-[176px] sm:h-[190px] sm:w-[190px] my-1 sm:my-2">
-            <svg width="100%" height="100%" viewBox="0 0 200 200" className="-rotate-90">
-              <defs>
-                <linearGradient id="forgeFireGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#FF3B00" />
-                  <stop offset="50%" stopColor="#FF9500" />
-                  <stop offset="100%" stopColor="#FFC846" />
-                </linearGradient>
-                <filter id="forgeGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="3.5" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-              </defs>
-              <circle cx="100" cy="100" r="82" fill="none" stroke="#22222C" strokeWidth="8" strokeDasharray="4 6" opacity="0.3" />
-              <circle cx="100" cy="100" r="82" fill="none" stroke="#181822" strokeWidth="9" />
-              <circle
-                cx="100"
-                cy="100"
-                r="82"
-                fill="none"
-                stroke="url(#forgeFireGrad)"
-                strokeWidth="9"
-                strokeLinecap="round"
-                strokeDasharray="515.22"
-                strokeDashoffset={dialOffset.toFixed(1)}
-                filter="url(#forgeGlow)"
-                style={{ transition: 'stroke-dashoffset 0.8s ease-out' }}
-              />
-            </svg>
-
-            {/* Conteúdo Central do Mostrador */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1.5 select-none">
-              <div className="flex items-center gap-1 text-gold/80 mb-0.5">
-                <span className="text-xs sm:text-sm">⚔️</span>
-              </div>
-
-              <span className="font-display text-4xl sm:text-5xl font-black leading-none bg-gradient-to-b from-[#FFF5D6] via-[#FFCA40] to-[#B87A18] bg-clip-text text-transparent drop-shadow-[0_4px_16px_rgba(255,180,50,0.35)] tracking-tight">
-                {d}
-              </span>
-
-              <span className="mt-1 text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-[0.2em] text-[#C9C2B0] px-1 truncate max-w-full">
-                {L.modeA(S) ? t('daysClean') : (curLang === 'en' ? 'RAW RETENTION' : curLang === 'es' ? 'RETENCIÓN PURA' : 'RETENÇÃO BRUTA')}
-              </span>
-
-              {/* Cronômetro ao vivo segundo a segundo */}
-              <div className="mt-1 sm:mt-1.5 flex items-center gap-1 rounded-full border border-gold/40 bg-black/80 px-2 sm:px-2.5 py-0.5 shadow-inner max-w-full">
-                <Clock size={9} className="text-gold animate-pulse flex-none" />
-                <span className="font-mono text-[9px] sm:text-[9.5px] font-bold text-gold tracking-wider truncate">
-                  {pad(liveTime.days)}d · {pad(liveTime.hours)}h · {pad(liveTime.minutes)}m · {pad(liveTime.seconds)}s
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Pilares Secundários Integrados e Compactos (Sem poluição de cards extras) */}
-          <div className="grid grid-cols-2 gap-2 my-2 min-w-0">
-            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#14141A] border border-line/70 min-w-0">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-xs flex-none">👁️</span>
-                <span className="text-[10px] font-bold text-muted truncate">
-                  {curLang === 'en' ? 'Porn-Free' : curLang === 'es' ? 'Sin Porno' : 'Sem Pornô'}
-                </span>
-              </div>
-              <span className="font-mono text-xs font-black text-gold pl-1 flex-none">
-                {pornFree}d
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#14141A] border border-line/70 min-w-0">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-xs flex-none">⚡</span>
-                <span className="text-[10px] font-bold text-muted truncate">
-                  {curLang === 'en' ? 'Self-Mastery' : curLang === 'es' ? 'Autodominio' : 'Autodomínio'}
-                </span>
-              </div>
-              <span className="font-mono text-xs font-black text-gold pl-1 flex-none">
-                {mastFree}d
-              </span>
-            </div>
-          </div>
-
-          {/* Rodapé do Mostrador: Próximo Patamar & Barra de Brasas */}
-          <div className="pt-2 border-t border-line/40 relative z-10">
-            <div className="flex items-center justify-between text-[10px] sm:text-[10.5px] text-muted font-medium mb-1 min-w-0">
-              <span className="truncate flex-1 text-left">{lvlTxt}</span>
-              {tier.reward && <span className="text-gold2 truncate ml-2 flex-none">🎁 {tier.reward}</span>}
-            </div>
-            <Bar pct={lvlPct} />
-          </div>
-        </div>
+        {renderCombatDial(false)}
 
         {/* 3. BLINDAGEM DO DIA: REGISTRO TÁTICO DIRETO (Os 3 Escudos do Guerreiro) */}
         <div className="rounded-xl border border-line/80 bg-[#15151C] p-3 sm:p-3.5 shadow-sm w-full max-w-full overflow-hidden">
@@ -1323,9 +1326,9 @@ export default function QgView() {
               {renderMantra()}
             </div>
 
-            {/* Coluna Esquerda Desktop: Progresso, Nível completo e Protocolo Tático */}
+            {/* Coluna Esquerda Desktop: O Anel de Fogo e Retenção (Hero Combat Dial), Nível e Protocolo Tático */}
             <div className="lg:col-span-7 flex flex-col gap-3.5">
-              {renderProgressHero()}
+              {renderCombatDial(true)}
               {renderForgeLevel(false)}
               {renderTacticalProtocol()}
             </div>
