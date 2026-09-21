@@ -411,7 +411,7 @@ export default function QgView() {
 
   const getCategoryLabel = (id) => {
     const map = {
-      overview: { pt: 'Progresso & Combate', en: 'Progress & Combat', es: 'Progreso y Combate' },
+      overview: { pt: 'Combate', en: 'Combat', es: 'Combate' },
       timeline: { pt: 'Linha do Tempo', en: 'Timeline', es: 'Línea de Tiempo' },
     };
     return map[id]?.[curLang] || map[id]?.pt || id;
@@ -419,7 +419,7 @@ export default function QgView() {
 
   const getCategoryBadge = (catId) => {
     if (catId === 'overview') {
-      return S.forge.active.length ? `${d}d · ${doneF}/${S.forge.active.length}` : `${d}d`;
+      return S.forge.active.length ? `${doneF}/${S.forge.active.length}` : `${d}d`;
     }
     if (catId === 'timeline') {
       return `${rate}%`;
